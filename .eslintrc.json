@@ -1,0 +1,45 @@
+{
+  "root": true,
+  "env": { "browser": true, "es2020": true },
+  "ignorePatterns": [
+    "dist",
+    "src/__generated__/",
+    "src/solidityTypes/",
+    "src/scripts/",
+    "next-env.d.ts",
+    "env.d.ts",
+    "tailwind.config.js",
+    "next.config.js"
+  ],
+  "parser": "@typescript-eslint/parser",
+  "extends": [
+    "plugin:react-hooks/recommended",
+    "plugin:@next/next/recommended",
+    "@avicenne-studio"
+  ],
+  "rules": {
+    // Todo Linter: fix the following rules
+    "camelcase": "off",
+    "id-length": "off",
+    "func-style": "off",
+    "no-console": "warn",
+    "@stylistic/jsx-curly-newline": "off",
+    "@stylistic/multiline-ternary": "off",
+    "@stylistic/jsx-one-expression-per-line": "off",
+    "@stylistic/jsx-wrap-multilines": "off",
+    "@stylistic/jsx-indent": "off",
+    "@typescript-eslint/no-misused-promises": [
+      "error",
+      {
+        "checksVoidReturn": {
+          "arguments": false,
+          "attributes": false
+        }
+      }
+    ],
+    "@typescript-eslint/restrict-template-expressions": [
+      "error",
+      { "allowNumber": true }
+    ]
+  }
+}

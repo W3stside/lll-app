@@ -1,0 +1,127 @@
+@import 'tailwindcss';
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --foreground-rgb: 0, 0, 0;
+  --background-start-rgb: 214, 219, 220;
+  --background-end-rgb: 255, 255, 255;
+  font-family: monospace;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --foreground-rgb: 255, 255, 255;
+    --background-start-rgb: 0, 0, 0;
+    --background-end-rgb: #003737;
+  }
+}
+
+body {
+  color: rgb(var(--foreground-rgb));
+  background: linear-gradient(
+      to bottom,
+      transparent,
+      rgb(var(--background-end-rgb)) 100%
+    )
+    rgb(var(--background-start-rgb));
+  background-color: #028383;
+}
+
+@layer utilities {
+  h1 {
+    font-size: 2.25rem;
+    line-height: 1.2;
+  }
+
+  h2 {
+    font-size: 2rem;
+    line-height: 1.2;
+  }
+
+  h3 {
+    font-size: 1.75rem;
+    line-height: 1.2;
+  }
+
+  h4 {
+    font-size: 1.5rem;
+    line-height: 1.2;
+  }
+
+  h5 {
+    font-size: 1.25rem;
+    line-height: 1.2;
+  }
+
+  button {
+    cursor: pointer;
+    outline: none;
+    &:active {
+      border: 2px solid #242424;
+      border-right-color: white;
+      border-bottom-color: white;
+    }
+    &:disabled {
+      cursor: not-allowed;
+      pointer-events: none;
+      background-color: #525252;
+      color: #242424;
+    }
+  }
+
+  input {
+    color: black;
+    background-color: white;
+    border: 2px solid #242424;
+    border-right-color: white;
+    border-bottom-color: white;
+    outline: none;
+    width: 100%;
+    padding: 8px;
+  }
+
+  .elevation-2 {
+    box-shadow:
+      0px 1px 10px 0px rgba(31, 20, 37, 0.03),
+      0px 12px 18px 0px rgba(31, 19, 37, 0.01),
+      0px 40px 40px 0px rgba(31, 20, 37, 0.02);
+
+    box-shadow:
+      0px 1px 10px 0px color(display-p3 0.1137 0.0784 0.1412 / 0.03),
+      0px 12px 18px 0px color(display-p3 0.1145 0.0767 0.1415 / 0.01),
+      0px 40px 40px 0px color(display-p3 0.1137 0.0784 0.1412 / 0.02);
+  }
+
+  .container,
+  button {
+    display: flex;
+    background-color: #c5c5c5;
+    border: 2px solid #242424;
+    border-left-color: white;
+    border-top-color: white;
+    padding: 8px;
+    color: black;
+  }
+
+  .container-header {
+    display: flex;
+    background-color: #020087;
+    color: ghostwhite;
+    padding-right: 6px;
+    align-items: center;
+    justify-content: flex-end;
+    height: 20px;
+    font-size: 12px;
+  }
+
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+  .no-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+}

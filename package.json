@@ -1,25 +1,45 @@
 {
   "private": true,
   "scripts": {
-    "dev": "next dev",
+    "dev": "next dev --port 3005",
     "build": "next build",
     "start": "next start"
   },
   "dependencies": {
+    "clsx": "^2.1.1",
     "mongodb": "^6.5.0",
     "next": "latest",
     "react": "^18",
-    "react-dom": "^18"
+    "react-dom": "^18",
+    "tailwind-merge": "^3.2.0"
   },
   "devDependencies": {
+    "@avicenne-studio/eslint-config": "1.0.27",
+    "@avicenne-studio/prettier-config": "1.0.2",
+    "@eslint/compat": "^1.2.8",
+    "@next/eslint-plugin-next": "14.2.23",
+    "@tailwindcss/container-queries": "^0.1.1",
+    "@tailwindcss/forms": "^0.5.10",
+    "@tailwindcss/postcss": "^4",
+    "@types/express": "^5.0.1",
     "@types/node": "^20",
     "@types/react": "^18",
     "@types/react-dom": "^18",
+    "@typescript-eslint/eslint-plugin": "7.18.0",
+    "@typescript-eslint/parser": "7.18.0",
     "autoprefixer": "^10.0.1",
-    "eslint": "^9",
+    "eslint": "^8",
     "eslint-config-next": "14.0.4",
-    "postcss": "^8",
-    "tailwindcss": "^3.3.0",
+    "eslint-config-prettier": "9.1.0",
+    "eslint-plugin-import": "2.31.0",
+    "eslint-plugin-prettier": "5.2.3",
+    "eslint-plugin-react-hooks": "4.6.2",
+    "eslint-plugin-simple-import-sort": "12.1.1",
+    "postcss": "^8.5.3",
+    "prettier": "3.4.2",
+    "tailwindcss": "^4",
+    "tailwindcss-animate": "^1.0.7",
     "typescript": "^5"
-  }
+  },
+  "packageManager": "yarn@1.22.22+sha512.a6b2f7906b721bba3d67d4aff083df04dad64c399707841b7acf00f6b133b7ac24255f2652fa22ae3534329dc6180534e98d17432037ff6fd140556e2bb3137e"
 }
