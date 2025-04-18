@@ -1,5 +1,6 @@
-import { useState } from "react";
+import { type ReactNode, useState } from "react";
 
+import { ORANGE_THRESHOLD, YELLOW_THRESHOLD } from "@/constants/signups";
 import { cn } from "@/utils/tailwind";
 
 interface ICollapsible {
@@ -17,7 +18,7 @@ export const Collapsible = ({
   collapsedClassName,
   children,
   collapsedHeight,
-  startCollapsed = false,
+  startCollapsed = true,
   customHandler,
   customState = undefined,
 }: ICollapsible) => {
@@ -32,7 +33,7 @@ export const Collapsible = ({
           setCollapse((prev) => !prev);
         })
       }
-      className={cn(className, {
+      className={cn(className, "cursor-pointer", {
         "overflow-hidden": rCollapsed,
         [collapsedClassName as string]:
           rCollapsed && collapsedClassName !== undefined,
@@ -40,6 +41,36 @@ export const Collapsible = ({
       style={{ height: rCollapsed ? collapsedHeight : "auto" }}
     >
       {children}
+    </div>
+  );
+};
+
+interface IRemainingSpots {
+  className?: string;
+  title?: ReactNode;
+  signedUp: number;
+  maxSignups: number;
+}
+
+export const RemainingSpots = ({
+  className,
+  title = "Remaining spots:",
+  signedUp,
+  maxSignups,
+}: IRemainingSpots) => {
+  return (
+    <div className={cn("flex items-center pl-6 w-full text-xl", className)}>
+      {title}{" "}
+      <div
+        className={cn("inline-flex ml-auto p-2 px-4", {
+          "bg-[#77e8a0]": signedUp < maxSignups,
+          "bg-[#d5be4c]": maxSignups - signedUp <= YELLOW_THRESHOLD,
+          "bg-orange-300": maxSignups - signedUp <= ORANGE_THRESHOLD,
+          "bg-red-500": maxSignups - signedUp <= 0,
+        })}
+      >
+        {Math.max(maxSignups - signedUp, 0)} / {maxSignups}
+      </div>
     </div>
   );
 };

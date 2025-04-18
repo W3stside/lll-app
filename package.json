@@ -3,7 +3,10 @@
   "scripts": {
     "dev": "next dev --port 3005",
     "build": "next build",
-    "start": "next start"
+    "lint": "eslint . --ext ts,tsx --max-warnings 0",
+    "lint:fix": "eslint . --fix --ext ts,tsx",
+    "start": "next start",
+    "types": "tsc --noEmit"
   },
   "dependencies": {
     "clsx": "^2.1.1",

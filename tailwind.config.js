@@ -11,6 +11,9 @@ module.exports = {
     "./src/**/*.{html,ts,tsx}",
   ],
   theme: {
+    colors: {
+      white: "ghostwhite"
+    },
     screens: {
       xs: "368px",
       sm: "432px",
