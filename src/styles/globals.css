@@ -6,8 +6,14 @@
 
 :root {
   --foreground-rgb: 0, 0, 0;
+  --background-color: #028383;
+  --background-color-2: #9f9f9f;
   --background-start-rgb: 214, 219, 220;
   --background-end-rgb: 255, 255, 255;
+  --border-light: #dfdfdf;
+  --border-dark: #242424;
+  --background-windows-blue: #020087;
+  --background-window-highlight: #f8f9cf;
   font-family: monospace;
 }
 
@@ -19,18 +25,40 @@
   }
 }
 
+html,body {
+  height: 100%;
+  min-height: 100%;
+  min-width: 360px;
+  > body > div#__next {
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+  }
+  scrollbar-width: none;
+  --webkit-scrollbar {
+    display: none;
+  }
+}
+
 body {
   color: rgb(var(--foreground-rgb));
-  background: linear-gradient(
-      to bottom,
-      transparent,
-      rgb(var(--background-end-rgb)) 100%
-    )
-    rgb(var(--background-start-rgb));
-  background-color: #028383;
+  background: url("../assets/logo-2.png");
+  background-blend-mode: hue;
+  background-size: contain;
+  background-position-y: 80%;
+  background-color: var(--background-color);
 }
 
 @layer utilities {
+  p {
+    margin: 8px 0;
+    font-size: 1rem;
+  }
+
+  a {
+    text-decoration: underline;
+  }
+
   h1 {
     font-size: 2.25rem;
     line-height: 1.2;
@@ -60,24 +88,25 @@ body {
     cursor: pointer;
     outline: none;
     &:active {
-      border: 2px solid #242424;
-      border-right-color: white;
-      border-bottom-color: white;
+      border: 2px solid var(--border-dark);
+      border-right-color: var(--border-light);
+      border-bottom-color: var(--border-light);
     }
     &:disabled {
       cursor: not-allowed;
       pointer-events: none;
       background-color: #525252;
-      color: #242424;
+      color: var(--border-dark);
     }
   }
 
-  input {
+  input,
+  select {
     color: black;
     background-color: white;
-    border: 2px solid #242424;
-    border-right-color: white;
-    border-bottom-color: white;
+    border: 2px solid var(--border-dark);
+    border-right-color: var(--border-light);
+    border-bottom-color: var(--border-light);
     outline: none;
     width: 100%;
     padding: 8px;
@@ -99,16 +128,17 @@ body {
   button {
     display: flex;
     background-color: #c5c5c5;
-    border: 2px solid #242424;
-    border-left-color: white;
-    border-top-color: white;
+    border: 2px solid var(--border-dark);
+    border-left-color: var(--border-light);
+    border-top-color: var(--border-light);
     padding: 8px;
     color: black;
+    max-width: 600px;
   }
 
   .container-header {
     display: flex;
-    background-color: #020087;
+    background-color: var(--background-windows-blue);
     color: ghostwhite;
     padding-right: 6px;
     align-items: center;

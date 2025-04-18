@@ -1,31 +1,42 @@
 /* eslint-disable no-console */
-import type { Signup } from "@/types/signups";
+import type { ObjectId } from "mongodb";
 
-type Action = "create" | "delete" | "get";
-interface JSONResponse<T> {
-  data: T;
-  error: Error | null;
+import type { Action, JSONResponse, RequestPath } from "@/types/http";
+
+function _crudFromAction(action: Action) {
+  switch (action) {
+    case "create":
+      return "POST";
+    case "delete":
+      return "DELETE";
+    case "get":
+      return "GET";
+    case "update":
+      return "PATCH";
+    default:
+      throw new Error("Unsupported action!");
+  }
 }
+
 export async function dbRequest<T>(
-  action: "get",
-  request?: never,
-  callback?: (json: JSONResponse<T>) => void,
+  action: "create",
+  path: RequestPath,
+  request?: Partial<T> & { _id?: never },
 ): Promise<JSONResponse<T>>;
 export async function dbRequest<T>(
-  action: "create" | "delete",
-  request?: Partial<Signup>,
-  callback?: (json: JSONResponse<T>) => void,
+  action: "delete" | "get" | "update",
+  path: RequestPath,
+  request?: Partial<T> & { _id: ObjectId },
 ): Promise<JSONResponse<T>>;
 export async function dbRequest<T>(
   action: Action,
-  request?: Partial<Signup>,
-  callback?: (json: JSONResponse<T>) => void,
+  path: RequestPath,
+  request?: Partial<T> & { _id?: ObjectId },
 ): Promise<JSONResponse<T>> {
   try {
-    const res = await fetch(`/api/requests/${action}`, {
-      method:
-        action === "create" ? "POST" : action === "delete" ? "DELETE" : "GET",
-      ...(action !== "get" ? { body: JSON.stringify(request) } : {}),
+    const res = await fetch(`/api/requests/${path}/${action}`, {
+      method: _crudFromAction(action),
+      ...(request !== undefined ? { body: JSON.stringify(request) } : {}),
       headers: {
         "Content-Type": "application/json",
       },
@@ -35,13 +46,15 @@ export async function dbRequest<T>(
     const json: JSONResponse<T> = await res.json();
 
     if (!res.ok) {
-      console.error(json.error);
-    } else {
-      console.log("success", json);
-      callback?.(json);
+      console.error("Request response NOT ok. json.error: ", json);
+      return {
+        data: undefined as T,
+        error:
+          json instanceof Error ? json : new Error("Unknown error occurred."),
+      };
     }
 
-    return json;
+    return { data: (json.data ?? json) as T, error: null };
   } catch (e) {
     console.error("An error occurred trying to submit the request:", e);
     throw new Error(e instanceof Error ? e.message : "Unknown error occurred.");

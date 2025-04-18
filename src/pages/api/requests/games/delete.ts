@@ -1,20 +1,18 @@
-import type { Response } from "express";
+/* eslint-disable no-console */
 import { ObjectId } from "mongodb";
+import type { NextApiRequest, NextApiResponse } from "next";
 
 import clientPromise from "@/lib/mongodb";
-import type { Signup } from "@/types/signups";
+import { Collection } from "@/types";
+import type { IUser } from "@/types/users";
 
-interface Request {
-  body: Pick<Signup, "_id">;
-}
-
-export default async (req: Request, res: Response) => {
+export default async (req: NextApiRequest, res: NextApiResponse) => {
   try {
-    const { _id } = req.body;
+    const { _id } = req.body as IUser;
 
     const client = clientPromise;
     const db = client.db("LLL");
-    const collection = db.collection("signups");
+    const collection = db.collection(Collection.GAMES);
 
     const result = await collection.deleteOne({
       _id: new ObjectId(_id),

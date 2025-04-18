@@ -1,0 +1,52 @@
+import type { ObjectId } from "mongodb";
+
+import type { Role } from ".";
+
+export interface IBaseUser {
+  first_name: string;
+  last_name: string;
+  phone_number: string;
+}
+
+export interface INewSignup extends IBaseUser {
+  _id?: ObjectId;
+  password: string;
+  createdAt: Date;
+  shame: { game_id: ObjectId; date: Date }[];
+  role?: Role;
+}
+
+export interface IUser extends INewSignup {
+  _id: ObjectId;
+}
+
+export interface IShamer extends IBaseUser {
+  _id: ObjectId;
+  games?: ObjectId[];
+}
+
+export type PlaySpeed = "faster" | "mixed" | "slower";
+export enum Gender {
+  FEMALE = "female",
+  MALE = "male",
+  UNSPECIFIED = "unspecified",
+}
+export interface IGame {
+  _id: ObjectId;
+  game_id: number;
+  time: string;
+  speed: PlaySpeed;
+  location: string;
+  address: string;
+  mapUrl: string;
+  day:
+    | "Friday"
+    | "Monday"
+    | "Saturday"
+    | "Sunday"
+    | "Thursday"
+    | "Tuesday"
+    | "Wednesday";
+  players: ObjectId[];
+  gender?: Gender;
+}

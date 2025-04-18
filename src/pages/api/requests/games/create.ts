@@ -1,38 +1,36 @@
-import type { Response } from "express";
+/* eslint-disable no-console */
 import type { ObjectId } from "mongodb";
+import type { NextApiRequest, NextApiResponse } from "next";
 
 import clientPromise from "@/lib/mongodb";
+import { Collection } from "@/types";
+import type { Gender, IGame } from "@/types/users";
 
-interface Request {
-  body: {
-    game_id: string;
-    first_name: string;
-    last_name?: string;
-    phone_number: string;
-    date: Date;
-  };
-}
-
-export default async (req: Request, res: Response) => {
+export default async (req: NextApiRequest, res: NextApiResponse) => {
   try {
-    const { game_id, first_name, last_name, phone_number, date } = req.body;
+    const body = req.body as Omit<IGame, "_id" | "players">;
+    const { game_id, time, location, address, mapUrl, speed, day, gender } =
+      body;
 
     const client = clientPromise;
     const db = client.db("LLL");
-    const collection = db.collection("signups");
+    const collection = db.collection(Collection.GAMES);
 
     const result = await collection.insertOne({
+      time,
+      location,
+      address,
+      mapUrl,
+      speed,
       game_id,
-      first_name,
-      last_name,
-      phone_number,
-      date,
+      day,
+      gender: (gender as Gender | "") !== "" ? gender : null,
     });
 
     if (result.insertedId as ObjectId | undefined) {
       const insertedDocument = {
         _id: result.insertedId, // Use the insertedId as the document's _id
-        ...req.body, // Include the rest of the document data
+        ...body, // Include the rest of the document data
       };
       res.status(201).json({
         message: "Record created successfully",

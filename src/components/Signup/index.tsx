@@ -1,2 +1,2 @@
-export { Signees } from "./Signees";
+export { Signees } from "./SIgnees";
 export { SignupForm } from "./SignupForm";

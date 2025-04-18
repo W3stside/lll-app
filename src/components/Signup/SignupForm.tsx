@@ -1,46 +1,52 @@
-interface ISignupForm {
-  firstNameStore: [string, (value: string) => void];
-  lastNameStore: [string, (value: string) => void];
-  phoneStore: [number | undefined, (value: number) => void];
+import type { ObjectId } from "mongodb";
+import type { Dispatch, SetStateAction } from "react";
+
+import type { IGame } from "@/types/users";
+import { cn } from "@/utils/tailwind";
+
+export interface ISignupForm {
+  userId: ObjectId;
+  games: IGame[] | null;
+  gameId: string | undefined;
+  disabled?: boolean;
+  setGameId: Dispatch<SetStateAction<string | undefined>>;
 }
 
 export function SignupForm({
-  firstNameStore: [firstNameValue, setFirstNameValue],
-  lastNameStore: [lastNameValue, setLastNameValue],
-  phoneStore: [phoneValue, setPhoneValue],
+  userId,
+  games,
+  gameId,
+  disabled = false,
+  setGameId,
 }: ISignupForm) {
   return (
     <div className="container flex flex-col items-center gap-y-2 p-4 w-full">
-      <div className="container-header w-[calc(100%+12px)] -mt-2" />
-      <h5 className="self-start">Sign up to play</h5>
       <div className="flex flex-col items-center gap-y-2 p-2 w-full [&>input]:h-12">
-        <input
-          type="text"
-          value={firstNameValue}
+        <select
+          disabled={disabled || games === null || games.length === 0}
+          required
+          name="game"
+          id="game_id"
+          className={cn("cursor-pointer", {
+            "!bg-gray-400 text-gray-600": disabled,
+          })}
+          defaultValue={undefined}
+          value={gameId}
           onChange={(e) => {
-            setFirstNameValue(e.target.value);
+            setGameId(e.target.value);
           }}
-          placeholder="First name"
-        />
-        <input
-          type="text"
-          value={lastNameValue}
-          onChange={(e) => {
-            setLastNameValue(e.target.value);
-          }}
-          placeholder="Last name"
-        />
-        <input
-          type="number"
-          value={phoneValue}
-          onChange={(e) => {
-            const targetAsNumber = Number(e.target.value);
-            if (isNaN(targetAsNumber)) return;
-
-            setPhoneValue(targetAsNumber);
-          }}
-          placeholder="00351961666666"
-        />
+        >
+          <option value={""}>- Please select a game -</option>
+          {games?.map(({ _id, game_id, time, players }) => (
+            <option
+              disabled={players.includes(userId)}
+              value={_id.toString()}
+              key={_id.toString()}
+            >
+              Game {game_id} @ {time}
+            </option>
+          ))}
+        </select>
       </div>
     </div>
   );
