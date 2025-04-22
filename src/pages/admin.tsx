@@ -8,8 +8,8 @@ import { Loader } from "@/components/ui";
 import { RED_TW } from "@/constants/colours";
 import { DAYS_IN_WEEK } from "@/constants/date";
 import { NAVLINKS_MAP } from "@/constants/links";
+import { JWT_REFRESH_SECRET, JWT_SECRET, verifyToken } from "@/lib/authUtils";
 import client from "@/lib/mongodb";
-import { verifyToken } from "@/lib/verifyToken";
 import { Collection, Role } from "@/types";
 import { Gender, type IGame, type IUser, type PlaySpeed } from "@/types/users";
 import { isValid24hTime } from "@/utils/date";
@@ -34,12 +34,12 @@ export const getServerSideProps: GetServerSideProps<ConnectionStatus> = async (
   try {
     const { req } = context;
     const { token } = req.cookies;
-    const decoded =
+    const user =
       token !== undefined
-        ? (verifyToken(token) as Partial<IUser> | null)
+        ? verifyToken<IUser>(token, JWT_SECRET as string, JWT_REFRESH_SECRET)
         : null;
 
-    if (decoded === null) {
+    if (user === null) {
       return {
         redirect: {
           destination: NAVLINKS_MAP.LOGIN,
@@ -51,7 +51,7 @@ export const getServerSideProps: GetServerSideProps<ConnectionStatus> = async (
     await client.connect();
     const db = client.db("LLL");
     const adminUser = await db.collection<IUser>(Collection.USERS).findOne({
-      _id: new ObjectId(decoded._id),
+      _id: new ObjectId(user._id),
       role: Role.ADMIN,
     });
 

@@ -6,8 +6,8 @@ import { useCallback, useState } from "react";
 import { RegisterUser } from "@/components/Signup/RegisterUser";
 import { Loader } from "@/components/ui";
 import { NAVLINKS_MAP } from "@/constants/links";
+import { JWT_REFRESH_SECRET, JWT_SECRET, verifyToken } from "@/lib/authUtils";
 import client from "@/lib/mongodb";
-import { verifyToken } from "@/lib/verifyToken";
 import type { INewSignup, IUser } from "@/types/users";
 import { dbAuth } from "@/utils/dbAuth";
 import { isValidNewSignup } from "@/utils/signup";
@@ -22,13 +22,16 @@ export const getServerSideProps: GetServerSideProps<LoginPage> = async (
 ) => {
   try {
     const { token } = context.req.cookies;
-    const decoded = token === undefined ? undefined : verifyToken(token);
+    const user =
+      token === undefined
+        ? undefined
+        : verifyToken<IUser>(token, JWT_SECRET as string, JWT_REFRESH_SECRET);
 
     await client.connect();
 
     return {
       props: {
-        user: (decoded ?? null) as IUser | null,
+        user: user ?? null,
         isConnected: true,
       },
     };

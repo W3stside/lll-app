@@ -1,8 +1,8 @@
 import bcrypt from "bcryptjs";
 import type { NextApiRequest, NextApiResponse } from "next";
 
+import { refreshAndSetJwtTokens } from "@/lib/authUtils";
 import client from "@/lib/mongodb";
-import { setJwtToken } from "@/lib/setJwtToken";
 import { verifyAuthBody } from "@/lib/verifyAuthBody";
 import { Collection } from "@/types";
 import type { INewSignup } from "@/types/users";
@@ -34,18 +34,24 @@ export default async function handler(
     if (!isValid) {
       res.status(401).json({ message: "Invalid credentials" });
     } else {
-      setJwtToken(
-        req,
-        res,
+      refreshAndSetJwtTokens(
         {
           first_name: user.first_name,
           last_name: user.last_name,
           phone_number: user.phone_number,
           _id: user._id,
         },
-        "User created successfully!",
-        { expiresIn: "4Weeks" },
+        res,
       );
+      res.status(200).json({
+        message: "Login successful",
+        user: {
+          _id: user._id,
+          first_name: user.first_name,
+          last_name: user.last_name,
+          phone_number: user.phone_number,
+        },
+      });
     }
   }
 }

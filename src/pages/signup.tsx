@@ -11,10 +11,9 @@ import { Games } from "@/components/Signup/Games";
 import { RegisterToPlay } from "@/components/Signup/RegisterToPlay";
 import { Collapsible, RemainingSpots } from "@/components/ui";
 import { DAYS_IN_WEEK } from "@/constants/date";
-import { NAVLINKS_MAP } from "@/constants/links";
 import { MAX_SIGNUPS_PER_GAME } from "@/constants/signups";
 import { useGameSignup } from "@/hooks/useGameSignup";
-import { verifyToken } from "@/lib/verifyToken";
+import { getUserFromServerSideRequest } from "@/lib/authUtils";
 import { Collection, GameStatus } from "@/types";
 import type { IGame, IUser } from "@/types/users";
 import { checkPlayerIsUser, groupUsersById } from "@/utils/data";
@@ -335,26 +334,9 @@ export default Signups;
 
 export const getServerSideProps: GetServerSideProps = async (context) => {
   try {
-    const { req } = context;
-    const { token } = req.cookies;
-    if (token === undefined) {
-      return {
-        redirect: {
-          destination: NAVLINKS_MAP.LOGIN,
-          permanent: false,
-        },
-      };
-    }
+    const { user, redirect } = getUserFromServerSideRequest(context);
 
-    const decoded = verifyToken(token) as Partial<IUser> | null;
-    if (decoded === null) {
-      return {
-        redirect: {
-          destination: NAVLINKS_MAP.LOGIN,
-          permanent: false,
-        },
-      };
-    }
+    if (user === null) return { redirect };
 
     await client.connect();
 
@@ -373,10 +355,10 @@ export const getServerSideProps: GetServerSideProps = async (context) => {
     return {
       props: {
         user: {
-          _id: decoded._id ?? null,
-          first_name: decoded.first_name ?? null,
-          last_name: decoded.last_name ?? null,
-          phone_number: decoded.phone_number ?? null,
+          _id: user._id,
+          first_name: user.first_name,
+          last_name: user.last_name,
+          phone_number: user.phone_number,
         },
         games: JSON.parse(JSON.stringify(games)) as string,
         usersById: JSON.parse(JSON.stringify(usersById)) as string,

@@ -2,8 +2,8 @@ import bcrypt from "bcryptjs";
 import type { NextApiRequest, NextApiResponse } from "next";
 
 import { SALT_ROUNDS } from "@/constants/api";
+import { refreshAndSetJwtTokens } from "@/lib/authUtils";
 import client from "@/lib/mongodb";
-import { setJwtToken } from "@/lib/setJwtToken";
 import { verifyAuthBody } from "@/lib/verifyAuthBody";
 import { Collection } from "@/types";
 import type { INewSignup } from "@/types/users";
@@ -38,9 +38,7 @@ export default async function handler(
     shame: [],
   });
 
-  setJwtToken(
-    req,
-    res,
+  refreshAndSetJwtTokens(
     {
       first_name,
       last_name,
@@ -49,7 +47,9 @@ export default async function handler(
       _id: newUser.insertedId,
       createdAt,
     },
-    "User created successfully!",
-    { expiresIn: "4Weeks" },
+    res,
   );
+  res.status(200).json({
+    message: "User created successfully!",
+  });
 }
