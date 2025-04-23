@@ -37,9 +37,7 @@ export function useGameSignup({ gamesInitial, user }: IUseSignup) {
   const gamesByDay = useMemo(() => groupGamesByDay(games), [games]);
 
   const handleGameSignup = useCallback(
-    (day: IGame["day"]) => async (game_id: string) => {
-      const game = gamesByDay[day]?.find((g) => g._id.toString() === game_id);
-
+    async (game: IGame | undefined) => {
       // Can't submit w.o valid player but type safety
       if (game === undefined) return;
 
@@ -48,7 +46,7 @@ export function useGameSignup({ gamesInitial, user }: IUseSignup) {
         players: [...game.players, user._id],
       });
     },
-    [dbSignup, gamesByDay, user._id],
+    [dbSignup, user._id],
   );
 
   return {

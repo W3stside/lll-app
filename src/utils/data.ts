@@ -1,6 +1,6 @@
 import { sortDaysOfWeek } from "./sort";
 
-import type { IBaseUser, IGame, IUser } from "@/types/users";
+import type { GamesByDay, IBaseUser, IGame, IUser } from "@/types/users";
 
 export function groupUsersById(users: IUser[]) {
   return users.reduce<Record<string, IUser>>(
@@ -13,7 +13,7 @@ export function groupUsersById(users: IUser[]) {
 }
 
 export function groupGamesByDay(games: IGame[]) {
-  return sortDaysOfWeek(games).reduce<Partial<Record<IGame["day"], IGame[]>>>(
+  return sortDaysOfWeek(games).reduce<GamesByDay>(
     (acc, game) => ({
       ...acc,
       [game.day]: [...(acc[game.day] ?? []), game],

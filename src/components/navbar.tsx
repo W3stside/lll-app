@@ -1,4 +1,3 @@
-/* eslint-disable no-console */
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/router";
@@ -26,6 +25,7 @@ export function Navbar({ title }: INavbar) {
       void router.push(NAVLINKS_MAP.LOGIN);
     } catch (error) {
       const err = error instanceof Error ? error : new Error("Unknown error");
+      // eslint-disable-next-line no-console
       console.error(err);
     }
   }, [router]);
