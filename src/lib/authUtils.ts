@@ -70,6 +70,25 @@ export const refreshAndSetJwtTokens = (
   ]);
 };
 
+export const clearJwtTokens = (res: ServerResponse) => {
+  res.setHeader("Set-Cookie", [
+    serialize(ACCESS_COOKIE_NAME, "", {
+      path: "/",
+      httpOnly: true,
+      sameSite: "lax",
+      secure: process.env.NODE_ENV === "production",
+      maxAge: 0,
+    }),
+    serialize(REFRESH_COOKIE_NAME, "", {
+      path: "/",
+      httpOnly: true,
+      sameSite: "lax",
+      secure: process.env.NODE_ENV === "production",
+      maxAge: 0,
+    }),
+  ]);
+};
+
 export function getUserFromServerSideRequest(ctx: GetServerSidePropsContext) {
   const { req, res } = ctx;
   const cookies = parse(req.headers.cookie ?? "");

@@ -150,7 +150,7 @@ export default function Login({ isConnected, user }: LoginPage) {
           />
           {appError !== null && (
             <p className="flex mb-6 w-full justify-center text-red-700">
-              Login error: {appError}
+              {view !== "login" ? "Registration" : "Login"} error: {appError}
             </p>
           )}
           <p
