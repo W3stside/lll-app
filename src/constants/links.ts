@@ -6,6 +6,10 @@ export const NAVLINKS = [
   { name: "Games", url: "/signup" },
   { name: "Wall of Shame", url: "/shame" },
   { name: "About", url: "/about" },
+  /* 
+    // TODO: hidden for now
+    // { name: "Profile", url: "/profile" }, 
+  */
 ];
 export const NAVLINKS_MAP = {
   HOME: "/",
@@ -13,6 +17,8 @@ export const NAVLINKS_MAP = {
   SHAME: "/shame",
   ABOUT: "/about",
   LOGIN: "/login",
+  // TODO: hidden for now
+  // PROFILE: "/profile",
 };
 
 export const ADMIN_PATH = "/admin";
