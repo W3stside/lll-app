@@ -1,4 +1,4 @@
-import { PHONE_MIN_LENGTH } from "@/constants/signups";
+import { PASSWORD_MIN_LENGTH, PHONE_MIN_LENGTH } from "@/constants/signups";
 import type { INewSignup } from "@/types/users";
 
 export function isValidNewSignup(
@@ -7,7 +7,7 @@ export function isValidNewSignup(
   return (
     player !== undefined &&
     player.password !== undefined &&
-    player.password.length >= 8 &&
+    player.password.length >= PASSWORD_MIN_LENGTH &&
     player.phone_number !== undefined &&
     player.phone_number.length >= PHONE_MIN_LENGTH
   );
