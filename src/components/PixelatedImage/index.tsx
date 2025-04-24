@@ -1,13 +1,14 @@
 import React, { useRef, useEffect, useCallback } from "react";
 
-export type ImagePixelatedProps = {
-  src: string;
-  width?: number;
-  height?: number;
+export interface ImagePixelatedProps
+  extends React.HTMLProps<HTMLCanvasElement> {
   pixelSize?: number;
   centered?: boolean;
   fillTransparencyColor?: string;
-};
+  height?: number;
+  width?: number;
+  src: string;
+}
 
 export const ImagePixelated = ({
   src,
@@ -16,6 +17,7 @@ export const ImagePixelated = ({
   pixelSize = 5,
   centered = false,
   fillTransparencyColor,
+  className,
 }: ImagePixelatedProps) => {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const paintPixels = useCallback(
@@ -70,13 +72,14 @@ export const ImagePixelated = ({
         img.height = height ?? img.height;
         canvas.width = img.width;
         canvas.height = img.height;
+        canvas.className = className ?? "";
 
         ctx.drawImage(img, 0, 0, img.width, img.height);
         paintPixels(ctx, img);
         img = undefined;
       }
     };
-  }, [height, paintPixels, src, width]);
+  }, [className, height, paintPixels, src, width]);
 
   useEffect(() => {
     pixelate();
