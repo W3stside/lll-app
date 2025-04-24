@@ -23,7 +23,7 @@ import {
   groupGamesByDay,
   groupUsersById,
 } from "@/utils/data";
-import { computeGameDate, getUSDayIndex } from "@/utils/date";
+import { computeGameStatus } from "@/utils/games";
 import { cn } from "@/utils/tailwind";
 
 export interface ISignups {
@@ -31,8 +31,6 @@ export interface ISignups {
   usersById: Record<string, IUser>;
   games: IGame[];
 }
-
-const TODAY_INDEX = getUSDayIndex(new Date());
 
 const Signups: React.FC<ISignups> = ({
   user,
@@ -71,12 +69,6 @@ const Signups: React.FC<ISignups> = ({
     (gamesByDay[DAYS_IN_WEEK[DAYS_IN_WEEK.length - 1]]?.length ?? 1) - 1
   ] as IGame;
 
-  const lastGameOfWeekDate = computeGameDate(
-    lastGameOfWeek.day,
-    lastGameOfWeek.time,
-    "WET",
-  );
-
   return (
     <>
       <div className="flex flex-col gap-y-1 text-black container">
@@ -107,17 +99,11 @@ const Signups: React.FC<ISignups> = ({
           Active filters: {filters?.toLocaleLowerCase() ?? "none"}
         </div>
         {Object.entries(groupGamesByDay(filteredGames)).map(([day, games]) => {
-          const gameDate = computeGameDate(
+          const { gameStatus, gameDate } = computeGameStatus(
+            games,
             day as IGame["day"],
-            games[games.length - 1].time,
-            "WET",
-            new Date() > lastGameOfWeekDate,
+            lastGameOfWeek,
           );
-
-          const gameStatus =
-            TODAY_INDEX > getUSDayIndex(gameDate) && new Date() > gameDate
-              ? GameStatus.PAST
-              : GameStatus.UPCOMING;
 
           const userFullyBooked = games.every((g) =>
             g.players.some((p) => p.toString() === user._id.toString()),
@@ -200,7 +186,7 @@ const Signups: React.FC<ISignups> = ({
                     </small>
                     <div className="flex items-center w-full font-bold text-3xl italic uppercase tracking-tight">
                       {day}
-                      <strong className="ml-auto">
+                      <strong className="ml-auto not-italic">
                         {games.length} {games.length > 1 ? "games" : "game"}
                       </strong>
                     </div>
