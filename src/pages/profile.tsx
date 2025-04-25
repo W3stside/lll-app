@@ -1,11 +1,13 @@
 import type { GetServerSideProps } from "next";
 
+import { Avatar } from "@/components/Avatar";
 import { PartnerProducts } from "@/components/PartnerProducts";
 import { Uploader } from "@/components/Uploader";
 import { NAVLINKS_MAP } from "@/constants/links";
 import { JWT_REFRESH_SECRET, JWT_SECRET, verifyToken } from "@/lib/authUtils";
 import client from "@/lib/mongodb";
 import type { IUser } from "@/types/users";
+import { getAvatarUrl } from "@/utils/avatar";
 
 type ConnectionStatus = {
   isConnected: boolean;
@@ -33,17 +35,20 @@ export const getServerSideProps: GetServerSideProps<ConnectionStatus> = async (
 
     await client.connect();
 
+    const avatarUrl = getAvatarUrl(user, "png");
+
     return {
       props: {
         isConnected: true,
         user: JSON.parse(JSON.stringify(user)) as string,
+        avatarUrl: JSON.parse(JSON.stringify(avatarUrl)) as string,
       },
     };
   } catch (e) {
     // eslint-disable-next-line no-console
     console.error(e);
     return {
-      props: { isConnected: false, user: null },
+      props: { isConnected: false, user: null, avatarUrl: "" },
     };
   }
 };
@@ -51,21 +56,21 @@ export const getServerSideProps: GetServerSideProps<ConnectionStatus> = async (
 interface IProfile {
   isConnected: boolean;
   user: IUser;
+  avatarUrl: string;
 }
 
-export default function About({ isConnected, user }: IProfile) {
-  if (!isConnected) return <h1>Connecting to db...</h1>;
-
+export default function About({ avatarUrl, user }: IProfile) {
   return (
     <div className="flex flex-col gap-y-5 min-h-[60vh] justify-between">
       <div className="flex flex-col gap-y-3 text-black container">
         <div className="container-header !h-auto -mt-2 -mx-1.5">
           <h4 className="mr-auto px-2 py-1">My profile</h4> X
         </div>
-        <div className="px-2 py-2">
-          Hey {user.first_name}! <br />
-          <br />
-          Welcome to your profile page :)
+        <div className="flex gap-x-4 items-start h-auto">
+          <Avatar src={avatarUrl} />
+          <div className="px-2 py-2">
+            Hey {user.first_name}! Welcome to your profile page.
+          </div>
         </div>
       </div>
       <div className="flex flex-col gap-y-3 text-black container">
@@ -73,8 +78,10 @@ export default function About({ isConnected, user }: IProfile) {
           <div className="mr-auto px-2 py-1">Profile photo</div> X
         </div>
         <div className="px-2 py-2">
-          Upload a new profile photo. Max size 1mb!
-          <Uploader />
+          <Uploader
+            user={user}
+            title="Upload a new profile photo. Max size 1mb!"
+          />
         </div>
       </div>
       <PartnerProducts className="mt-20" />

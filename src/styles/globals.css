@@ -154,4 +154,10 @@ body {
     -ms-overflow-style: none;
     scrollbar-width: none;
   }
+
+  .border-out {
+    border: 2px solid var(--border-dark);
+    border-left-color: var(--border-light);
+    border-top-color: var(--border-light);
+  }
 }

@@ -1,10 +1,23 @@
-import { useState, useCallback } from "react";
+import imageCompression from "browser-image-compression";
+import { useState, useCallback, type ReactNode } from "react";
 
-import { ImagePixelated } from "../PixelatedImage";
+import { Loader } from "../ui";
+import { PlaceholderAvatar } from "./PlaceholderAvatar";
+import { Avatar } from "../Avatar";
+import { MAX_IMAGE_WIDTH } from "../Avatar/constants";
 
 import { RED_TW } from "@/constants/colours";
+import type { IUser } from "@/types/users";
+import { uploadAvatar } from "@/utils/avatar";
 
 const ONE_MB = 1_048_576;
+const COMPRESS_TO_MB = 0.01;
+const COMPRESS_OPTIONS = {
+  maxSizeMB: COMPRESS_TO_MB,
+  maxWidthOrHeight: MAX_IMAGE_WIDTH,
+  useWebWorker: true,
+};
+
 const ERRORS_MAP = {
   fileTooLarge: "File size is too large. Must be less than 1mb",
 };
@@ -29,72 +42,105 @@ function UploadError({ errors, errorKey, className }: IProfileError) {
   );
 }
 
-export function Uploader() {
+interface IUploader {
+  user: IUser;
+  title?: ReactNode;
+}
+
+export function Uploader({ user, title }: IUploader) {
+  const [loading, setLoading] = useState(false);
+
   const [uploadKey, setUploadKey] = useState(Date.now());
   const [file, setFile] = useState<File | undefined>();
+  const [preview, setPreview] = useState<string | undefined>();
 
-  const handleFileChange: React.ChangeEventHandler<HTMLInputElement> =
-    useCallback((e) => {
-      setFile(e.target.files?.[0]);
-    }, []);
+  const resetFile = useCallback(() => {
+    setFile(undefined);
+    setUploadKey(Date.now());
+  }, []);
+
+  const handleFileChange = useCallback(async () => {
+    if (file === undefined) return;
+
+    try {
+      setLoading(true);
+      const compressedFile = await imageCompression(file, COMPRESS_OPTIONS);
+
+      const publicUrl = await uploadAvatar(compressedFile, user);
+
+      setFile(compressedFile);
+      setPreview(publicUrl);
+    } catch (error) {
+      // eslint-disable-next-line no-console
+      console.error(error);
+    } finally {
+      setLoading(false);
+      resetFile();
+    }
+  }, [file, resetFile, user]);
 
   const disabled = file !== undefined && file.size > ONE_MB;
 
   return (
     <div className="flex flex-col">
-      <div className="flex gap-x-4 items-start h-auto py-4">
-        {file !== undefined && file.size <= ONE_MB && (
-          <ImagePixelated
-            src={URL.createObjectURL(file)}
-            pixelSize={3}
-            height={80}
-            width={80}
-          />
+      <div className="flex gap-x-4 items-start h-auto">
+        {preview !== undefined ? (
+          <Avatar src={preview} />
+        ) : loading ? (
+          <div className="overflow-hidden w-[80px] h-[80px] relative self-center">
+            <Loader className="absolute -top-[23px] -left-[28px] w-[130px] height-[100px] max-w-none" />
+          </div>
+        ) : (
+          <PlaceholderAvatar className="bg-[var(--background-color-2)]" />
         )}
-        <label
-          htmlFor="imageUpload"
-          className="flex flex-row gap-y-2 flex-1 bg-white h-full px-2 py-1 cursor-pointer border-2 border-r-[var(--border-light)] border-b-[var(--border-light)]"
-        >
-          <div className="flex items-center gap-x-2">
-            {file === undefined ? (
-              "Upload a new profile photo"
-            ) : (
-              <strong>{file.name}</strong>
+        <div className="flex flex-col flex-1">
+          {title}
+          <div className="flex gap-x-4 items-start h-auto py-2">
+            <label
+              htmlFor="imageUpload"
+              className="flex flex-row gap-y-2 flex-1 bg-white h-[40px] max-w-[50%] px-2 py-1 cursor-pointer border-2 border-r-[var(--border-light)] border-b-[var(--border-light)]"
+            >
+              <div className="flex items-center gap-x-2 text-md">
+                {file === undefined ? (
+                  "Select a photo"
+                ) : (
+                  <strong>{file.name}</strong>
+                )}
+              </div>
+              <input
+                key={uploadKey}
+                type="file"
+                className="hidden"
+                id="imageUpload"
+                name="image"
+                accept="image/*"
+                onChange={(e) => {
+                  setFile(e.target.files?.[0]);
+                }}
+              />
+            </label>
+            {file !== undefined && (
+              <div className="flex gap-x-4 items-center">
+                <button
+                  className="ml-auto bg-[var(--background-color-2)]"
+                  onClick={resetFile}
+                >
+                  Remove
+                </button>
+                <button
+                  className="ml-auto"
+                  disabled={disabled}
+                  onClick={async () => {
+                    await handleFileChange();
+                    // ResetFile();
+                  }}
+                >
+                  Upload
+                </button>
+              </div>
             )}
           </div>
-          <input
-            key={uploadKey}
-            type="file"
-            className="hidden"
-            id="imageUpload"
-            name="image"
-            accept="image/*"
-            onChange={handleFileChange}
-          />
-        </label>
-        {file !== undefined && (
-          <div className="flex gap-x-4 items-center">
-            <button
-              className="ml-auto bg-[var(--background-color-2)]"
-              onClick={() => {
-                setUploadKey(Date.now());
-                setFile(undefined);
-              }}
-            >
-              Remove
-            </button>
-            <button
-              className="ml-auto"
-              disabled={disabled}
-              onClick={() => {
-                setUploadKey(Date.now());
-                setFile(undefined);
-              }}
-            >
-              Upload
-            </button>
-          </div>
-        )}
+        </div>
       </div>
       {file !== undefined && file.size > ONE_MB && (
         <UploadError

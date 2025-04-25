@@ -10,7 +10,9 @@
   },
   "dependencies": {
     "@radix-ui/react-dialog": "^1.1.11",
+    "@supabase/supabase-js": "^2.49.4",
     "bcryptjs": "^3.0.2",
+    "browser-image-compression": "^2.0.2",
     "clsx": "^2.1.1",
     "cookie": "^1.0.2",
     "jsonwebtoken": "^9.0.2",
