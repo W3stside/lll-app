@@ -15,6 +15,7 @@ export const NAVLINKS_MAP = {
   ABOUT: "/about",
   LOGIN: "/login",
   PROFILE: "/profile",
+  NOT_FOUND: "/not-found",
 };
 
 export const ADMIN_PATH = "/admin";
