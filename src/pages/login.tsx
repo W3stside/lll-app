@@ -6,9 +6,10 @@ import { useCallback, useState } from "react";
 import { RegisterUser } from "@/components/Signup/RegisterUser";
 import { Loader } from "@/components/ui";
 import { NAVLINKS_MAP } from "@/constants/links";
+import { useUser } from "@/context/User/context";
 import { JWT_REFRESH_SECRET, JWT_SECRET, verifyToken } from "@/lib/authUtils";
 import client from "@/lib/mongodb";
-import type { INewSignup, IUser } from "@/types/users";
+import type { IUser } from "@/types/users";
 import { dbAuth } from "@/utils/dbAuth";
 import { isValidNewSignup } from "@/utils/signup";
 
@@ -46,7 +47,7 @@ export const getServerSideProps: GetServerSideProps<LoginPage> = async (
 
 export default function Login({ isConnected, user }: LoginPage) {
   const [view, setView] = useState<"login" | "register">("register");
-  const [player, setPlayer] = useState<Partial<INewSignup>>({});
+  const { user: player } = useUser();
 
   const [appError, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -54,17 +55,17 @@ export default function Login({ isConnected, user }: LoginPage) {
   const router = useRouter();
 
   const handleSignup = useCallback(
-    async (e: React.FormEvent) => {
+    async (e: React.FormEvent, password: string) => {
       e.preventDefault();
       setError(null);
       setLoading(true);
 
       try {
-        if (!isValidNewSignup(player)) {
+        if (!isValidNewSignup(player, password)) {
           throw new Error("Player is invalid. Check fields.");
         }
 
-        const { error } = await dbAuth("register", player);
+        const { error } = await dbAuth("register", { ...player, password });
 
         if (error !== null) {
           setError(error.message);
@@ -85,13 +86,13 @@ export default function Login({ isConnected, user }: LoginPage) {
   );
 
   const handleLogin = useCallback(
-    async (e: React.FormEvent) => {
+    async (e: React.FormEvent, password: string) => {
       e.preventDefault();
       setError(null);
       setLoading(true);
 
       try {
-        const { error } = await dbAuth("login", player);
+        const { error } = await dbAuth("login", { ...player, password });
 
         if (error !== null) {
           setError(error.message);
@@ -142,7 +143,6 @@ export default function Login({ isConnected, user }: LoginPage) {
               view === "login" ? "Login to find games" : "Register here to play"
             }
             label={view === "login" ? "Login" : "Register"}
-            playerStore={[player, setPlayer]}
             handleAction={view !== "login" ? handleSignup : handleLogin}
             handleLogout={handleLogout}
             isLoggedIn={user !== null}

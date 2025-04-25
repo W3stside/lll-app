@@ -59,7 +59,7 @@ interface IRemainingSpots {
   className?: string;
   title?: ReactNode;
   text?: ReactNode;
-  signedUp: number;
+  signedUp: number | null;
   maxSignups: number;
   disabled?: boolean;
 }
@@ -84,7 +84,7 @@ export const RemainingSpots = ({
       <div
         className={cn(
           "inline-flex ml-auto p-1 px-2",
-          text !== null
+          text !== null || signedUp === null
             ? {}
             : {
                 [GREEN_TW]: signedUp < maxSignups,
@@ -96,7 +96,7 @@ export const RemainingSpots = ({
       >
         {text !== null ? (
           <div>{text}</div>
-        ) : disabled ? (
+        ) : signedUp === null || disabled ? (
           "PAST"
         ) : (
           <>

@@ -79,6 +79,17 @@ export default function About({ isConnected, gamesByDay }: IAbout) {
             their spot YOU are responsible for payments of anyone you add to the
             list.
           </p>
+          <br />
+          <p>
+            <strong>💵💵 €5/game - CASH ONLY!! 💵💵</strong>{" "}
+            <p>
+              <small>
+                We don't accept MBWay because the amount of payments we would
+                need to accept far exceeds their minimum untaxed threshold.
+              </small>
+            </p>
+          </p>
+          <br />
           <p>
             <strong>We have a ladies team!</strong>
           </p>{" "}

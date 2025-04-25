@@ -3,12 +3,14 @@ import { RemainingSpots } from "../ui";
 import { ORANGE_TW } from "@/constants/colours";
 import { MAX_SIGNUPS_PER_GAME } from "@/constants/signups";
 import { Gender, type IGame } from "@/types/users";
+import { cn } from "@/utils/tailwind";
 
 interface IGames extends IGame {
   date: string;
-  signupsAmt: number;
-  waitlistAmt: number;
+  signupsAmt: number | null;
+  waitlistAmt: number | null;
   children?: React.ReactNode;
+  className?: string;
 }
 
 export function Games({
@@ -22,9 +24,13 @@ export function Games({
   signupsAmt,
   waitlistAmt,
   children,
+  className,
 }: IGames) {
   return (
-    <div key={game_id} className="flex flex-col container gap-y-4 pl-9 w-full">
+    <div
+      key={game_id}
+      className={cn("flex flex-col container gap-y-4 pl-9 w-full", className)}
+    >
       <div className="flex flex-row flex-wrap items-start w-full">
         <div className="flex gap-x-4 w-full">
           <strong className="flex items-center gap-x-2 text-lg">
@@ -45,6 +51,9 @@ export function Games({
           Address:
           <a
             href={mapUrl}
+            onClick={(e) => {
+              e.stopPropagation();
+            }}
             target="_blank"
             rel="noreferrer"
             className="underline text-blue-500 ml-auto"
@@ -69,7 +78,7 @@ export function Games({
           maxSignups={MAX_SIGNUPS_PER_GAME}
           className="pl-0 text-md [&>div]:!px-2.5 [&>div]:!py-0.5"
         />
-        {waitlistAmt <= 0 && (
+        {waitlistAmt !== null && waitlistAmt <= 0 && (
           <div className={`px-2 p-1 ${ORANGE_TW}`}>Waitlist only</div>
         )}
         {/* {waitlistAmt < 0 && (
