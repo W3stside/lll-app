@@ -1,7 +1,8 @@
 import { computeGameDate, getUSDayIndex } from "./date";
 
+import { DAYS_IN_WEEK } from "@/constants/date";
 import { GameStatus } from "@/types";
-import type { IGame } from "@/types/users";
+import type { GamesByDay, IGame } from "@/types/users";
 
 export const computeGameStatus = (
   games: IGame[],
@@ -25,3 +26,8 @@ export const computeGameStatus = (
 
   return { gameStatus, gameDate };
 };
+
+export const getLastGame = (gamesByDay: GamesByDay) =>
+  gamesByDay[DAYS_IN_WEEK[DAYS_IN_WEEK.length - 1]]?.[
+    (gamesByDay[DAYS_IN_WEEK[DAYS_IN_WEEK.length - 1]]?.length ?? 1) - 1
+  ] as IGame;

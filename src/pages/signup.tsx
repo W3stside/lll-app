@@ -11,7 +11,6 @@ import { Signees } from "@/components/Signup";
 import { Games } from "@/components/Signup/Games";
 import { RegisterToPlay } from "@/components/Signup/RegisterToPlay";
 import { Collapsible, RemainingSpots } from "@/components/ui";
-import { DAYS_IN_WEEK } from "@/constants/date";
 import { MAX_SIGNUPS_PER_GAME } from "@/constants/signups";
 import { useFilterGames } from "@/hooks/useFilterGames";
 import { useGameSignup } from "@/hooks/useGameSignup";
@@ -23,7 +22,7 @@ import {
   groupGamesByDay,
   groupUsersById,
 } from "@/utils/data";
-import { computeGameStatus } from "@/utils/games";
+import { computeGameStatus, getLastGame } from "@/utils/games";
 import { cn } from "@/utils/tailwind";
 
 export interface ISignups {
@@ -65,9 +64,7 @@ const Signups: React.FC<ISignups> = ({
     ),
   );
 
-  const lastGameOfWeek = gamesByDay[DAYS_IN_WEEK[DAYS_IN_WEEK.length - 1]]?.[
-    (gamesByDay[DAYS_IN_WEEK[DAYS_IN_WEEK.length - 1]]?.length ?? 1) - 1
-  ] as IGame;
+  const lastGameOfWeek = getLastGame(gamesByDay);
 
   return (
     <>

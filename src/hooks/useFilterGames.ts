@@ -3,7 +3,9 @@ import { useState, useMemo } from "react";
 import { useDebounce } from "use-debounce";
 
 import { MAX_SIGNUPS_PER_GAME } from "@/constants/signups";
+import { GameStatus } from "@/types";
 import type { GamesByDay, IUser } from "@/types/users";
+import { computeGameStatus, getLastGame } from "@/utils/games";
 
 const SEARCH_DEBOUNCE = 400;
 
@@ -51,6 +53,8 @@ export function useFilterGames({
 
   return useMemo(() => {
     let filteredGames = flatGames;
+    const lastGameOfWeek = getLastGame(gamesByDay);
+
     switch (filters) {
       case GameFilters.MY_GAMES:
         filteredGames = flatGames.filter((fg) =>
@@ -59,7 +63,10 @@ export function useFilterGames({
         break;
       case GameFilters.OPEN_GAMES:
         filteredGames = flatGames.filter(
-          (fg) => fg.players.length < MAX_SIGNUPS_PER_GAME,
+          (fg) =>
+            fg.players.length < MAX_SIGNUPS_PER_GAME &&
+            computeGameStatus(flatGames, fg.day, lastGameOfWeek).gameStatus !==
+              GameStatus.PAST,
         );
         break;
       default:
@@ -86,6 +93,7 @@ export function useFilterGames({
   }, [
     filters,
     flatGames,
+    gamesByDay,
     searchFilter,
     searchFilterRaw,
     userId,
