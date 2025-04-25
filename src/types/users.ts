@@ -20,6 +20,11 @@ export interface IUser extends INewSignup {
   _id: ObjectId;
 }
 
+export type IUserSafe = Omit<IUser, "_id" | "createdAt" | "password"> & {
+  _id: IUser["_id"] | undefined;
+  createdAt: IUser["createdAt"] | undefined;
+};
+
 export interface IShamer extends IBaseUser {
   _id: ObjectId;
   games?: ObjectId[];

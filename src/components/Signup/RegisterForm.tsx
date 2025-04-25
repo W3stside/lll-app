@@ -1,8 +1,6 @@
-import type { Dispatch, SetStateAction } from "react";
-
 import { GREEN_TW, RED_TW } from "@/constants/colours";
 import { PASSWORD_MIN_LENGTH, PHONE_MIN_LENGTH } from "@/constants/signups";
-import type { INewSignup } from "@/types/users";
+import { useUser } from "@/context/User/context";
 import { cn } from "@/utils/tailwind";
 
 const PasswordValidity = {
@@ -35,34 +33,45 @@ function _validatePhoneNumber(phoneNumber?: string): string | null {
   return PhoneNumberValidity.VALID;
 }
 export interface IRegisterForm {
-  playerStore: [
-    Partial<INewSignup>,
-    Dispatch<SetStateAction<Partial<INewSignup>>>,
-  ];
   isLogin?: boolean;
-  handleAction: (e: React.FormEvent<HTMLFormElement>) => Promise<void>;
+  password: string;
+  setPassword: React.Dispatch<React.SetStateAction<string>>;
+  handleAction: (
+    e: React.FormEvent<HTMLFormElement>,
+    password: string,
+  ) => Promise<void>;
 }
 
 export function RegisterForm({
-  playerStore: [player, setPlayer],
   isLogin = false,
+  password,
+  setPassword,
   handleAction,
 }: IRegisterForm) {
-  const passwordValidation = _validatePassword(player.password);
-  const phoneNumberValidation = _validatePhoneNumber(player.phone_number);
+  const { user, setUser } = useUser();
+
+  const passwordValidation = _validatePassword(password);
+  const phoneNumberValidation = _validatePhoneNumber(user.phone_number);
+
   return (
     <div className="container flex flex-col items-center gap-y-2 p-4 w-full">
       <div className="flex flex-col items-center gap-y-2 p-2 w-full [&>input]:h-12">
-        <form className="w-full" onSubmit={handleAction}>
+        <form
+          className="w-full"
+          onSubmit={async (e) => {
+            await handleAction(e, password);
+            setPassword("");
+          }}
+        >
           {!isLogin && (
             <>
               <input
                 type="text"
                 required
                 autoComplete="first-name"
-                value={player.first_name}
+                value={user.first_name}
                 onChange={(e) => {
-                  setPlayer((prev) => ({
+                  setUser((prev) => ({
                     ...prev,
                     first_name: e.target.value,
                   }));
@@ -74,9 +83,9 @@ export function RegisterForm({
                 required
                 className="my-[26px]"
                 autoComplete="last-name"
-                value={player.last_name}
+                value={user.last_name}
                 onChange={(e) => {
-                  setPlayer((prev) => ({
+                  setUser((prev) => ({
                     ...prev,
                     last_name: e.target.value,
                   }));
@@ -89,12 +98,12 @@ export function RegisterForm({
             type="number"
             required
             autoComplete="phone-number"
-            value={player.phone_number}
+            value={user.phone_number}
             onChange={(e) => {
               const targetAsNumber = Number(e.target.value);
               if (isNaN(targetAsNumber)) return;
 
-              setPlayer((prev) => ({
+              setUser((prev) => ({
                 ...prev,
                 phone_number: e.target.value,
               }));
@@ -106,13 +115,11 @@ export function RegisterForm({
           {!isLogin && (
             <div
               className={cn("min-h-[26px] my-1 px-2 py-1", {
-                invisible:
-                  player.phone_number === "" ||
-                  player.phone_number === undefined,
+                invisible: user.phone_number === "",
                 [GREEN_TW]: phoneNumberValidation === PhoneNumberValidity.VALID,
                 [RED_TW]:
                   phoneNumberValidation ===
-                  PhoneNumberValidity.TOO_SHORT(player.phone_number ?? ""),
+                  PhoneNumberValidity.TOO_SHORT(user.phone_number),
               })}
             >
               {phoneNumberValidation}
@@ -121,12 +128,9 @@ export function RegisterForm({
           <input
             type="password"
             required
-            value={player.password}
+            value={password}
             onChange={(e) => {
-              setPlayer((prev) => ({
-                ...prev,
-                password: e.target.value,
-              }));
+              setPassword(e.target.value);
             }}
             placeholder={
               isLogin
@@ -137,12 +141,10 @@ export function RegisterForm({
           {!isLogin && (
             <div
               className={cn("min-h-[26px] my-1 px-2 py-1", {
-                invisible:
-                  player.password === "" || player.password === undefined,
+                invisible: password === "",
                 [GREEN_TW]: passwordValidation === PasswordValidity.VALID,
                 [RED_TW]:
-                  passwordValidation ===
-                  PasswordValidity.TOO_SHORT(player.password ?? ""),
+                  passwordValidation === PasswordValidity.TOO_SHORT(password),
               })}
             >
               {passwordValidation}

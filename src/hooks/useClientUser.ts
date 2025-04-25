@@ -1,11 +1,13 @@
 import { useState, useEffect } from "react";
 
 import { POLLING_TIME } from "@/constants/api";
+import { useUser } from "@/context/User/context";
+import { DEFAULT_USER } from "@/context/User/provider";
 import type { IUser } from "@/types/users";
 import { dbRequest } from "@/utils/dbRequest";
 
 export function useClientUser(condition?: string) {
-  const [user, setUser] = useState<IUser | undefined>();
+  const { user, setUser } = useUser();
   const [errorState, setError] = useState<Error | null>(null);
 
   useEffect(() => {
@@ -20,7 +22,7 @@ export function useClientUser(condition?: string) {
 
         setUser(data);
       } catch (err) {
-        setUser(undefined);
+        setUser(DEFAULT_USER);
         setError(
           err instanceof Error ? err : new Error("Unknown error occurred."),
         );
@@ -34,7 +36,11 @@ export function useClientUser(condition?: string) {
     return () => {
       clearTimeout(timeout);
     };
-  }, [condition]);
+  }, [condition, setUser]);
 
-  return { user, error: errorState, isLoading: user === undefined };
+  return {
+    user: user.phone_number === "" ? undefined : user,
+    error: errorState,
+    isLoading: user.phone_number === "",
+  };
 }

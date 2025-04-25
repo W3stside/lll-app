@@ -14,9 +14,11 @@ export function verifyAuthBody(
     return res.status(405).end();
   }
 
+  const body = req.body as INewSignup;
+
   if (
-    (action === "register" && !isValidNewSignup(req.body as INewSignup)) ||
-    (action === "login" && !isValidLogin(req.body as INewSignup))
+    (action === "register" && !isValidNewSignup(body, body.password)) ||
+    (action === "login" && !isValidLogin(body, body.password))
   ) {
     res.status(400).json({ message: "Missing fields" });
     return res.end();

@@ -51,6 +51,9 @@ export function Games({
           Address:
           <a
             href={mapUrl}
+            onClick={(e) => {
+              e.stopPropagation();
+            }}
             target="_blank"
             rel="noreferrer"
             className="underline text-blue-500 ml-auto"
