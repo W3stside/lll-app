@@ -12,7 +12,7 @@ export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse,
 ) {
-  verifyAuthBody(req, res);
+  verifyAuthBody(req, res, "register");
 
   const { first_name, last_name, phone_number, password } =
     req.body as INewSignup;
