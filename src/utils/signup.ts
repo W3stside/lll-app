@@ -6,6 +6,10 @@ export function isValidNewSignup(
 ): player is INewSignup {
   return (
     player !== undefined &&
+    player.first_name !== undefined &&
+    player.first_name.length > 0 &&
+    player.last_name !== undefined &&
+    player.last_name.length > 0 &&
     player.password !== undefined &&
     player.password.length >= PASSWORD_MIN_LENGTH &&
     player.phone_number !== undefined &&

@@ -6,7 +6,7 @@ export const NAVLINKS = [
   { name: "Games", url: "/signup" },
   { name: "Wall of Shame", url: "/shame" },
   { name: "About", url: "/about" },
-  { name: "Profile", url: "/profile" },
+  // { name: "Profile", url: "/profile" },
 ];
 export const NAVLINKS_MAP = {
   HOME: "/",

@@ -89,9 +89,12 @@ const Signups: React.FC<ISignups> = ({
           <strong className="pr-2">X</strong>
         </div>
         <div
-          className={cn("flex gap-x-2 items-center text-xs -mt-5 -mb-5 px-2", {
-            "bg-[var(--background-window-highlight)]": filters !== undefined,
-          })}
+          className={cn(
+            "border-out flex gap-x-2 items-center text-xs -mt-5 -mb-5 px-1.5",
+            {
+              "bg-[var(--background-window-highlight)]": filters !== undefined,
+            },
+          )}
         >
           Active filters: {filters?.toLocaleLowerCase() ?? "none"}
         </div>

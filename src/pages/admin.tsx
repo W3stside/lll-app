@@ -235,7 +235,7 @@ export default function About({
         </div>
         <div className="flex flex-col gap-y-1 text-black container">
           <div className="container-header !h-auto -mt-2 -mx-1.5">
-            Add newGame
+            Add new game
           </div>
           <div className="my-2 flex flex-col gap-y-2">
             <strong>Current games</strong>
