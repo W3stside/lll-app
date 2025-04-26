@@ -1,5 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { useRouter } from "next/router";
 import { useCallback } from "react";
 
@@ -11,12 +12,13 @@ import { useClientUser } from "@/hooks/useClientUser";
 import { dbAuth } from "@/utils/dbAuth";
 import { cn } from "@/utils/tailwind";
 
-interface INavbar {
-  title: string;
+function _formatPathname(pathname: string) {
+  return pathname.replace(/^\/profiles\/([a-f0-9]{24})$/, "profile: $1");
 }
 
-export function Navbar({ title }: INavbar) {
+export function Navbar() {
   const router = useRouter();
+  const pathname = usePathname();
   const { user, isLoading } = useClientUser(router.pathname);
 
   const handleLogout = useCallback(async () => {
@@ -36,10 +38,12 @@ export function Navbar({ title }: INavbar) {
         <Link href={NAVLINKS_MAP.HOME}>
           <Image src={logo} alt="LLL logo" className="max-w-25 p-1" />
         </Link>
-        <h1 className="lowercase font-thin">{title}</h1>
+        <h1 className="lowercase font-thin text-[3.5vw] sm:text-xl">
+          {_formatPathname(pathname)}
+        </h1>
         <div className="flex-1 sm:grow-0 mb-2 sm:m-0 sm:ml-auto m-2 flex items-center justify-center gap-x-4 w-min">
           {NAVLINKS.flatMap(({ name, url }) =>
-            !title.includes(url)
+            !router.pathname.includes(url)
               ? [
                   <Link key={url} href={url} className="whitespace-nowrap">
                     <button className="underline">{name}</button>

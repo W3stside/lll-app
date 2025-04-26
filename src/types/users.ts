@@ -20,6 +20,8 @@ export interface IUser extends INewSignup {
   _id: ObjectId;
 }
 
+export type IUserFromCookies = Pick<IUser, "_id">;
+
 export type IUserSafe = Omit<IUser, "_id" | "createdAt" | "password"> & {
   _id: IUser["_id"] | undefined;
   createdAt: IUser["createdAt"] | undefined;

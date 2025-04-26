@@ -38,17 +38,7 @@ export default async function handler(
     shame: [],
   });
 
-  refreshAndSetJwtTokens(
-    {
-      first_name,
-      last_name,
-      phone_number,
-      password: hashedPassword,
-      _id: newUser.insertedId,
-      createdAt,
-    },
-    res,
-  );
+  refreshAndSetJwtTokens({ _id: newUser.insertedId }, res);
   res.status(200).json({
     message: "User created successfully!",
   });

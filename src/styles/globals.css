@@ -100,6 +100,21 @@ body {
     }
   }
 
+  input::-webkit-outer-spin-button,
+  input::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+  }
+
+  input[type=number] {
+    -moz-appearance: textfield;
+  }
+
+  input::placeholder {
+    font-size: 10px;
+  }
+
+
   input,
   select {
     color: black;
@@ -159,5 +174,11 @@ body {
     border: 2px solid var(--border-dark);
     border-left-color: var(--border-light);
     border-top-color: var(--border-light);
+  }
+
+  .border-in {
+    border: 2px solid var(--border-light);
+    border-bottom-color: var(--border-dark);
+    border-right-color: var(--border-dark);
   }
 }

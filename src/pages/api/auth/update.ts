@@ -1,7 +1,5 @@
-import bcrypt from "bcryptjs";
 import type { NextApiRequest, NextApiResponse } from "next";
 
-import { refreshAndSetJwtTokens } from "@/lib/authUtils";
 import client from "@/lib/mongodb";
 import { verifyAuthBody } from "@/lib/verifyAuthBody";
 import { Collection } from "@/types";
@@ -11,9 +9,9 @@ export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse,
 ) {
-  verifyAuthBody(req, res, "login");
+  verifyAuthBody(req, res, "update");
 
-  const { phone_number, password } = req.body as INewSignup;
+  const { first_name, last_name, phone_number } = req.body as INewSignup;
 
   const db = client.db("LLL");
   const users = db.collection(Collection.USERS);
@@ -23,18 +21,24 @@ export default async function handler(
   if (!user) {
     res.status(401).json({ message: "Invalid credentials" });
   } else {
-    const isValid = await bcrypt.compare(password, user.password);
-
-    if (!isValid) {
-      res.status(401).json({ message: "Invalid credentials" });
-    } else {
-      refreshAndSetJwtTokens({ _id: user._id }, res);
-      res.status(200).json({
-        message: "Login successful",
-        user: {
-          _id: user._id,
+    await users.updateOne(
+      { _id: user._id },
+      {
+        $set: {
+          first_name,
+          last_name,
+          phone_number,
         },
-      });
-    }
+      },
+    );
+
+    res.status(200).json({
+      message: "User updated successfully!",
+      user: {
+        first_name,
+        last_name,
+        phone_number,
+      },
+    });
   }
 }

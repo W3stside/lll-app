@@ -7,9 +7,9 @@ import client from "../lib/mongodb";
 import ebaumsWorld from "@/assets/ebaums-world.png";
 import { FilterGames } from "@/components/FilterGames";
 import { PartnerProducts } from "@/components/PartnerProducts";
+import { RegisterToPlay } from "@/components/Register/RegisterToPlay";
 import { Signees } from "@/components/Signup";
 import { Games } from "@/components/Signup/Games";
-import { RegisterToPlay } from "@/components/Signup/RegisterToPlay";
 import { Collapsible, RemainingSpots } from "@/components/ui";
 import { MAX_SIGNUPS_PER_GAME } from "@/constants/signups";
 import { useFilterGames } from "@/hooks/useFilterGames";
@@ -390,9 +390,6 @@ export const getServerSideProps: GetServerSideProps = async (context) => {
       props: {
         user: {
           _id: user._id,
-          first_name: user.first_name,
-          last_name: user.last_name,
-          phone_number: user.phone_number,
         },
         games: JSON.parse(JSON.stringify(games)) as string,
         usersById: JSON.parse(JSON.stringify(usersById)) as string,

@@ -6,7 +6,7 @@ export async function dbAuth<T>(
   body?: never,
 ): Promise<JSONResponse<T>>;
 export async function dbAuth<T>(
-  action: "login" | "register",
+  action: "login" | "register" | "update",
   body: T,
 ): Promise<JSONResponse<T>>;
 export async function dbAuth<T>(
