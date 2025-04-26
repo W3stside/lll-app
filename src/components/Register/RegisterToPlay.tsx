@@ -1,4 +1,4 @@
-import { type ISignupForm, SignupForm } from "./SignupForm";
+import { type ISignupForm, SignupForm } from "../Signup/SignupForm";
 import { Loader } from "../ui";
 
 import { cn } from "@/utils/tailwind";

@@ -52,7 +52,6 @@ export function Uploader({ user, title }: IUploader) {
 
   const [uploadKey, setUploadKey] = useState(Date.now());
   const [file, setFile] = useState<File | undefined>();
-  const [preview, setPreview] = useState<string | undefined>();
 
   const resetFile = useCallback(() => {
     setFile(undefined);
@@ -66,10 +65,9 @@ export function Uploader({ user, title }: IUploader) {
       setLoading(true);
       const compressedFile = await imageCompression(file, COMPRESS_OPTIONS);
 
-      const publicUrl = await uploadAvatar(compressedFile, user);
+      await uploadAvatar(compressedFile, user);
 
       setFile(compressedFile);
-      setPreview(publicUrl);
     } catch (error) {
       // eslint-disable-next-line no-console
       console.error(error);
@@ -84,8 +82,8 @@ export function Uploader({ user, title }: IUploader) {
   return (
     <div className="flex flex-col">
       <div className="flex gap-x-4 items-start h-auto">
-        {preview !== undefined ? (
-          <Avatar src={preview} />
+        {file !== undefined ? (
+          <Avatar src={URL.createObjectURL(file)} />
         ) : loading ? (
           <div className="overflow-hidden w-[80px] h-[80px] relative self-center">
             <Loader className="absolute -top-[23px] -left-[28px] w-[130px] height-[100px] max-w-none" />
@@ -98,7 +96,7 @@ export function Uploader({ user, title }: IUploader) {
           <div className="flex gap-x-4 items-start h-auto py-2">
             <label
               htmlFor="imageUpload"
-              className="flex flex-row gap-y-2 flex-1 bg-white h-[40px] max-w-[50%] px-2 py-1 cursor-pointer border-2 border-r-[var(--border-light)] border-b-[var(--border-light)]"
+              className="flex flex-row gap-y-2 flex-1 bg-white h-[40px] max-w-[70%] px-2 py-1 cursor-pointer border-2 border-r-[var(--border-light)] border-b-[var(--border-light)]"
             >
               <div className="flex items-center gap-x-2 text-md">
                 {file === undefined ? (

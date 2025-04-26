@@ -7,9 +7,9 @@ import client from "../lib/mongodb";
 import ebaumsWorld from "@/assets/ebaums-world.png";
 import { FilterGames } from "@/components/FilterGames";
 import { PartnerProducts } from "@/components/PartnerProducts";
+import { RegisterToPlay } from "@/components/Register/RegisterToPlay";
 import { Signees } from "@/components/Signup";
 import { Games } from "@/components/Signup/Games";
-import { RegisterToPlay } from "@/components/Signup/RegisterToPlay";
 import { Collapsible, RemainingSpots } from "@/components/ui";
 import { MAX_SIGNUPS_PER_GAME } from "@/constants/signups";
 import { useFilterGames } from "@/hooks/useFilterGames";
@@ -156,18 +156,21 @@ const Signups: React.FC<ISignups> = ({
                   collapsedHeight={
                     gameStatus !== GameStatus.PAST &&
                     gamesFullyCapped.length > 0
-                      ? 135
-                      : 103
+                      ? 128
+                      : gameStatus === GameStatus.PAST
+                        ? 50
+                        : 103
                   }
                   customState={collapsed[day]}
                   disabled={gameStatus === GameStatus.PAST}
                 >
                   <div
                     className={cn(
-                      "flex flex-col !gap-y-1 !bg-[var(--background-window-highlight)] -mb-4 h-auto w-full container !px-4 !py-3 gap-y-2",
+                      "flex flex-col !gap-y-1 !bg-[var(--background-window-highlight)] -mb-4 h-auto w-full container px-4 py-3 gap-y-2",
                       {
                         "p-2 mt-0 !border-0 -container !bg-revert":
                           collapsed[day],
+                        "px-0 py-[2px]": gameStatus === GameStatus.PAST,
                       },
                     )}
                     onClick={
@@ -182,8 +185,15 @@ const Signups: React.FC<ISignups> = ({
                     }
                   >
                     <div className="flex items-center justify-start gap-4 gap-x-2">
-                      <h2 className="font-thinner text-md font-serif pb-1">
-                        {collapsed[day] ? "+" : "-"}
+                      <h2
+                        className={cn("font-thinner text-md font-serif", {
+                          "-mt-2": gameStatus === GameStatus.PAST,
+                          "mb-[-4px]": !collapsed[day],
+                        })}
+                      >
+                        {collapsed[day] && gameStatus !== GameStatus.PAST
+                          ? "+"
+                          : "-"}
                       </h2>
                       <div
                         className={cn(
@@ -195,7 +205,13 @@ const Signups: React.FC<ISignups> = ({
                           {gameDate.toDateString()}
                         </small>
                         <div className="flex items-center w-full font-bold text-3xl italic uppercase tracking-tight">
-                          {day}
+                          <span
+                            className={cn({
+                              "-mt-2": gameStatus === GameStatus.PAST,
+                            })}
+                          >
+                            {day}
+                          </span>
                           <strong className="ml-auto not-italic">
                             {games.length} {games.length > 1 ? "games" : "game"}
                           </strong>
@@ -284,6 +300,8 @@ const Signups: React.FC<ISignups> = ({
                                         key={playerId.toString()}
                                         date={nextGameDate}
                                         {...signee}
+                                        hideAvatar
+                                        avatarSize={60}
                                         games={games}
                                         game_id={game._id}
                                         isUser={checkPlayerIsUser(signee, user)}
@@ -390,9 +408,6 @@ export const getServerSideProps: GetServerSideProps = async (context) => {
       props: {
         user: {
           _id: user._id,
-          first_name: user.first_name,
-          last_name: user.last_name,
-          phone_number: user.phone_number,
         },
         games: JSON.parse(JSON.stringify(games)) as string,
         usersById: JSON.parse(JSON.stringify(usersById)) as string,

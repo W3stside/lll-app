@@ -16,6 +16,8 @@ interface ISignees extends IUser {
   games: IGame[];
   game_id: ObjectId;
   setGames?: (users: IGame[]) => void;
+  avatarSize?: number;
+  hideAvatar?: boolean;
 }
 
 export function Signees({
@@ -26,7 +28,11 @@ export function Signees({
   last_name,
   phone_number,
   date,
+  shame,
+  createdAt,
   isUser,
+  avatarSize,
+  hideAvatar,
   children,
   setGames,
 }: ISignees) {
@@ -74,7 +80,7 @@ export function Signees({
 
   return (
     <SigneeComponent
-      {...{ _id, first_name, last_name, phone_number, date }}
+      {...{ _id, first_name, last_name, phone_number, date, shame, createdAt }}
       loading={loading}
       errorMsg={errorMsg}
       handleCancel={
@@ -113,6 +119,8 @@ export function Signees({
             }
           : undefined
       }
+      avatarSize={avatarSize}
+      hideAvatar={hideAvatar}
     >
       {children}
     </SigneeComponent>

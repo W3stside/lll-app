@@ -13,7 +13,10 @@ interface IRegisterUser
   loading: boolean;
   label: string;
   title?: string;
-  handleAction: (e: React.FormEvent, password: string) => Promise<void>;
+  handleAction: (
+    e: React.FormEvent,
+    password: string | undefined,
+  ) => Promise<void>;
   handleLogout?: (e: React.FormEvent) => Promise<void>;
 }
 

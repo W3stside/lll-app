@@ -3,19 +3,19 @@ import type { GetServerSideProps } from "next";
 import { useRouter } from "next/router";
 import { useCallback, useState } from "react";
 
-import { RegisterUser } from "@/components/Signup/RegisterUser";
+import { RegisterUser } from "@/components/Register/RegisterUser";
 import { Loader } from "@/components/ui";
 import { NAVLINKS_MAP } from "@/constants/links";
 import { useUser } from "@/context/User/context";
 import { JWT_REFRESH_SECRET, JWT_SECRET, verifyToken } from "@/lib/authUtils";
 import client from "@/lib/mongodb";
-import type { IUser } from "@/types/users";
+import type { IUserFromCookies } from "@/types/users";
 import { dbAuth } from "@/utils/dbAuth";
-import { isValidNewSignup } from "@/utils/signup";
+import { isValidLogin, isValidNewSignup } from "@/utils/signup";
 
 type LoginPage = {
   isConnected: boolean;
-  user: IUser | null;
+  user: IUserFromCookies | null;
 };
 
 export const getServerSideProps: GetServerSideProps<LoginPage> = async (
@@ -26,7 +26,11 @@ export const getServerSideProps: GetServerSideProps<LoginPage> = async (
     const user =
       token === undefined
         ? undefined
-        : verifyToken<IUser>(token, JWT_SECRET as string, JWT_REFRESH_SECRET);
+        : verifyToken<IUserFromCookies>(
+            token,
+            JWT_SECRET as string,
+            JWT_REFRESH_SECRET,
+          );
 
     await client.connect();
 
@@ -55,7 +59,7 @@ export default function Login({ isConnected, user }: LoginPage) {
   const router = useRouter();
 
   const handleSignup = useCallback(
-    async (e: React.FormEvent, password: string) => {
+    async (e: React.FormEvent, password: string | undefined) => {
       e.preventDefault();
       setError(null);
       setLoading(true);
@@ -86,12 +90,17 @@ export default function Login({ isConnected, user }: LoginPage) {
   );
 
   const handleLogin = useCallback(
-    async (e: React.FormEvent, password: string) => {
+    async (e: React.FormEvent, password: string | undefined) => {
       e.preventDefault();
       setError(null);
       setLoading(true);
 
       try {
+        if (!isValidLogin(player, password)) {
+          throw new Error(
+            "Login fields are invalid. Please check and try again.",
+          );
+        }
         const { error } = await dbAuth("login", { ...player, password });
 
         if (error !== null) {

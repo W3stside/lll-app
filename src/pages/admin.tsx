@@ -11,7 +11,13 @@ import { NAVLINKS_MAP } from "@/constants/links";
 import { JWT_REFRESH_SECRET, JWT_SECRET, verifyToken } from "@/lib/authUtils";
 import client from "@/lib/mongodb";
 import { Collection, Role } from "@/types";
-import { Gender, type IGame, type IUser, type PlaySpeed } from "@/types/users";
+import {
+  Gender,
+  type IUserFromCookies,
+  type IGame,
+  type IUser,
+  type PlaySpeed,
+} from "@/types/users";
 import { isValid24hTime } from "@/utils/date";
 import { dbRequest } from "@/utils/dbRequest";
 import { sortDaysOfWeek } from "@/utils/sort";
@@ -36,7 +42,11 @@ export const getServerSideProps: GetServerSideProps<ConnectionStatus> = async (
     const { token } = req.cookies;
     const user =
       token !== undefined
-        ? verifyToken<IUser>(token, JWT_SECRET as string, JWT_REFRESH_SECRET)
+        ? verifyToken<IUserFromCookies>(
+            token,
+            JWT_SECRET as string,
+            JWT_REFRESH_SECRET,
+          )
         : null;
 
     if (user === null) {

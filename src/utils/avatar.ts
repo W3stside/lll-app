@@ -1,20 +1,22 @@
 import { supabase } from "@/lib/supabase";
 import type { IUser } from "@/types/users";
 
-export const getAvatarUrl = (userId: string, ext = "jpeg") => {
-  const filePath = `avatars/${userId}.${ext}`;
-  const { data } = supabase.storage.from("avatars").getPublicUrl(filePath);
-  return data.publicUrl;
+export const getAvatarUrl = async (userId: string) => {
+  const filePath = `avatars/${userId}`;
+  const { data } = await supabase.storage
+    .from("avatars")
+    .download(`${filePath}?downloaded_at=${Date.now()}`);
+
+  return data;
 };
 
 export const uploadAvatar = async (compressedFile: File, user: IUser) => {
-  const fileExt = compressedFile.name.split(".").pop();
-  const filePath = `avatars/${user._id.toString()}.${fileExt}`;
+  const filePath = `avatars/${user._id.toString()}`;
   const { error } = await supabase.storage
     .from("avatars")
     .upload(filePath, compressedFile, { upsert: true });
 
   if (error !== null) throw error;
 
-  return getAvatarUrl(user._id.toString(), fileExt);
+  return await getAvatarUrl(user._id.toString());
 };
