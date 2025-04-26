@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useMemo, useRef, useState } from "react";
 
 import { Avatar } from "../Avatar";
 import { PartnerProducts } from "../PartnerProducts";
@@ -25,7 +25,7 @@ export interface IProfile {
   games: IGame[];
 }
 
-function _dataIsEqual(currentUser: IUser, newUser: IUserSafe) {
+function _dataIsEqual(currentUser: IUserSafe, newUser: IUserSafe) {
   return (
     currentUser.first_name === newUser.first_name &&
     currentUser.last_name === newUser.last_name &&
@@ -38,6 +38,7 @@ export function Profile({ avatarUrl, user, games }: IProfile) {
   const [loading, setLoading] = useState(false);
 
   const { user: currentUser } = useUser();
+  const userRef = useRef<IUserSafe>(user);
 
   const { gamesByDay, lastGame } = useMemo(() => {
     const gbd = groupGamesByDay(games);
@@ -65,6 +66,7 @@ export function Profile({ avatarUrl, user, games }: IProfile) {
         setError(errChecked);
       } finally {
         setLoading(false);
+        userRef.current = currentUser;
       }
     },
     [currentUser],
@@ -83,7 +85,7 @@ export function Profile({ avatarUrl, user, games }: IProfile) {
         </div>
         <div className="flex gap-x-4 items-start h-auto">
           {avatarUrl !== null ? (
-            <Avatar src={avatarUrl} />
+            <Avatar src={avatarUrl} pixelSize={4} />
           ) : (
             <PlaceholderAvatar className="bg-[var(--background-color-2)]" />
           )}
@@ -121,14 +123,15 @@ export function Profile({ avatarUrl, user, games }: IProfile) {
                 />
                 <button
                   disabled={
-                    _dataIsEqual(user, currentUser) ||
+                    _dataIsEqual(userRef.current, currentUser) ||
                     !isValidUserUpdate(currentUser)
                   }
                   className="font-bold"
                   onClick={handleUpdateUser}
                 >
                   Update user{" "}
-                  {_dataIsEqual(user, currentUser) && " (no changes)"}
+                  {_dataIsEqual(userRef.current, currentUser) &&
+                    " (no changes)"}
                 </button>
                 {error !== null && (
                   <span className="px-2 py-1 text-xs text-red-500">

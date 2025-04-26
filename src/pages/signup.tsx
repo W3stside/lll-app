@@ -300,6 +300,8 @@ const Signups: React.FC<ISignups> = ({
                                         key={playerId.toString()}
                                         date={nextGameDate}
                                         {...signee}
+                                        hideAvatar
+                                        avatarSize={60}
                                         games={games}
                                         game_id={game._id}
                                         isUser={checkPlayerIsUser(signee, user)}

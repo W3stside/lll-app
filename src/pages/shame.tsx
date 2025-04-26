@@ -70,10 +70,16 @@ export default function WallOfShame({ users }: IWallOfShame) {
                   key={user._id.toString()}
                   errorMsg={null}
                   loading={false}
+                  avatarSize={70}
                   {...user}
                   childrenBelow={
                     <div className="flex flex-col w-full gap-y-1 -mt-2">
-                      Shameful proof
+                      <div className="flex items-center justify-between w-full">
+                        Shameful proof{" "}
+                        <div className="text-right ml-auto">
+                          {user.shame.length}x shame
+                        </div>
+                      </div>
                       {user.shame.map(({ game_id, date }, idx) => {
                         return (
                           <div
@@ -88,12 +94,7 @@ export default function WallOfShame({ users }: IWallOfShame) {
                       })}
                     </div>
                   }
-                >
-                  <p className="text-right">
-                    Shamed us: {user.shame.length}{" "}
-                    {user.shame.length > 1 ? "times" : "time"}
-                  </p>
-                </SigneeComponent>,
+                ></SigneeComponent>,
               ]
             : [],
         )

@@ -1,6 +1,6 @@
 import { sortDaysOfWeek } from "./sort";
 
-import type { GamesByDay, IBaseUser, IGame, IUser } from "@/types/users";
+import type { GamesByDay, IGame, IUser, IUserSafe } from "@/types/users";
 
 export function groupUsersById(users: IUser[]) {
   return users.reduce<Record<string, IUser>>(
@@ -22,12 +22,8 @@ export function groupGamesByDay(games: IGame[]) {
   );
 }
 
-export function checkPlayerIsUser(player?: IBaseUser, user?: IBaseUser) {
-  if (!player || !user) return false;
+export function checkPlayerIsUser(player?: IUserSafe, user?: IUserSafe) {
+  if (player === undefined || user === undefined) return false;
 
-  return (
-    player.first_name === user.first_name &&
-    player.last_name === user.last_name &&
-    player.phone_number === user.phone_number
-  );
+  return player._id?.toString() === user._id?.toString();
 }
