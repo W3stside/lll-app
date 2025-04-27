@@ -23,7 +23,7 @@ export const ActionContext = createContext<IActionContext | undefined>(
 export const useActions = () => {
   const context = useContext(ActionContext);
   if (context === undefined) {
-    throw new Error("useActions must be used within a DialogProvider");
+    throw new Error("useActions must be used within a ActionsProvider");
   }
 
   return context;

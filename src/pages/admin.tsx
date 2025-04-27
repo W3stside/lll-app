@@ -1,16 +1,18 @@
-/* eslint-disable no-console */
 import { ObjectId } from "mongodb";
 import type { GetServerSideProps } from "next";
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 
 import { PartnerProducts } from "@/components/PartnerProducts";
 import { Loader } from "@/components/ui";
 import { RED_TW } from "@/constants/colours";
 import { DAYS_IN_WEEK } from "@/constants/date";
 import { NAVLINKS_MAP } from "@/constants/links";
+import { useAdmin } from "@/context/Admin/context";
+import { useGames } from "@/context/Games/context";
 import { JWT_REFRESH_SECRET, JWT_SECRET, verifyToken } from "@/lib/authUtils";
 import client from "@/lib/mongodb";
 import { Collection, Role } from "@/types";
+import type { IAdmin } from "@/types/admin";
 import {
   Gender,
   type IUserFromCookies,
@@ -61,6 +63,7 @@ export const getServerSideProps: GetServerSideProps<ConnectionStatus> = async (
 
     await client.connect();
     const db = client.db("LLL");
+
     const adminUser = await db.collection<IUser>(Collection.USERS).findOne({
       _id: new ObjectId(user._id),
       role: Role.ADMIN,
@@ -79,18 +82,31 @@ export const getServerSideProps: GetServerSideProps<ConnectionStatus> = async (
       serialised: true,
     })();
 
+    const [admin] = await db
+      .collection<IAdmin>(Collection.ADMIN)
+      .find({})
+      .toArray();
+
     return {
       props: {
         isConnected: true,
+        admin: JSON.parse(JSON.stringify(admin)) as IAdmin,
         user: JSON.parse(JSON.stringify(adminUser)) as string,
         users,
         games,
       },
     };
   } catch (e) {
+    // eslint-disable-next-line no-console
     console.error(e);
     return {
-      props: { isConnected: false, user: null, users: [], games: [] },
+      props: {
+        isConnected: false,
+        admin: null,
+        user: null,
+        users: [],
+        games: [],
+      },
     };
   }
 };
@@ -113,19 +129,20 @@ function AdminError({ errors, errorKey }: IAdminError) {
   );
 }
 
-interface IAdmin {
+interface IAdminPage {
   isConnected: boolean;
   user: IUser;
   games: IGame[];
+  admin: IAdmin | null;
 }
 
 type ErrorUser = Omit<Partial<IGame>, "_id" | "game_id" | "players">;
 
-export default function About({
+export default function Admin({
   isConnected,
+  admin: adminInitial,
   user,
-  games: gamesInitial,
-}: IAdmin) {
+}: IAdminPage) {
   const [loading, setLoading] = useState(false);
   const [generalError, setGeneralError] = useState<Error | null>(null);
   const [addGameError, setAddGameError] = useState<
@@ -134,7 +151,17 @@ export default function About({
       }
     | null
   >(null);
-  const [games, setGames] = useState<IGame[]>(gamesInitial);
+
+  const { games, setGames } = useGames();
+  const { admin, setAdmin } = useAdmin();
+
+  // Sync server-side games with client-side games
+  useEffect(() => {
+    if (adminInitial !== null && admin === undefined) {
+      setAdmin(adminInitial);
+    }
+  }, [admin, adminInitial, setAdmin]);
+
   const [newGame, setNewGame] = useState<Partial<Omit<IGame, "_id">>>({
     time: "",
     location: "",
@@ -223,7 +250,39 @@ export default function About({
       const e = error instanceof Error ? error : new Error("Unknown error");
       setGeneralError(e);
     }
-  }, []);
+  }, [setGames]);
+
+  const handleToggleSignupsAvailable = useCallback(async () => {
+    if (admin === undefined) return;
+    try {
+      setLoading(true);
+      setGeneralError(null);
+
+      const { data, error } = await dbRequest<IAdmin>(
+        "update",
+        Collection.ADMIN,
+        {
+          _id: admin._id,
+          signup_open: !admin.signup_open,
+        },
+      );
+
+      if (error !== null) {
+        setGeneralError(error);
+        throw error;
+      }
+
+      setAdmin(data);
+    } catch (error) {
+      const e =
+        error instanceof Error
+          ? error
+          : new Error("handleToggleSignupsAvailable: Unknown error");
+      setGeneralError(e);
+    } finally {
+      setLoading(false);
+    }
+  }, [admin, setAdmin]);
 
   const sortedGames = useMemo(() => sortDaysOfWeek(games), [games]);
 
@@ -244,6 +303,28 @@ export default function About({
           <br />
           More coming soon!
         </div>
+
+        {admin !== undefined && (
+          <div className="flex flex-col gap-y-1 text-black container">
+            <div className="container-header !h-auto -mt-2 -mx-1.5">
+              Enabled/Disable signups
+            </div>
+            <div className="flex flex-col gap-y-2">
+              <div className="my-2 flex gap-x-2">
+                <strong>Signups status:</strong>{" "}
+                <div>{admin.signup_open ? "Enabled" : "Disabled"}</div>
+              </div>
+              <button
+                onClick={handleToggleSignupsAvailable}
+                className="!max-w-none w-max"
+                disabled={loading}
+              >
+                {admin.signup_open ? "Disable signups" : "Enable signups"}
+              </button>
+            </div>
+          </div>
+        )}
+
         <div className="flex flex-col gap-y-1 text-black container">
           <div className="container-header !h-auto -mt-2 -mx-1.5">
             Add new game
