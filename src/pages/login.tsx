@@ -10,7 +10,7 @@ import { useUser } from "@/context/User/context";
 import { JWT_REFRESH_SECRET, JWT_SECRET, verifyToken } from "@/lib/authUtils";
 import client from "@/lib/mongodb";
 import type { IUserFromCookies } from "@/types/users";
-import { dbAuth } from "@/utils/dbAuth";
+import { dbAuth } from "@/utils/api/dbAuth";
 import { isValidLogin, isValidNewSignup } from "@/utils/signup";
 
 type LoginPage = {

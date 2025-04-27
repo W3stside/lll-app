@@ -5,29 +5,19 @@ import client from "../lib/mongodb";
 
 import { PartnerProducts } from "@/components/PartnerProducts";
 import { SigneeComponent } from "@/components/Signup/SIgnees/SigneeComponent";
-import { Collection } from "@/types";
 import type { IGame, IUser } from "@/types/users";
+import { fetchRequiredCollectionsFromMongoDb } from "@/utils/api/mongodb";
 
 export const getServerSideProps: GetServerSideProps = async () => {
   try {
-    await client.connect();
-
-    const db = client.db("LLL");
-    const users = await db
-      .collection<IUser>(Collection.USERS)
-      .find({})
-      .limit(100)
-      .toArray();
-
-    const games = await db
-      .collection<IGame>(Collection.GAMES)
-      .find({})
-      .toArray();
+    const [games, users] = await fetchRequiredCollectionsFromMongoDb(client, {
+      serialised: true,
+    })();
 
     return {
       props: {
-        games: JSON.parse(JSON.stringify(games)) as string,
-        users: JSON.parse(JSON.stringify(users)) as string,
+        games,
+        users,
       },
     };
   } catch (e) {
@@ -63,41 +53,47 @@ export default function WallOfShame({ users }: IWallOfShame) {
         </div>
       </div>
       {shamers.length > 0 ? (
-        users.flatMap((user) =>
-          user.shame.length > 0
-            ? [
-                <SigneeComponent
-                  key={user._id.toString()}
-                  errorMsg={null}
-                  loading={false}
-                  avatarSize={70}
-                  {...user}
-                  childrenBelow={
-                    <div className="flex flex-col w-full gap-y-1 -mt-2">
-                      <div className="flex items-center justify-between w-full">
-                        Shameful proof{" "}
-                        <div className="text-right ml-auto">
-                          {user.shame.length}x shame
-                        </div>
-                      </div>
-                      {user.shame.map(({ game_id, date }, idx) => {
-                        return (
-                          <div
-                            key={game_id.toString()}
-                            className="flex items-center justify-between w-full"
-                          >
-                            <span className="text-sm text-gray-800">
-                              {idx + 1}. {new Date(date).toString()}
-                            </span>
+        <div className="flex flex-col items-center gap-y-2">
+          {users.flatMap((user) =>
+            user.shame.length > 0
+              ? [
+                  <div key={user._id.toString()} className="w-[350px]">
+                    <SigneeComponent
+                      errorMsg={null}
+                      loading={false}
+                      avatarSize={70}
+                      {...user}
+                      className="py-[4px] px-[16px]"
+                      childrenBelow={
+                        <div className="flex flex-col w-full gap-y-1 mt-2">
+                          <div className="flex items-center justify-between w-full">
+                            Shameful proof{" "}
+                            <div className="text-right ml-auto">
+                              {user.shame.length}x shame
+                            </div>
                           </div>
-                        );
-                      })}
-                    </div>
-                  }
-                ></SigneeComponent>,
-              ]
-            : [],
-        )
+                          {user.shame.map(({ game_id, date }, idx) => {
+                            return (
+                              <div
+                                key={game_id.toString()}
+                                className="flex items-center justify-between w-full"
+                              >
+                                <span className="text-sm text-gray-800">
+                                  {idx + 1}.{" "}
+                                  <strong>Late cancel/no-show:</strong>{" "}
+                                  {new Date(date).toLocaleString()}
+                                </span>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      }
+                    ></SigneeComponent>
+                  </div>,
+                ]
+              : [],
+          )}
+        </div>
       ) : (
         <div className="container !justify-center">
           <p className="">No sinners yet :)</p>

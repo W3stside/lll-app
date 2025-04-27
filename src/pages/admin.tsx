@@ -18,8 +18,9 @@ import {
   type IUser,
   type PlaySpeed,
 } from "@/types/users";
+import { dbRequest } from "@/utils/api/dbRequest";
+import { fetchRequiredCollectionsFromMongoDb } from "@/utils/api/mongodb";
 import { isValid24hTime } from "@/utils/date";
-import { dbRequest } from "@/utils/dbRequest";
 import { sortDaysOfWeek } from "@/utils/sort";
 
 const GOOGLE_MAPS_REGEX = /^(https?:\/\/)?(www\.)?google\.com\/maps/;
@@ -74,22 +75,22 @@ export const getServerSideProps: GetServerSideProps<ConnectionStatus> = async (
       };
     }
 
-    const games = await db
-      .collection<IGame>(Collection.GAMES)
-      .find({})
-      .toArray();
+    const [games, users] = await fetchRequiredCollectionsFromMongoDb(client, {
+      serialised: true,
+    })();
 
     return {
       props: {
         isConnected: true,
         user: JSON.parse(JSON.stringify(adminUser)) as string,
-        games: JSON.parse(JSON.stringify(games)) as string,
+        users,
+        games,
       },
     };
   } catch (e) {
     console.error(e);
     return {
-      props: { isConnected: false, user: null, games: [] },
+      props: { isConnected: false, user: null, users: [], games: [] },
     };
   }
 };

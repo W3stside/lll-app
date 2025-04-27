@@ -16,10 +16,7 @@ export default async (_: NextApiRequest, res: NextApiResponse) => {
       .limit(ABSOLUTE_MAX_SIGNUPS_REQUEST)
       .toArray();
 
-    res.status(201).json({
-      message: "Users fetched successfully",
-      data: users,
-    });
+    res.status(201).json(users);
   } catch (e) {
     console.error(e);
     res.status(500).json({ message: "Error getting users" });

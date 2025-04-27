@@ -9,17 +9,24 @@ import { Loader } from "./ui";
 import logo from "@/assets/logo.png";
 import { NAVLINKS, NAVLINKS_MAP } from "@/constants/links";
 import { useClientUser } from "@/hooks/useClientUser";
-import { dbAuth } from "@/utils/dbAuth";
+import type { IUser } from "@/types/users";
+import { dbAuth } from "@/utils/api/dbAuth";
 import { cn } from "@/utils/tailwind";
 
 function _formatPathname(pathname: string) {
-  return pathname.replace(/^\/profiles\/([a-f0-9]{24})$/, "profile: $1");
+  return pathname.replace("/profiles/", "");
 }
 
-export function Navbar() {
+interface INavbar {
+  usersById?: Record<string, Partial<IUser>>;
+}
+
+export function Navbar({ usersById }: INavbar) {
   const router = useRouter();
   const pathname = usePathname();
   const { user, isLoading } = useClientUser(router.pathname);
+
+  const userInfoFromPath = usersById?.[_formatPathname(pathname)];
 
   const handleLogout = useCallback(async () => {
     try {
@@ -39,14 +46,23 @@ export function Navbar() {
           <Image src={logo} alt="LLL logo" className="max-w-25 p-1" />
         </Link>
         <h1 className="lowercase font-thin text-[3.5vw] sm:text-xl">
-          {_formatPathname(pathname)}
+          {userInfoFromPath !== undefined
+            ? `player profile: ${userInfoFromPath.first_name}`
+            : pathname}
         </h1>
         <div className="flex-1 sm:grow-0 mb-2 sm:m-0 sm:ml-auto m-2 flex items-center justify-center gap-x-4 w-min">
-          {NAVLINKS.flatMap(({ name, url }) =>
+          {NAVLINKS.flatMap(({ name, url, ...rest }) =>
             !router.pathname.includes(url)
               ? [
                   <Link key={url} href={url} className="whitespace-nowrap">
-                    <button className="underline">{name}</button>
+                    <button
+                      className={cn("underline", {
+                        "bg-[var(--background-window-highlight)]":
+                          "highlight" in rest && rest.highlight,
+                      })}
+                    >
+                      {name}
+                    </button>
                   </Link>,
                 ]
               : [],

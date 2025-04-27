@@ -32,10 +32,7 @@ export default async (req: NextApiRequest, res: NextApiResponse) => {
         _id: result.insertedId, // Use the insertedId as the document's _id
         ...body, // Include the rest of the document data
       };
-      res.status(201).json({
-        message: "Record created successfully",
-        data: insertedDocument,
-      });
+      res.status(201).json(insertedDocument);
     } else {
       res.status(500).json({ message: "Error creating record" });
     }

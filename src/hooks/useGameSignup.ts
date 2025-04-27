@@ -4,7 +4,7 @@ import { useCallback, useMemo, useState } from "react";
 import { Collection } from "@/types";
 import type { IUser, IGame } from "@/types/users";
 import { groupGamesByDay } from "@/utils/data";
-import { dbRequest } from "@/utils/dbRequest";
+import { dbRequest } from "@/utils/api/dbRequest";
 
 interface IUseSignup {
   gamesInitial: IGame[];

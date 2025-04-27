@@ -7,7 +7,9 @@ import { JWT_REFRESH_SECRET, JWT_SECRET, verifyToken } from "@/lib/authUtils";
 import client from "@/lib/mongodb";
 import { Collection } from "@/types";
 import type { IGame, IUser, IUserFromCookies } from "@/types/users";
+import { fetchUsersFromMongodb } from "@/utils/api/mongodb";
 import { getAvatarUrl } from "@/utils/avatar";
+import { groupUsersById } from "@/utils/data";
 
 export const getServerSideProps: GetServerSideProps = async (context) => {
   try {
@@ -44,6 +46,9 @@ export const getServerSideProps: GetServerSideProps = async (context) => {
       .find({ players: specificUserId.toString() })
       .toArray();
 
+    const users = await fetchUsersFromMongodb(client, false);
+    const usersById = groupUsersById(users);
+
     const fullUser = await client
       .db("LLL")
       .collection<IUser>(Collection.USERS)
@@ -60,15 +65,24 @@ export const getServerSideProps: GetServerSideProps = async (context) => {
       props: {
         isConnected: true,
         user: JSON.parse(JSON.stringify(fullUser)) as string,
+        usersById: JSON.parse(JSON.stringify(usersById)) as string,
+        users: JSON.parse(JSON.stringify(users)) as IUser[],
         avatarUrl: base64 === null ? null : `data:image/jpeg;base64,${base64}`,
-        games: JSON.parse(JSON.stringify(userGames)) as IGame[],
+        userGames: JSON.parse(JSON.stringify(userGames)) as IGame[],
       },
     };
   } catch (e) {
     // eslint-disable-next-line no-console
     console.error(e);
     return {
-      props: { isConnected: false, user: null, avatarUrl: null, games: [] },
+      props: {
+        isConnected: false,
+        user: null,
+        usersById: {},
+        users: [],
+        avatarUrl: null,
+        userGames: [],
+      },
     };
   }
 };

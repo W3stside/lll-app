@@ -1,6 +1,6 @@
 import type { GetServerSideProps } from "next";
 import Image from "next/image";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 import client from "../lib/mongodb";
 
@@ -11,12 +11,15 @@ import { RegisterToPlay } from "@/components/Register/RegisterToPlay";
 import { Signees } from "@/components/Signup";
 import { Games } from "@/components/Signup/Games";
 import { Collapsible, RemainingSpots } from "@/components/ui";
+import { DAYS_IN_WEEK } from "@/constants/date";
 import { MAX_SIGNUPS_PER_GAME } from "@/constants/signups";
+import { useActions } from "@/context/Actions/context";
+import { useGames } from "@/context/Games/context";
 import { useFilterGames } from "@/hooks/useFilterGames";
-import { useGameSignup } from "@/hooks/useGameSignup";
 import { getUserFromServerSideRequest } from "@/lib/authUtils";
-import { Collection, GameStatus } from "@/types";
+import { GameStatus } from "@/types";
 import type { IGame, IUser } from "@/types/users";
+import { fetchRequiredCollectionsFromMongoDb } from "@/utils/api/mongodb";
 import {
   checkPlayerIsUser,
   groupGamesByDay,
@@ -34,18 +37,13 @@ export interface ISignups {
 const Signups: React.FC<ISignups> = ({
   user,
   usersById,
-  games: gamesInitial,
+  games: gamesServerSide,
 }) => {
   const [selectedGameId, setSelectedGameId] = useState<string | undefined>();
 
-  const {
-    loading,
-    gamesStore: [gamesByDay, setGames],
-    handleGameSignup,
-  } = useGameSignup({
-    gamesInitial,
-    user,
-  });
+  const { games: gamesContext, gamesByDay, setGames } = useGames();
+
+  const { loading: actionLoading, signupForGame } = useActions();
 
   const { filteredGames, searchFilter, filters, setFilter, setSearchFilter } =
     useFilterGames({
@@ -55,16 +53,23 @@ const Signups: React.FC<ISignups> = ({
     });
 
   const [collapsed, setCollapse] = useState<Record<string, boolean>>(() =>
-    Object.keys(gamesByDay).reduce(
-      (acc, d) => ({
+    DAYS_IN_WEEK.reduce(
+      (acc, day) => ({
         ...acc,
-        [d]: true,
+        [day]: true,
       }),
       {},
     ),
   );
 
-  const lastGameOfWeek = getLastGame(gamesByDay);
+  // Sync server-side games with client-side games
+  useEffect(() => {
+    if (gamesServerSide.length !== gamesContext.length) {
+      setGames(gamesServerSide);
+    }
+  }, [gamesContext.length, gamesByDay, gamesServerSide, setGames]);
+
+  const lastGameOfWeek = getLastGame(gamesByDay, gamesContext);
 
   return (
     <>
@@ -280,7 +285,7 @@ const Signups: React.FC<ISignups> = ({
                             </Games>
                             <Collapsible
                               collapsedHeight={36}
-                              className="flex flex-col gap-y-2 justify-start ml-auto w-[80%] lg:w-[350px] border-4 border-red p-2 container"
+                              className="flex flex-col gap-y-2 justify-start ml-auto w-[90%] sm:w-[350px] border-4 border-red p-2 container"
                             >
                               <div className="container-header">
                                 <small className="ml-2 mr-auto">
@@ -300,7 +305,6 @@ const Signups: React.FC<ISignups> = ({
                                         key={playerId.toString()}
                                         date={nextGameDate}
                                         {...signee}
-                                        hideAvatar
                                         avatarSize={60}
                                         games={games}
                                         game_id={game._id}
@@ -315,7 +319,7 @@ const Signups: React.FC<ISignups> = ({
                             {waitlist.length > 0 && (
                               <Collapsible
                                 collapsedHeight={36}
-                                className="flex flex-col gap-y-2 justify-start ml-auto w-[80%] lg:w-[350px] border-4 border-red p-2 container"
+                                className="flex flex-col gap-y-2 justify-start ml-auto w-[90%] sm:w-[350px] border-4 border-red p-2 container"
                               >
                                 <div className="container-header !bg-orange-500">
                                   <small className="ml-2 mr-auto">
@@ -331,6 +335,7 @@ const Signups: React.FC<ISignups> = ({
                                       <Signees
                                         key={playerId.toString()}
                                         {...signee}
+                                        avatarSize={60}
                                         date={nextGameDate}
                                         games={games}
                                         game_id={game._id}
@@ -351,17 +356,18 @@ const Signups: React.FC<ISignups> = ({
                   <RegisterToPlay
                     label="Sign up"
                     games={games}
-                    loading={loading}
+                    loading={actionLoading}
                     userId={user._id}
                     gameId={selectedGameId}
                     disabled={userFullyBooked}
                     setGameId={setSelectedGameId}
                     handleSignup={async () => {
                       if (selectedGameId === undefined) return;
-                      await handleGameSignup(
+                      await signupForGame(
                         gamesByDay[day as IGame["day"]]?.find(
                           (g) => g._id.toString() === selectedGameId,
                         ),
+                        user._id,
                       );
                     }}
                   />
@@ -390,17 +396,9 @@ export const getServerSideProps: GetServerSideProps = async (context) => {
 
     if (user === null) return { redirect };
 
-    await client.connect();
-
-    const db = client.db("LLL");
-    const games = await db
-      .collection<IGame>(Collection.GAMES)
-      .find({})
-      .toArray();
-    const users = await db
-      .collection<IUser>(Collection.USERS)
-      .find({})
-      .toArray();
+    const [games, users] = await fetchRequiredCollectionsFromMongoDb(client, {
+      serialised: false,
+    })();
 
     const usersById = groupUsersById(users);
 

@@ -4,7 +4,7 @@ export const WHATS_APP_GROUP_URL =
 export const NAVLINKS = [
   { name: "Home", url: "/" },
   { name: "Games", url: "/signup" },
-  { name: "Profile", url: "/me" },
+  { name: "Profile", url: "/me", highlight: true },
   { name: "Wall of Shame", url: "/shame" },
   { name: "About", url: "/about" },
 ] as const;

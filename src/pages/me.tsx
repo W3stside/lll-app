@@ -42,7 +42,7 @@ export const getServerSideProps: GetServerSideProps<ConnectionStatus> = async (
     const userGames = await client
       .db("LLL")
       .collection<IGame[]>(Collection.GAMES)
-      .find({ players: user._id.toString() })
+      .find({ players: user._id })
       .toArray();
 
     const fullUser = await client
@@ -62,14 +62,19 @@ export const getServerSideProps: GetServerSideProps<ConnectionStatus> = async (
         isConnected: true,
         user: JSON.parse(JSON.stringify(fullUser)) as string,
         avatarUrl: base64 === null ? null : `data:image/jpeg;base64,${base64}`,
-        games: JSON.parse(JSON.stringify(userGames)) as IGame[],
+        userGames: JSON.parse(JSON.stringify(userGames)) as IGame[],
       },
     };
   } catch (e) {
     // eslint-disable-next-line no-console
     console.error(e);
     return {
-      props: { isConnected: false, user: null, avatarUrl: null, games: [] },
+      props: {
+        isConnected: false,
+        user: null,
+        avatarUrl: null,
+        userGames: [],
+      },
     };
   }
 };

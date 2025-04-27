@@ -11,7 +11,8 @@ export default async function handler(
 ) {
   verifyAuthBody(req, res, "update");
 
-  const { first_name, last_name, phone_number } = req.body as INewSignup;
+  const { first_name, last_name, phone_number, avatarUrl } =
+    req.body as INewSignup;
 
   const db = client.db("LLL");
   const users = db.collection(Collection.USERS);
@@ -28,17 +29,17 @@ export default async function handler(
           first_name,
           last_name,
           phone_number,
+          avatarUrl,
         },
       },
     );
 
     res.status(200).json({
-      message: "User updated successfully!",
-      user: {
-        first_name,
-        last_name,
-        phone_number,
-      },
+      _id: user._id,
+      first_name,
+      last_name,
+      phone_number,
+      avatarUrl,
     });
   }
 }
