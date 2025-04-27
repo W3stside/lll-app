@@ -6,7 +6,7 @@ import { Gender, type IGame } from "@/types/users";
 import { cn } from "@/utils/tailwind";
 
 interface IGames extends IGame {
-  date: string;
+  date: string | undefined;
   signupsAmt: number | null;
   waitlistAmt: number | null;
   children?: React.ReactNode;

@@ -13,6 +13,7 @@ import { NAVLINKS_MAP, WHATS_APP } from "@/constants/links";
 import { useActions } from "@/context/Actions/context";
 import { useUser } from "@/context/User/context";
 import { GameStatus } from "@/types";
+import type { IAdmin } from "@/types/admin";
 import type { IGame, IUser, IUserSafe } from "@/types/users";
 import { groupGamesByDay } from "@/utils/data";
 import { computeGameStatus, getLastGame } from "@/utils/games";
@@ -20,6 +21,7 @@ import { isValidUserUpdate } from "@/utils/signup";
 import { formatPhoneNumber } from "@/utils/user";
 
 export interface IProfile {
+  admin: IAdmin;
   isConnected: boolean;
   user: IUser;
   avatarUrl: string | null;
@@ -34,7 +36,7 @@ function _dataIsEqual(currentUser: IUserSafe, newUser: IUserSafe) {
   );
 }
 
-export function Profile({ avatarUrl, user, userGames }: IProfile) {
+export function Profile({ admin, avatarUrl, user, userGames }: IProfile) {
   const { loading, error, updateUser } = useActions();
   const { user: currentUser } = useUser();
   const userRef = useRef<IUserSafe>(user);
@@ -138,65 +140,67 @@ export function Profile({ avatarUrl, user, userGames }: IProfile) {
           </div>
         </div>
       )}
-      <Collapsible
-        startCollapsed={false}
-        collapsedHeight={33}
-        className="flex flex-col gap-y-3 text-black container"
-      >
-        <div className="container-header !h-auto -mt-2 -mx-1.5">
-          <div className="mr-auto px-2 py-1">
-            {isOwner ? "My" : `${user.first_name}'s`} games{" "}
-          </div>{" "}
-          <div className="flex items-center mr-2">
-            <span className="text-xs ml-auto mr-4 mt-0.5">
-              [+] tap to open/close
-            </span>
-            <span className="font-bold text-xl ">-</span>
-          </div>
-        </div>
-        <div className="px-2 py-2 flex flex-col gap-y-6">
-          {userGames.length > 0 ? (
-            Object.entries(gamesByDay).flatMap(([day, dGames]) => {
-              const { gameDate, gameStatus } = computeGameStatus(
-                userGames,
-                day as IGame["day"],
-                lastGame,
-              );
-
-              if (gameDate === undefined || gameStatus === GameStatus.PAST) {
-                return [];
-              }
-
-              return [
-                <div className="flex flex-col gap-y-1" key={day}>
-                  <h5 className="ml-1 font-bold">
-                    {day} - {gameDate.toDateString()}{" "}
-                  </h5>
-                  {dGames.map((game) => (
-                    <Games
-                      key={game._id.toString()}
-                      {...game}
-                      date={gameDate.toUTCString()}
-                      waitlistAmt={null}
-                      signupsAmt={game.players.length}
-                    />
-                  ))}
-                </div>,
-              ];
-            })
-          ) : (
-            <div className="flex flex-col gap-y-1">
-              {isOwner ? "You haven't" : `${user.first_name} hasn't`} signed up
-              to any games yet!
-              {isOwner && (
-                <Link href={NAVLINKS_MAP.SIGNUP}>
-                  <button>Signup here</button>
-                </Link>
-              )}
+      {admin.signup_open && (
+        <Collapsible
+          startCollapsed={false}
+          collapsedHeight={33}
+          className="flex flex-col gap-y-3 text-black container"
+        >
+          <div className="container-header !h-auto -mt-2 -mx-1.5">
+            <div className="mr-auto px-2 py-1">
+              {isOwner ? "My" : `${user.first_name}'s`} games{" "}
+            </div>{" "}
+            <div className="flex items-center mr-2">
+              <span className="text-xs ml-auto mr-4 mt-0.5">
+                [+] tap to open/close
+              </span>
+              <span className="font-bold text-xl ">-</span>
             </div>
-          )}
-        </div>
-      </Collapsible>
+          </div>
+          <div className="px-2 py-2 flex flex-col gap-y-6">
+            {userGames.length > 0 ? (
+              Object.entries(gamesByDay).flatMap(([day, dGames]) => {
+                const { gameDate, gameStatus } = computeGameStatus(
+                  userGames,
+                  day as IGame["day"],
+                  lastGame,
+                );
+
+                if (gameDate === undefined || gameStatus === GameStatus.PAST) {
+                  return [];
+                }
+
+                return [
+                  <div className="flex flex-col gap-y-1" key={day}>
+                    <h5 className="ml-1 font-bold">
+                      {day} - {gameDate.toDateString()}{" "}
+                    </h5>
+                    {dGames.map((game) => (
+                      <Games
+                        key={game._id.toString()}
+                        {...game}
+                        date={gameDate.toUTCString()}
+                        waitlistAmt={null}
+                        signupsAmt={game.players.length}
+                      />
+                    ))}
+                  </div>,
+                ];
+              })
+            ) : (
+              <div className="flex flex-col gap-y-1">
+                {isOwner ? "You haven't" : `${user.first_name} hasn't`} signed
+                up to any games yet!
+                {isOwner && (
+                  <Link href={NAVLINKS_MAP.SIGNUP}>
+                    <button>Signup here</button>
+                  </Link>
+                )}
+              </div>
+            )}
+          </div>
+        </Collapsible>
+      )}
       <PartnerProducts className="mt-20" />
     </div>
   );

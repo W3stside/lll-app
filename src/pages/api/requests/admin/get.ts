@@ -8,11 +8,11 @@ export default async (_: NextApiRequest, res: NextApiResponse) => {
   try {
     const client = clientPromise;
     const db = client.db("LLL");
-    const users = await db.collection(Collection.USERS).find({}).toArray();
+    const admin = await db.collection(Collection.ADMIN).find({}).toArray();
 
-    res.status(201).json(users);
+    res.status(201).json(admin);
   } catch (e) {
     console.error(e);
-    res.status(500).json({ message: "Error getting users" });
+    res.status(500).json({ message: "Error getting admin data" });
   }
 };

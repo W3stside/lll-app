@@ -3,17 +3,16 @@ import type { ObjectId } from "mongodb";
 import { type ISigneeComponent, SigneeComponent } from "./SigneeComponent";
 
 import { useActions } from "@/context/Actions/context";
-import type { IGame, IUser } from "@/types/users";
+import type { IGame, IUserSafe } from "@/types/users";
 
 interface ISignees
-  extends IUser,
+  extends IUserSafe,
     Omit<ISigneeComponent, "_id" | "createdAt" | "errorMsg" | "loading"> {
   children?: React.ReactNode;
   isUser: boolean;
-  date: string;
+  date: string | undefined;
   games: IGame[];
   game_id: ObjectId;
-  setGames?: (users: IGame[]) => void;
 }
 
 export function Signees({
@@ -32,7 +31,7 @@ export function Signees({
       loading={loading}
       errorMsg={error?.message ?? null}
       handleCancel={
-        isUser
+        isUser && _id !== undefined && date !== undefined
           ? () => {
               cancelGame(game_id, _id, date);
             }

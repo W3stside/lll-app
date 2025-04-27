@@ -16,7 +16,7 @@ export interface ISigneeComponent extends IUserSafe {
   errorMsg: string | null;
   loading: boolean;
   avatar_url?: string;
-  avatarSize?: number;
+  avatarClassName?: string;
   hideAvatar?: boolean;
   className?: string;
   handleCancel?: MouseEventHandler<HTMLButtonElement>;
@@ -28,7 +28,7 @@ export function SigneeComponent({
   last_name,
   phone_number,
   avatar_url,
-  avatarSize = 80,
+  avatarClassName = "h-[40px] w-[40px] md:h-[55px] md:w-[55px]",
   hideAvatar = false,
   errorMsg,
   loading,
@@ -64,14 +64,11 @@ export function SigneeComponent({
               className="no-underline"
             >
               {avatar_url !== undefined ? (
-                <Avatar
-                  src={avatar_url}
-                  width={avatarSize}
-                  height={avatarSize}
-                  className="h-[40px] w-[40px] md:h-[55px] md:w-[55px]"
-                />
+                <Avatar src={avatar_url} className={avatarClassName} />
               ) : (
-                <PlaceholderAvatar className="h-[40px] w-[40px] md:h-[55px] md:w-[55px] text-[8px] md:text-[11px]" />
+                <PlaceholderAvatar
+                  className={cn("text-[10px] md:text-[11px]", avatarClassName)}
+                />
               )}
             </Link>
           )}

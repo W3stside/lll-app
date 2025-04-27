@@ -4,7 +4,7 @@ import { UserContext } from "./context";
 
 import type { IUserSafe } from "@/types/users";
 
-interface IDialogProvider {
+interface IUserProvider {
   children: React.ReactNode;
 }
 
@@ -18,11 +18,16 @@ export const DEFAULT_USER: IUserSafe = {
   shame: [],
 };
 
-export function UserProvider({ children }: IDialogProvider) {
+export function UserProvider({ children }: IUserProvider) {
   const [user, setUser] = useState<IUserSafe>(DEFAULT_USER);
 
   return (
-    <UserContext.Provider value={{ user, setUser }}>
+    <UserContext.Provider
+      value={{
+        user,
+        setUser,
+      }}
+    >
       {children}
     </UserContext.Provider>
   );

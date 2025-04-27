@@ -61,11 +61,11 @@ export default function WallOfShame({ users }: IWallOfShame) {
                     <SigneeComponent
                       errorMsg={null}
                       loading={false}
-                      avatarSize={70}
+                      avatarClassName="text-[8px] md:text-[10px] w-[40px] h-[40px] md:h-[45px] md:w-[45px]"
                       {...user}
                       className="py-[4px] px-[16px]"
                       childrenBelow={
-                        <div className="flex flex-col w-full gap-y-1 mt-2">
+                        <div className="flex flex-col w-full gap-y-1 mt-2 md:px-2">
                           <div className="flex items-center justify-between w-full">
                             Shameful proof{" "}
                             <div className="text-right ml-auto">

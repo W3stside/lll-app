@@ -6,6 +6,7 @@ import { NAVLINKS_MAP } from "@/constants/links";
 import { JWT_REFRESH_SECRET, JWT_SECRET, verifyToken } from "@/lib/authUtils";
 import client from "@/lib/mongodb";
 import { Collection } from "@/types";
+import type { IAdmin } from "@/types/admin";
 import type { IGame, IUser, IUserFromCookies } from "@/types/users";
 import { getAvatarUrl } from "@/utils/avatar";
 
@@ -39,6 +40,12 @@ export const getServerSideProps: GetServerSideProps<ConnectionStatus> = async (
 
     await client.connect();
 
+    const admin = await client
+      .db("LLL")
+      .collection<IAdmin>(Collection.ADMIN)
+      .find({})
+      .toArray();
+
     const userGames = await client
       .db("LLL")
       .collection<IGame[]>(Collection.GAMES)
@@ -60,6 +67,7 @@ export const getServerSideProps: GetServerSideProps<ConnectionStatus> = async (
     return {
       props: {
         isConnected: true,
+        admin: JSON.parse(JSON.stringify(admin)) as IAdmin[],
         user: JSON.parse(JSON.stringify(fullUser)) as string,
         avatarUrl: base64 === null ? null : `data:image/jpeg;base64,${base64}`,
         userGames: JSON.parse(JSON.stringify(userGames)) as IGame[],
@@ -71,6 +79,7 @@ export const getServerSideProps: GetServerSideProps<ConnectionStatus> = async (
     return {
       props: {
         isConnected: false,
+        admin: null,
         user: null,
         avatarUrl: null,
         userGames: [],

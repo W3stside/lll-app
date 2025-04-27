@@ -70,7 +70,7 @@ export function Navbar({ usersById }: INavbar) {
           {(isLoading || user !== undefined) && (
             <button
               className={cn(
-                "hidden w-[75px] justify-center lg:flex bg-[var(--background-window-highlight)]",
+                "hidden w-[75px] justify-center lg:flex bg-[var(--background-color-2)]",
                 { "!p-0": isLoading },
               )}
               onClick={handleLogout}

@@ -1,4 +1,4 @@
-export const WHATS_APP = "https://wa.me/";
+export const WHATS_APP = "https://wa.me";
 export const WHATS_APP_GROUP_URL =
   "https://chat.whatsapp.com/HtFbF7KNjyg7rnDmHek9e5";
 export const NAVLINKS = [

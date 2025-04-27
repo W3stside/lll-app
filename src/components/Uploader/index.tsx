@@ -85,7 +85,7 @@ export function Uploader({ user, title }: IUploader) {
 
   return (
     <div className="flex flex-col">
-      <div className="flex gap-x-4 items-start h-auto">
+      <div className="flex gap-x-4 items-center h-auto">
         {file !== undefined ? (
           <Avatar src={URL.createObjectURL(file)} />
         ) : loading ? (

@@ -7,12 +7,12 @@ import { ActionProvider } from "@/context/Actions/provider";
 import { DialogProvider } from "@/context/Dialog/provider";
 import { GamesProvider } from "@/context/Games/provider";
 import { UserProvider } from "@/context/User/provider";
-import type { IUser, IGame } from "@/types/users";
+import type { IUserSafe, IGame } from "@/types/users";
 
 interface IServerSideProps {
-  user: IUser;
+  user: IUserSafe;
   games: IGame[];
-  usersById: Record<string, IUser>;
+  usersById: Record<string, IUserSafe>;
 }
 
 export default function App({

@@ -3,7 +3,7 @@ import dynamic from "next/dynamic";
 import { Footer } from "./footer";
 import { Loader } from "./ui";
 
-import type { IUser } from "@/types/users";
+import type { IUserSafe } from "@/types/users";
 
 const Navbar = dynamic(
   async () => await import("./navbar").then((mod) => ({ default: mod.Navbar })),
@@ -12,7 +12,7 @@ const Navbar = dynamic(
 
 interface ILayout {
   children: React.ReactNode;
-  usersById: Record<string, IUser>;
+  usersById: Record<string, IUserSafe>;
 }
 
 export function Layout({ children, usersById }: ILayout) {

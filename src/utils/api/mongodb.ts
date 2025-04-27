@@ -1,6 +1,7 @@
 import type { MongoClient, WithId } from "mongodb";
 
 import { Collection } from "@/types";
+import type { IAdmin } from "@/types/admin";
 import type { IGame, IUser } from "@/types/users";
 
 export async function fetchGamesFromMongodb(
@@ -46,6 +47,7 @@ export async function fetchUsersFromMongodb(
 type CollectionToDocument = {
   [Collection.USERS]: IUser;
   [Collection.GAMES]: IGame;
+  [Collection.ADMIN]: IAdmin;
 };
 
 export function fetchRequiredCollectionsFromMongoDb(
