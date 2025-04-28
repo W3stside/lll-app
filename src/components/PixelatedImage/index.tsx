@@ -67,7 +67,9 @@ export const ImagePixelated = ({
     img.onload = () => {
       const canvas = canvasRef.current;
       if (canvas !== null && img !== undefined) {
-        const ctx = canvas.getContext("2d") as CanvasRenderingContext2D;
+        const ctx = canvas.getContext("2d", {
+          willReadFrequently: true,
+        }) as CanvasRenderingContext2D;
         img.width = width ?? img.width;
         img.height = height ?? img.height;
         canvas.width = img.width;

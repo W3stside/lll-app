@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { useCallback, useMemo, useRef, useState } from "react";
+import { useMemo, useRef } from "react";
 
 import { Avatar } from "../Avatar";
 import { PartnerProducts } from "../PartnerProducts";
@@ -9,20 +9,23 @@ import { Uploader } from "../Uploader";
 import { PlaceholderAvatar } from "../Uploader/PlaceholderAvatar";
 import { Collapsible, Loader } from "../ui";
 
-import { NAVLINKS_MAP } from "@/constants/links";
+import { NAVLINKS_MAP, WHATS_APP } from "@/constants/links";
+import { useActions } from "@/context/Actions/context";
 import { useUser } from "@/context/User/context";
 import { GameStatus } from "@/types";
+import type { IAdmin } from "@/types/admin";
 import type { IGame, IUser, IUserSafe } from "@/types/users";
 import { groupGamesByDay } from "@/utils/data";
-import { dbAuth } from "@/utils/dbAuth";
 import { computeGameStatus, getLastGame } from "@/utils/games";
 import { isValidUserUpdate } from "@/utils/signup";
+import { formatPhoneNumber } from "@/utils/user";
 
 export interface IProfile {
+  admin: IAdmin;
   isConnected: boolean;
   user: IUser;
   avatarUrl: string | null;
-  games: IGame[];
+  userGames: IGame[];
 }
 
 function _dataIsEqual(currentUser: IUserSafe, newUser: IUserSafe) {
@@ -33,53 +36,25 @@ function _dataIsEqual(currentUser: IUserSafe, newUser: IUserSafe) {
   );
 }
 
-export function Profile({ avatarUrl, user, games }: IProfile) {
-  const [error, setError] = useState<Error | null>(null);
-  const [loading, setLoading] = useState(false);
-
+export function Profile({ admin, avatarUrl, user, userGames }: IProfile) {
+  const { loading, error, updateUser } = useActions();
   const { user: currentUser } = useUser();
   const userRef = useRef<IUserSafe>(user);
 
   const { gamesByDay, lastGame } = useMemo(() => {
-    const gbd = groupGamesByDay(games);
-    return { gamesByDay: gbd, lastGame: getLastGame(gbd) };
-  }, [games]);
+    const gbd = groupGamesByDay(userGames);
+    return { gamesByDay: gbd, lastGame: getLastGame(gbd, userGames) };
+  }, [userGames]);
 
-  const handleUpdateUser = useCallback(
-    async (e: React.FormEvent) => {
-      e.preventDefault();
-      setError(null);
-      setLoading(true);
-      try {
-        if (!isValidUserUpdate(currentUser)) {
-          throw new Error(
-            "User update error: Fields invalid! Check and try again.",
-          );
-        }
-
-        await dbAuth("update", currentUser);
-      } catch (err) {
-        const errChecked =
-          err instanceof Error ? err : new Error("Unknown error");
-        // eslint-disable-next-line no-console
-        console.error(errChecked);
-        setError(errChecked);
-      } finally {
-        setLoading(false);
-        userRef.current = currentUser;
-      }
-    },
-    [currentUser],
-  );
-
-  const isOwnner = user._id === currentUser._id;
+  const isOwner = user._id === currentUser._id;
+  const numberFormatted = formatPhoneNumber(user.phone_number);
 
   return (
     <div className="flex flex-col gap-y-5 min-h-[60vh] justify-between">
       <div className="flex flex-col gap-y-3 text-black container">
         <div className="container-header !h-auto -mt-2 -mx-1.5">
           <h4 className="mr-auto px-2 py-1">
-            {isOwnner ? "My profile" : `${user.first_name}'s profile`}
+            {isOwner ? "My profile" : `${user.first_name}'s profile`}
           </h4>{" "}
           X
         </div>
@@ -87,15 +62,27 @@ export function Profile({ avatarUrl, user, games }: IProfile) {
           {avatarUrl !== null ? (
             <Avatar src={avatarUrl} pixelSize={4} />
           ) : (
-            <PlaceholderAvatar className="bg-[var(--background-color-2)]" />
+            <PlaceholderAvatar />
           )}
           <div className="px-2 py-2">
-            Hey {isOwnner ? user.first_name : currentUser.first_name}! Welcome
-            to {isOwnner ? "your" : `${user.first_name}'s`} profile page.
+            Hey {isOwner ? user.first_name : currentUser.first_name}! Welcome to{" "}
+            {isOwner ? "your" : `${user.first_name}'s`} profile page.
+            <br />
+            <br />
+            <strong>Whatsapp:</strong>{" "}
+            <a
+              href={`${WHATS_APP}/${numberFormatted}`}
+              target="_blank"
+              rel="noreferrer noopener"
+            >
+              {user.phone_number.startsWith("00")
+                ? user.phone_number.slice(2)
+                : user.phone_number}
+            </a>
           </div>
         </div>
       </div>
-      {isOwnner && (
+      {isOwner && (
         <div className="flex flex-col gap-y-3 text-black container">
           <div className="container-header !h-auto -mt-2 -mx-1.5">
             <div className="mr-auto px-2 py-1">Add/update profile photo</div> X
@@ -108,7 +95,7 @@ export function Profile({ avatarUrl, user, games }: IProfile) {
           </div>
         </div>
       )}
-      {isOwnner && (
+      {isOwner && (
         <div className="flex flex-col gap-y-3 text-black container">
           <div className="container-header !h-auto -mt-2 -mx-1.5">
             <div className="mr-auto px-2 py-1">Update user info</div> X
@@ -119,7 +106,11 @@ export function Profile({ avatarUrl, user, games }: IProfile) {
                 <RegisterForm
                   password={undefined}
                   setPassword={null}
-                  handleAction={handleUpdateUser}
+                  handleAction={async (e) => {
+                    e.preventDefault();
+                    await updateUser(user);
+                    userRef.current = currentUser;
+                  }}
                 />
                 <button
                   disabled={
@@ -127,7 +118,11 @@ export function Profile({ avatarUrl, user, games }: IProfile) {
                     !isValidUserUpdate(currentUser)
                   }
                   className="font-bold"
-                  onClick={handleUpdateUser}
+                  onClick={async (e) => {
+                    e.preventDefault();
+                    await updateUser(user);
+                    userRef.current = currentUser;
+                  }}
                 >
                   Update user{" "}
                   {_dataIsEqual(userRef.current, currentUser) &&
@@ -145,69 +140,67 @@ export function Profile({ avatarUrl, user, games }: IProfile) {
           </div>
         </div>
       )}
-      <Collapsible
-        startCollapsed={false}
-        collapsedHeight={33}
-        className="flex flex-col gap-y-3 text-black container"
-      >
-        <div className="container-header !h-auto -mt-2 -mx-1.5">
-          <div className="mr-auto px-2 py-1">
-            {isOwnner ? "My" : `${user.first_name}'s`} games{" "}
-          </div>{" "}
-          <div className="flex items-center mr-2">
-            <span className="text-xs ml-auto mr-4 mt-0.5">
-              [+] tap to open/close
-            </span>
-            <span className="font-bold text-xl ">-</span>
-          </div>
-        </div>
-        <div className="px-2 py-2 flex flex-col gap-y-6">
-          {games.length > 0 ? (
-            Object.entries(gamesByDay).map(([day, dGames]) => {
-              const { gameDate, gameStatus } = computeGameStatus(
-                games,
-                day as IGame["day"],
-                lastGame,
-              );
-              return (
-                <div className="flex flex-col gap-y-1" key={day}>
-                  <h5 className="ml-1 font-bold">
-                    {day} - {gameDate.toDateString()}{" "}
-                  </h5>
-                  {dGames.map((game) => (
-                    <Games
-                      key={game._id.toString()}
-                      className={
-                        gameStatus === GameStatus.PAST
-                          ? "!bg-[var(--background-color-2)]"
-                          : ""
-                      }
-                      {...game}
-                      date={gameDate.toUTCString()}
-                      waitlistAmt={null}
-                      signupsAmt={
-                        gameStatus === GameStatus.PAST
-                          ? null
-                          : game.players.length
-                      }
-                    />
-                  ))}
-                </div>
-              );
-            })
-          ) : (
-            <div className="flex flex-col gap-y-1">
-              {isOwnner ? "You haven't" : `${user.first_name} hasn't`} signed up
-              to any games yet!
-              {isOwnner && (
-                <Link href={NAVLINKS_MAP.SIGNUP}>
-                  <button>Signup here</button>
-                </Link>
-              )}
+      {admin.signup_open && (
+        <Collapsible
+          startCollapsed={false}
+          collapsedHeight={33}
+          className="flex flex-col gap-y-3 text-black container"
+        >
+          <div className="container-header !h-auto -mt-2 -mx-1.5">
+            <div className="mr-auto px-2 py-1">
+              {isOwner ? "My" : `${user.first_name}'s`} games{" "}
+            </div>{" "}
+            <div className="flex items-center mr-2">
+              <span className="text-xs ml-auto mr-4 mt-0.5">
+                [+] tap to open/close
+              </span>
+              <span className="font-bold text-xl ">-</span>
             </div>
-          )}
-        </div>
-      </Collapsible>
+          </div>
+          <div className="px-2 py-2 flex flex-col gap-y-6">
+            {userGames.length > 0 ? (
+              Object.entries(gamesByDay).flatMap(([day, dGames]) => {
+                const { gameDate, gameStatus } = computeGameStatus(
+                  userGames,
+                  day as IGame["day"],
+                  lastGame,
+                );
+
+                if (gameDate === undefined || gameStatus === GameStatus.PAST) {
+                  return [];
+                }
+
+                return [
+                  <div className="flex flex-col gap-y-1" key={day}>
+                    <h5 className="ml-1 font-bold">
+                      {day} - {gameDate.toDateString()}{" "}
+                    </h5>
+                    {dGames.map((game) => (
+                      <Games
+                        key={game._id.toString()}
+                        {...game}
+                        date={gameDate.toUTCString()}
+                        waitlistAmt={null}
+                        signupsAmt={game.players.length}
+                      />
+                    ))}
+                  </div>,
+                ];
+              })
+            ) : (
+              <div className="flex flex-col gap-y-1">
+                {isOwner ? "You haven't" : `${user.first_name} hasn't`} signed
+                up to any games yet!
+                {isOwner && (
+                  <Link href={NAVLINKS_MAP.SIGNUP}>
+                    <button>Signup here</button>
+                  </Link>
+                )}
+              </div>
+            )}
+          </div>
+        </Collapsible>
+      )}
       <PartnerProducts className="mt-20" />
     </div>
   );

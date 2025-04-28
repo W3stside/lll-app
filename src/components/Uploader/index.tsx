@@ -7,6 +7,7 @@ import { Avatar } from "../Avatar";
 import { MAX_IMAGE_WIDTH } from "../Avatar/constants";
 
 import { RED_TW } from "@/constants/colours";
+import { useActions } from "@/context/Actions/context";
 import type { IUser } from "@/types/users";
 import { uploadAvatar } from "@/utils/avatar";
 
@@ -53,6 +54,8 @@ export function Uploader({ user, title }: IUploader) {
   const [uploadKey, setUploadKey] = useState(Date.now());
   const [file, setFile] = useState<File | undefined>();
 
+  const { updateUser } = useActions();
+
   const resetFile = useCallback(() => {
     setFile(undefined);
     setUploadKey(Date.now());
@@ -66,6 +69,7 @@ export function Uploader({ user, title }: IUploader) {
       const compressedFile = await imageCompression(file, COMPRESS_OPTIONS);
 
       await uploadAvatar(compressedFile, user);
+      await updateUser(user);
 
       setFile(compressedFile);
     } catch (error) {
@@ -75,13 +79,13 @@ export function Uploader({ user, title }: IUploader) {
       setLoading(false);
       resetFile();
     }
-  }, [file, resetFile, user]);
+  }, [file, resetFile, updateUser, user]);
 
   const disabled = file !== undefined && file.size > ONE_MB;
 
   return (
     <div className="flex flex-col">
-      <div className="flex gap-x-4 items-start h-auto">
+      <div className="flex gap-x-4 items-center h-auto">
         {file !== undefined ? (
           <Avatar src={URL.createObjectURL(file)} />
         ) : loading ? (

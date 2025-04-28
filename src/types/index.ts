@@ -1,6 +1,7 @@
 export enum Collection {
   USERS = "users",
   GAMES = "games",
+  ADMIN = "admin",
 }
 
 export enum GameStatus {

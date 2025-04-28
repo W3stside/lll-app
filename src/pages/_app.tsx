@@ -3,17 +3,36 @@ import type { AppProps } from "next/app";
 import { VariantDialog } from "@/components/Dialog/VariantDialog";
 import { Layout } from "@/components/layout";
 import "@/styles/globals.css";
+import { ActionProvider } from "@/context/Actions/provider";
+import { AdminProvider } from "@/context/Admin/provider";
 import { DialogProvider } from "@/context/Dialog/provider";
+import { GamesProvider } from "@/context/Games/provider";
 import { UserProvider } from "@/context/User/provider";
+import type { IUserSafe, IGame } from "@/types/users";
 
-export default function App({ Component, pageProps }: AppProps) {
+interface IServerSideProps {
+  user: IUserSafe;
+  games: IGame[];
+  usersById: Record<string, IUserSafe>;
+}
+
+export default function App({
+  Component,
+  pageProps,
+}: AppProps<IServerSideProps>) {
   return (
     <UserProvider>
       <DialogProvider>
-        <Layout>
-          <Component {...pageProps} />
-        </Layout>
-        <VariantDialog />
+        <GamesProvider initialState={pageProps.games}>
+          <ActionProvider>
+            <AdminProvider>
+              <Layout usersById={pageProps.usersById}>
+                <Component {...pageProps} />
+              </Layout>
+            </AdminProvider>
+            <VariantDialog />
+          </ActionProvider>
+        </GamesProvider>
       </DialogProvider>
     </UserProvider>
   );

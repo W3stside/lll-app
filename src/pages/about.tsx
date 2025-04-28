@@ -1,4 +1,3 @@
-/* eslint-disable no-console */
 import type { GetServerSideProps } from "next";
 import Link from "next/link";
 
@@ -9,8 +8,8 @@ import {
   WHATS_APP_GROUP_URL,
 } from "@/constants/links";
 import client from "@/lib/mongodb";
-import { Collection } from "@/types";
 import type { IGame } from "@/types/users";
+import { fetchGamesFromMongodb } from "@/utils/api/mongodb";
 import { sortDaysOfWeek } from "@/utils/sort";
 
 type ConnectionStatus = {
@@ -22,11 +21,7 @@ export const getServerSideProps: GetServerSideProps<
 > = async () => {
   try {
     await client.connect();
-    const db = client.db("LLL");
-    const games = await db
-      .collection<IGame>(Collection.GAMES)
-      .find({})
-      .toArray();
+    const games = await fetchGamesFromMongodb(client, false);
 
     const gamesByDay = sortDaysOfWeek(games).reduce<
       Partial<Record<IGame["day"], IGame[]>>
@@ -41,13 +36,15 @@ export const getServerSideProps: GetServerSideProps<
     return {
       props: {
         isConnected: true,
+        games: JSON.parse(JSON.stringify(games)) as string,
         gamesByDay: JSON.parse(JSON.stringify(gamesByDay)) as string,
       },
     };
   } catch (e) {
+    // eslint-disable-next-line no-console
     console.error(e);
     return {
-      props: { isConnected: false, gamesByDay: {} },
+      props: { isConnected: false, gamesByDay: {}, games: [] },
     };
   }
 };
@@ -81,13 +78,11 @@ export default function About({ isConnected, gamesByDay }: IAbout) {
           </p>
           <br />
           <p>
-            <strong>💵💵 €5/game - CASH ONLY!! 💵💵</strong>{" "}
-            <p>
-              <small>
-                We don't accept MBWay because the amount of payments we would
-                need to accept far exceeds their minimum untaxed threshold.
-              </small>
-            </p>
+            <strong>💵💵 €5/game - CASH ONLY!! 💵💵</strong> <br />
+            <small>
+              We don't accept MBWay because the amount of payments we would need
+              to accept far exceeds their minimum untaxed threshold.
+            </small>
           </p>
           <br />
           <p>

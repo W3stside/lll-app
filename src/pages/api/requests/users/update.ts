@@ -34,10 +34,7 @@ export default async (req: NextApiRequest, res: NextApiResponse) => {
     if (result.matchedCount === 0) {
       res.status(404).json({ message: "Document not found" });
     } else if (result.acknowledged) {
-      res.status(200).json({
-        message: "Document updated successfully",
-        data: result.upsertedId,
-      });
+      res.status(200).json(result.upsertedId);
     } else {
       res.status(500).json({ message: "Error updating document" });
     }

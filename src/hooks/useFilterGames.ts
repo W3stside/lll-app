@@ -53,7 +53,7 @@ export function useFilterGames({
 
   return useMemo(() => {
     let filteredGames = flatGames;
-    const lastGameOfWeek = getLastGame(gamesByDay);
+    const lastGameOfWeek = getLastGame(gamesByDay, flatGames);
 
     switch (filters) {
       case GameFilters.MY_GAMES:

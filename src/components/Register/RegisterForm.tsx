@@ -138,7 +138,7 @@ export function RegisterForm({
             <input
               type="number"
               required
-              autoComplete="phone-number"
+              autoComplete="tel"
               value={user.phone_number}
               className={INPUT_CLASS}
               onChange={(e) => {
@@ -166,6 +166,7 @@ export function RegisterForm({
             <div className="flex items-center relative">
               <input
                 type="password"
+                autoComplete="new-password"
                 required
                 value={password}
                 className={INPUT_CLASS}

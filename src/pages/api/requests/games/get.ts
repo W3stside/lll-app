@@ -10,10 +10,7 @@ export default async (_: Request, res: Response) => {
     const db = client.db("LLL");
     const signups = await db.collection(Collection.GAMES).find({}).toArray();
 
-    res.status(201).json({
-      message: "Games fetched successfully",
-      data: signups,
-    });
+    res.status(201).json(signups);
   } catch (e) {
     console.error(e);
     res.status(500).json({ message: "Error getting games" });

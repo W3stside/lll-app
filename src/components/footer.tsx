@@ -12,7 +12,7 @@ import {
 } from "@/constants/links";
 import { useClientUser } from "@/hooks/useClientUser";
 import { Role } from "@/types";
-import { dbAuth } from "@/utils/dbAuth";
+import { dbAuth } from "@/utils/api/dbAuth";
 import { cn } from "@/utils/tailwind";
 
 export function Footer() {
@@ -53,7 +53,7 @@ export function Footer() {
           {(isLoading || user !== undefined) && (
             <button
               className={cn(
-                "w-[75px] h-[40px] justify-center lg:hidden ml-4 bg-[var(--background-window-highlight)] whitespace-nowrap",
+                "w-[75px] h-[40px] justify-center lg:hidden ml-4 bg-[var(--background-color-2)] whitespace-nowrap",
                 { "!p-0": isLoading },
               )}
               onClick={handleLogout}

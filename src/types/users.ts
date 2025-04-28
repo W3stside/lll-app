@@ -6,6 +6,7 @@ export interface IBaseUser {
   first_name: string;
   last_name: string;
   phone_number: string;
+  avatarUrl?: string;
 }
 
 export interface INewSignup extends IBaseUser {
