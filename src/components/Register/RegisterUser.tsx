@@ -1,14 +1,12 @@
 import { useState } from "react";
 
-import { Loader } from "../ui";
 import { type IRegisterForm, RegisterForm } from "./RegisterForm";
 
 import { useUser } from "@/context/User/context";
-import { isValidLogin, isValidNewSignup } from "@/utils/signup";
+import { isValidNewSignup, isValidLogin } from "@/utils/signup";
 
 interface IRegisterUser
-  extends Omit<IRegisterForm, "password" | "setPassword"> {
-  isLoggedIn: boolean;
+  extends Omit<IRegisterForm, "disabled" | "password" | "setPassword"> {
   isLogin?: boolean;
   loading: boolean;
   label: string;
@@ -24,13 +22,12 @@ export function RegisterUser({
   loading,
   label,
   title = "Register to play",
-  isLoggedIn,
   isLogin = false,
   handleAction,
   handleLogout,
 }: IRegisterUser) {
-  const { user } = useUser();
   const [password, setPassword] = useState("");
+  const { user } = useUser();
 
   return (
     <div className="flex flex-col items-center mt-auto mb-8 w-full gap-y-6">
@@ -38,11 +35,21 @@ export function RegisterUser({
         <span className="mr-2">{title}</span>
       </div>
       <RegisterForm
-        handleAction={handleAction}
-        password={password}
-        setPassword={setPassword}
+        loading={loading}
+        label={label}
         isLogin={isLogin}
+        password={password}
+        disabled={
+          !isLogin
+            ? !isValidNewSignup(user, password)
+            : !isValidLogin(user, password)
+        }
+        handleAction={handleAction}
+        handleLogout={handleLogout}
+        setPassword={setPassword}
       />
+      {/* 
+      // TODO
       <button
         className="w-full lg:w-[350px] text-2xl p-4 justify-center"
         disabled={
@@ -60,6 +67,7 @@ export function RegisterUser({
       >
         {!loading ? label : <Loader />}
       </button>
+       */}
     </div>
   );
 }

@@ -4,7 +4,7 @@ import jwt from "jsonwebtoken";
 import type { GetServerSidePropsContext } from "next";
 
 import { NAVLINKS_MAP } from "@/constants/links";
-import type { IUser } from "@/types/users";
+import type { IUser, IUserFromCookies } from "@/types/users";
 
 const ACCESS_COOKIE_NAME = "token";
 const REFRESH_COOKIE_NAME = "refreshToken";
@@ -95,7 +95,7 @@ export function getUserFromServerSideRequest(ctx: GetServerSidePropsContext) {
   const accessToken = cookies[ACCESS_COOKIE_NAME];
   const refreshToken = cookies[REFRESH_COOKIE_NAME];
 
-  let user: IUser | null = null;
+  let user: IUserFromCookies | null = null;
 
   try {
     if (accessToken === undefined) throw new Error("No access token");

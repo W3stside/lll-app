@@ -2,103 +2,74 @@ import { ObjectId } from "mongodb";
 import type { GetServerSideProps } from "next";
 
 import { Profile, type IProfile } from "@/components/Profile";
-import { NAVLINKS_MAP } from "@/constants/links";
-import { JWT_REFRESH_SECRET, JWT_SECRET, verifyToken } from "@/lib/authUtils";
+import { withServerSideProps } from "@/hoc/withServerSideProps";
 import client from "@/lib/mongodb";
 import { Collection } from "@/types";
 import type { IAdmin } from "@/types/admin";
-import type { IGame, IUser, IUserFromCookies } from "@/types/users";
-import { fetchUsersFromMongodb } from "@/utils/api/mongodb";
-import { getAvatarUrl } from "@/utils/avatar";
-import { groupUsersById } from "@/utils/data";
+import type { IGame, IUser } from "@/types/users";
 
-export const getServerSideProps: GetServerSideProps = async (context) => {
-  try {
-    const { params: { slug: userId } = {}, req } = context;
+export const getServerSideProps: GetServerSideProps = withServerSideProps(
+  // TODO: review
+  // @ts-expect-error error in the custom HOC - doesn't break.
+  async (context) => {
+    try {
+      const {
+        parentProps: { admin, users, usersById },
+        params: { slug: userId } = {},
+      } = context;
 
-    const { token } = req.cookies;
-    const user =
-      token !== undefined
-        ? verifyToken<IUserFromCookies>(
-            token,
-            JWT_SECRET as string,
-            JWT_REFRESH_SECRET,
-          )
-        : null;
+      const specificUserId = new ObjectId(
+        Array.isArray(userId) ? userId[0] : userId,
+      );
 
-    if (user === null) {
+      const userGames = await client
+        .db("LLL")
+        .collection<IGame[]>(Collection.GAMES)
+        .find({ players: specificUserId.toString() })
+        .toArray();
+
+      const fullUser = await client
+        .db("LLL")
+        .collection<IUser>(Collection.USERS)
+        .findOne(
+          {
+            _id: specificUserId,
+          },
+          { projection: { password: 0 } },
+        );
+
       return {
-        redirect: {
-          destination: NAVLINKS_MAP.LOGIN,
-          permanent: false,
+        props: {
+          isConnected: true,
+          admin: JSON.parse(JSON.stringify(admin)) as IAdmin[],
+          profileUser: JSON.parse(JSON.stringify(fullUser)) as IUser,
+          usersById: JSON.parse(JSON.stringify(usersById)) as Record<
+            string,
+            IUser
+          >,
+          users: JSON.parse(JSON.stringify(users)) as IUser[],
+          avatarUrl: fullUser?.avatarUrl ?? null,
+          userGames: JSON.parse(JSON.stringify(userGames)) as IGame[],
+        },
+      };
+    } catch (e) {
+      // eslint-disable-next-line no-console
+      console.error(e);
+      return {
+        props: {
+          isConnected: false,
+          admin: null,
+          profileUser: null,
+          usersById: {},
+          users: [],
+          avatarUrl: null,
+          userGames: [],
         },
       };
     }
-
-    const specificUserId = new ObjectId(
-      Array.isArray(userId) ? userId[0] : userId,
-    );
-
-    await client.connect();
-
-    const userGames = await client
-      .db("LLL")
-      .collection<IGame[]>(Collection.GAMES)
-      .find({ players: specificUserId.toString() })
-      .toArray();
-
-    const admin = await client
-      .db("LLL")
-      .collection<IAdmin>(Collection.ADMIN)
-      .find({})
-      .toArray();
-
-    const users = await fetchUsersFromMongodb(client, false);
-    const usersById = groupUsersById(users);
-
-    const fullUser = await client
-      .db("LLL")
-      .collection<IUser>(Collection.USERS)
-      .findOne({
-        _id: specificUserId,
-      });
-
-    const avatarUrl = await getAvatarUrl(specificUserId.toString());
-    const imgBuffer =
-      avatarUrl !== null ? Buffer.from(await avatarUrl.arrayBuffer()) : null;
-    const base64 = imgBuffer === null ? null : imgBuffer.toString("base64");
-
-    return {
-      props: {
-        isConnected: true,
-        admin: JSON.parse(JSON.stringify(admin)) as IAdmin[],
-        user: JSON.parse(JSON.stringify(fullUser)) as IUser,
-        usersById: JSON.parse(JSON.stringify(usersById)) as Record<
-          string,
-          IUser
-        >,
-        users: JSON.parse(JSON.stringify(users)) as IUser[],
-        avatarUrl: base64 === null ? null : `data:image/jpeg;base64,${base64}`,
-        userGames: JSON.parse(JSON.stringify(userGames)) as IGame[],
-      },
-    };
-  } catch (e) {
-    // eslint-disable-next-line no-console
-    console.error(e);
-    return {
-      props: {
-        isConnected: false,
-        admin: null,
-        user: null,
-        usersById: {},
-        users: [],
-        avatarUrl: null,
-        userGames: [],
-      },
-    };
-  }
-};
+  },
+);
 
 export default function SpecificProfile(props: IProfile) {
-  return <Profile {...props} />;
+  return <Profile {...props} user={props.profileUser} />;
 }

@@ -1,31 +1,42 @@
 import type { GetServerSideProps } from "next";
 import { useMemo } from "react";
 
-import client from "../lib/mongodb";
-
 import { PartnerProducts } from "@/components/PartnerProducts";
 import { SigneeComponent } from "@/components/Signup/SIgnees/SigneeComponent";
+import { withServerSideProps } from "@/hoc/withServerSideProps";
+import client from "@/lib/mongodb";
+import { Collection } from "@/types";
 import type { IGame, IUser } from "@/types/users";
-import { fetchRequiredCollectionsFromMongoDb } from "@/utils/api/mongodb";
 
-export const getServerSideProps: GetServerSideProps = async () => {
-  try {
-    const [games, users] = await fetchRequiredCollectionsFromMongoDb(client, {
-      serialised: true,
-    })();
+export const getServerSideProps: GetServerSideProps = withServerSideProps(
+  // TODO: review
+  // @ts-expect-error error in the custom HOC - doesn't break.
+  async (context) => {
+    const { parentProps } = context;
 
-    return {
-      props: {
-        games,
-        users,
-      },
-    };
-  } catch (e) {
-    // eslint-disable-next-line no-console
-    console.error(e);
-    return { props: { users: [], games: [] } };
-  }
-};
+    try {
+      await client.connect();
+
+      const users = await client
+        .db("LLL")
+        .collection<IGame[]>(Collection.USERS)
+        .find()
+        .toArray();
+
+      return {
+        props: {
+          ...parentProps,
+          isConnected: true,
+          users: JSON.parse(JSON.stringify(users)) as string,
+        },
+      };
+    } catch (e) {
+      // eslint-disable-next-line no-console
+      console.error(e);
+      throw e instanceof Error ? e : new Error("Shame: error occured!");
+    }
+  },
+);
 
 interface IWallOfShame {
   users: IUser[];

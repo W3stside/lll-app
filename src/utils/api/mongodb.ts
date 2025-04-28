@@ -71,7 +71,7 @@ export function fetchRequiredCollectionsFromMongoDb(
         async (coll) =>
           await db
             .collection<CollectionToDocument[typeof coll]>(coll)
-            .find({})
+            .find({}, { projection: { password: 0 } })
             .toArray(),
       ),
     )) as [WithId<IGame>[], WithId<IUser>[]];

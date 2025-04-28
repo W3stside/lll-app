@@ -8,7 +8,7 @@ import { useUser } from "../User/context";
 
 import { CANCELLATION_THRESHOLD_MS } from "@/constants/date";
 import { Collection } from "@/types";
-import type { IGame, IUser } from "@/types/users";
+import type { IGame, IUser, IUserSafe } from "@/types/users";
 import { dbAuth } from "@/utils/api/dbAuth";
 import { dbRequest } from "@/utils/api/dbRequest";
 import { isValidUserUpdate } from "@/utils/signup";
@@ -63,7 +63,7 @@ export function ActionProvider({ children }: IActionProvider) {
   const [loading, setLoading] = useState(false);
   const [errorState, setError] = useState<Error | null>(null);
 
-  const { user, setUser } = useUser();
+  const { setUser } = useUser();
   const { games, setGames } = useGames();
   const { openDialog } = useDialog();
 
@@ -174,7 +174,7 @@ export function ActionProvider({ children }: IActionProvider) {
             setLoading(false);
           }
         },
-        updateUser: async (_user: IUser) => {
+        updateUser: async (_user: IUserSafe) => {
           setError(null);
           setLoading(true);
           try {
@@ -183,14 +183,13 @@ export function ActionProvider({ children }: IActionProvider) {
                 "User update error: Fields invalid! Check and try again.",
               );
             }
-
-            const { data, error } = await dbAuth("update", user);
+            const { error } = await dbAuth("update", _user);
 
             if (error !== null) {
               throw error;
             }
 
-            setUser(data);
+            setUser(_user);
           } catch (err) {
             const errChecked =
               err instanceof Error
@@ -204,7 +203,7 @@ export function ActionProvider({ children }: IActionProvider) {
           }
         },
       };
-    }, [games, openDialog, setGames, setUser, user]);
+    }, [games, openDialog, setGames, setUser]);
 
   return (
     <ActionContext.Provider

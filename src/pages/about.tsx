@@ -12,17 +12,11 @@ import type { IGame } from "@/types/users";
 import { fetchGamesFromMongodb } from "@/utils/api/mongodb";
 import { sortDaysOfWeek } from "@/utils/sort";
 
-type ConnectionStatus = {
-  isConnected: boolean;
-};
-
-export const getServerSideProps: GetServerSideProps<
-  ConnectionStatus
-> = async () => {
+export const getServerSideProps: GetServerSideProps = async () => {
   try {
     await client.connect();
-    const games = await fetchGamesFromMongodb(client, false);
 
+    const games = await fetchGamesFromMongodb(client, false);
     const gamesByDay = sortDaysOfWeek(games).reduce<
       Partial<Record<IGame["day"], IGame[]>>
     >(
@@ -36,15 +30,19 @@ export const getServerSideProps: GetServerSideProps<
     return {
       props: {
         isConnected: true,
-        games: JSON.parse(JSON.stringify(games)) as string,
         gamesByDay: JSON.parse(JSON.stringify(gamesByDay)) as string,
+        games: JSON.parse(JSON.stringify(games)) as string,
       },
     };
   } catch (e) {
     // eslint-disable-next-line no-console
     console.error(e);
     return {
-      props: { isConnected: false, gamesByDay: {}, games: [] },
+      props: {
+        isConnected: false,
+        gamesByDay: {},
+        games: [],
+      },
     };
   }
 };

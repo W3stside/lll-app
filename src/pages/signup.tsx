@@ -2,8 +2,6 @@ import type { GetServerSideProps } from "next";
 import Image from "next/image";
 import { useEffect, useState } from "react";
 
-import client from "../lib/mongodb";
-
 import ebaumsWorld from "@/assets/ebaums-world.png";
 import { FilterGames } from "@/components/FilterGames";
 import { PartnerProducts } from "@/components/PartnerProducts";
@@ -16,17 +14,12 @@ import { MAX_SIGNUPS_PER_GAME } from "@/constants/signups";
 import { useActions } from "@/context/Actions/context";
 import { useGames } from "@/context/Games/context";
 import { useUser } from "@/context/User/context";
+import { withServerSideProps } from "@/hoc/withServerSideProps";
 import { useFilterGames } from "@/hooks/useFilterGames";
-import { getUserFromServerSideRequest } from "@/lib/authUtils";
 import { GameStatus, Role } from "@/types";
 import type { IAdmin } from "@/types/admin";
 import type { IGame, IUser } from "@/types/users";
-import { fetchRequiredCollectionsFromMongoDb } from "@/utils/api/mongodb";
-import {
-  checkPlayerIsUser,
-  groupGamesByDay,
-  groupUsersById,
-} from "@/utils/data";
+import { checkPlayerIsUser, groupGamesByDay } from "@/utils/data";
 import { computeGameStatus, getLastGame } from "@/utils/games";
 import { cn } from "@/utils/tailwind";
 
@@ -46,7 +39,7 @@ const Signups: React.FC<ISignups> = ({
   const [selectedGameId, setSelectedGameId] = useState<string | undefined>();
 
   const { games: gamesContext, gamesByDay, setGames } = useGames();
-  const { user: userContext } = useUser();
+  const { user: userContext, setUser } = useUser();
   const { loading: actionLoading, signupForGame } = useActions();
 
   const { filteredGames, searchFilter, filters, setFilter, setSearchFilter } =
@@ -381,6 +374,10 @@ const Signups: React.FC<ISignups> = ({
                         loading={actionLoading}
                         userId={user._id}
                         gameId={selectedGameId}
+                        submitDisabled={
+                          selectedGameId !== undefined &&
+                          userContext.registered_games?.includes(selectedGameId)
+                        }
                         disabled={userFullyBooked}
                         setGameId={setSelectedGameId}
                         handleSignup={async () => {
@@ -391,6 +388,13 @@ const Signups: React.FC<ISignups> = ({
                             ),
                             user._id,
                           );
+                          setUser((u) => ({
+                            ...u,
+                            registered_games: [
+                              ...(u.registered_games ?? []),
+                              selectedGameId,
+                            ],
+                          }));
                         }}
                       />
                     </Collapsible>
@@ -419,44 +423,4 @@ const Signups: React.FC<ISignups> = ({
 
 export default Signups;
 
-export const getServerSideProps: GetServerSideProps = async (context) => {
-  try {
-    const { user, redirect } = getUserFromServerSideRequest(context);
-
-    if (user === null) return { redirect };
-
-    const [admin] = await client
-      .db("LLL")
-      .collection<IAdmin>("admin")
-      .find({})
-      .toArray();
-
-    const [games, users] = await fetchRequiredCollectionsFromMongoDb(client, {
-      serialised: false,
-    })();
-
-    const usersById = groupUsersById(users);
-
-    return {
-      props: {
-        admin: JSON.parse(JSON.stringify(admin)) as IAdmin,
-        user: {
-          _id: user._id,
-        },
-        games: JSON.parse(JSON.stringify(games)) as string,
-        usersById: JSON.parse(JSON.stringify(usersById)) as string,
-      },
-    };
-  } catch (e) {
-    // eslint-disable-next-line no-console
-    console.error(e);
-    return {
-      props: {
-        admin: null,
-        games: [],
-        user: null,
-        usersById: {},
-      },
-    };
-  }
-};
+export const getServerSideProps: GetServerSideProps = withServerSideProps();

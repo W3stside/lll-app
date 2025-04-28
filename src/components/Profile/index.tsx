@@ -24,49 +24,58 @@ export interface IProfile {
   admin: IAdmin;
   isConnected: boolean;
   user: IUser;
+  profileUser: IUser;
   avatarUrl: string | null;
   userGames: IGame[];
 }
 
-function _dataIsEqual(currentUser: IUserSafe, newUser: IUserSafe) {
+function _dataIsEqual(
+  currentUser: IUserSafe | null,
+  newUser: IUserSafe | null,
+) {
   return (
+    currentUser !== null &&
+    newUser !== null &&
     currentUser.first_name === newUser.first_name &&
     currentUser.last_name === newUser.last_name &&
     currentUser.phone_number === newUser.phone_number
   );
 }
 
-export function Profile({ admin, avatarUrl, user, userGames }: IProfile) {
+export function Profile({ admin, profileUser, userGames }: IProfile) {
   const { loading, error, updateUser } = useActions();
   const { user: currentUser } = useUser();
-  const userRef = useRef<IUserSafe>(user);
+  const userRef = useRef<IUserSafe | null>(currentUser);
 
   const { gamesByDay, lastGame } = useMemo(() => {
     const gbd = groupGamesByDay(userGames);
     return { gamesByDay: gbd, lastGame: getLastGame(gbd, userGames) };
   }, [userGames]);
 
-  const isOwner = user._id === currentUser._id;
-  const numberFormatted = formatPhoneNumber(user.phone_number);
+  const isOwner = profileUser._id === currentUser._id;
+  const numberFormatted = formatPhoneNumber(profileUser.phone_number);
+
+  const avatarUrl = isOwner ? currentUser.avatarUrl : profileUser.avatarUrl;
 
   return (
     <div className="flex flex-col gap-y-5 min-h-[60vh] justify-between">
       <div className="flex flex-col gap-y-3 text-black container">
         <div className="container-header !h-auto -mt-2 -mx-1.5">
           <h4 className="mr-auto px-2 py-1">
-            {isOwner ? "My profile" : `${user.first_name}'s profile`}
+            {isOwner ? "My profile" : `${profileUser.first_name}'s profile`}
           </h4>{" "}
           X
         </div>
         <div className="flex gap-x-4 items-start h-auto">
-          {avatarUrl !== null ? (
-            <Avatar src={avatarUrl} pixelSize={4} />
+          {avatarUrl !== undefined ? (
+            <Avatar src={avatarUrl} pixelSize={1} />
           ) : (
             <PlaceholderAvatar />
           )}
           <div className="px-2 py-2">
-            Hey {isOwner ? user.first_name : currentUser.first_name}! Welcome to{" "}
-            {isOwner ? "your" : `${user.first_name}'s`} profile page.
+            Hey {isOwner ? profileUser.first_name : currentUser.first_name}!
+            Welcome to {isOwner ? "your" : `${profileUser.first_name}'s`}{" "}
+            profile page.
             <br />
             <br />
             <strong>Whatsapp:</strong>{" "}
@@ -75,9 +84,9 @@ export function Profile({ admin, avatarUrl, user, userGames }: IProfile) {
               target="_blank"
               rel="noreferrer noopener"
             >
-              {user.phone_number.startsWith("00")
-                ? user.phone_number.slice(2)
-                : user.phone_number}
+              {profileUser.phone_number.startsWith("00")
+                ? profileUser.phone_number.slice(2)
+                : profileUser.phone_number}
             </a>
           </div>
         </div>
@@ -89,7 +98,7 @@ export function Profile({ admin, avatarUrl, user, userGames }: IProfile) {
           </div>
           <div className="px-2 py-2">
             <Uploader
-              user={user}
+              user={currentUser}
               title="Upload a new profile photo. Max size 1mb!"
             />
           </div>
@@ -104,30 +113,26 @@ export function Profile({ admin, avatarUrl, user, userGames }: IProfile) {
             {!loading ? (
               <>
                 <RegisterForm
+                  loading={loading}
+                  label={
+                    <>
+                      Update user{" "}
+                      {_dataIsEqual(userRef.current, currentUser) &&
+                        " (no changes)"}
+                    </>
+                  }
                   password={undefined}
                   setPassword={null}
-                  handleAction={async (e) => {
-                    e.preventDefault();
-                    await updateUser(user);
-                    userRef.current = currentUser;
-                  }}
-                />
-                <button
                   disabled={
                     _dataIsEqual(userRef.current, currentUser) ||
                     !isValidUserUpdate(currentUser)
                   }
-                  className="font-bold"
-                  onClick={async (e) => {
+                  handleAction={async (e) => {
                     e.preventDefault();
-                    await updateUser(user);
+                    await updateUser(currentUser);
                     userRef.current = currentUser;
                   }}
-                >
-                  Update user{" "}
-                  {_dataIsEqual(userRef.current, currentUser) &&
-                    " (no changes)"}
-                </button>
+                />
                 {error !== null && (
                   <span className="px-2 py-1 text-xs text-red-500">
                     {error.message}
@@ -148,7 +153,7 @@ export function Profile({ admin, avatarUrl, user, userGames }: IProfile) {
         >
           <div className="container-header !h-auto -mt-2 -mx-1.5">
             <div className="mr-auto px-2 py-1">
-              {isOwner ? "My" : `${user.first_name}'s`} games{" "}
+              {isOwner ? "My" : `${profileUser.first_name}'s`} games{" "}
             </div>{" "}
             <div className="flex items-center mr-2">
               <span className="text-xs ml-auto mr-4 mt-0.5">
@@ -189,8 +194,8 @@ export function Profile({ admin, avatarUrl, user, userGames }: IProfile) {
               })
             ) : (
               <div className="flex flex-col gap-y-1">
-                {isOwner ? "You haven't" : `${user.first_name} hasn't`} signed
-                up to any games yet!
+                {isOwner ? "You haven't" : `${profileUser.first_name} hasn't`}{" "}
+                signed up to any games yet!
                 {isOwner && (
                   <Link href={NAVLINKS_MAP.SIGNUP}>
                     <button>Signup here</button>
