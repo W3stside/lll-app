@@ -6,7 +6,7 @@ export function CancelDialog({
   cancel,
 }: IBaseDialogVariationProps) {
   return (
-    <div className="flex flex-col gap-y-6 justify-center items-center h-full">
+    <div className="flex flex-col gap-y-10 justify-center items-center h-full">
       <div>{content}</div>
       <div className="flex gap-x-6 mt-auto justify-center items-center">
         <button onClick={action}>Yes, cancel</button>

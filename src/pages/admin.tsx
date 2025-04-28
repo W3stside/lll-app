@@ -8,6 +8,7 @@ import { RED_TW } from "@/constants/colours";
 import { DAYS_IN_WEEK } from "@/constants/date";
 import { NAVLINKS_MAP } from "@/constants/links";
 import { useAdmin } from "@/context/Admin/context";
+import { DialogVariant, useDialog } from "@/context/Dialog/context";
 import { useGames } from "@/context/Games/context";
 import { JWT_REFRESH_SECRET, JWT_SECRET, verifyToken } from "@/lib/authUtils";
 import client from "@/lib/mongodb";
@@ -24,6 +25,7 @@ import { dbRequest } from "@/utils/api/dbRequest";
 import { fetchRequiredCollectionsFromMongoDb } from "@/utils/api/mongodb";
 import { isValid24hTime } from "@/utils/date";
 import { sortDaysOfWeek } from "@/utils/sort";
+import { cn } from "@/utils/tailwind";
 
 const GOOGLE_MAPS_REGEX = /^(https?:\/\/)?(www\.)?google\.com\/maps/;
 const ERRORS_MAP = {
@@ -154,6 +156,7 @@ export default function Admin({
 
   const { games, setGames } = useGames();
   const { admin, setAdmin } = useAdmin();
+  const { openDialog } = useDialog();
 
   // Sync server-side games with client-side games
   useEffect(() => {
@@ -284,6 +287,34 @@ export default function Admin({
     }
   }, [admin, setAdmin]);
 
+  const handleClearAllSignups = useCallback(async () => {
+    if (admin === undefined) return;
+    try {
+      setLoading(true);
+      setGeneralError(null);
+
+      const { data, error } = await dbRequest<IGame[]>(
+        "reset",
+        Collection.GAMES,
+      );
+
+      if (error !== null) {
+        setGeneralError(error);
+        throw error;
+      }
+
+      setGames(data);
+    } catch (error) {
+      const e =
+        error instanceof Error
+          ? error
+          : new Error("handleToggleSignupsAvailable: Unknown error");
+      setGeneralError(e);
+    } finally {
+      setLoading(false);
+    }
+  }, [admin, setGames]);
+
   const sortedGames = useMemo(() => sortDaysOfWeek(games), [games]);
 
   if (!isConnected) return <h1>Connecting to db...</h1>;
@@ -307,20 +338,66 @@ export default function Admin({
         {admin !== undefined && (
           <div className="flex flex-col gap-y-1 text-black container">
             <div className="container-header !h-auto -mt-2 -mx-1.5">
-              Enabled/Disable signups
+              Game and signups management
             </div>
-            <div className="flex flex-col gap-y-2">
-              <div className="my-2 flex gap-x-2">
-                <strong>Signups status:</strong>{" "}
-                <div>{admin.signup_open ? "Enabled" : "Disabled"}</div>
+            <div className="flex flex-col justify-start p-2">
+              <div className="flex flex-wrap gap-2 items-center justify-between py-1">
+                <div className="my-2 flex gap-x-4">
+                  <strong>Game signups status:</strong>{" "}
+                  <div
+                    className={cn("font-bold", {
+                      "text-red-700": !admin.signup_open,
+                      "text-green-700": admin.signup_open,
+                    })}
+                  >
+                    {admin.signup_open ? "ENABLED" : "DISABLED"}
+                  </div>
+                </div>
+                <button
+                  onClick={handleToggleSignupsAvailable}
+                  className="!max-w-none w-max"
+                  disabled={loading}
+                >
+                  {admin.signup_open ? "Disable signups" : "Enable signups"}
+                </button>
               </div>
-              <button
-                onClick={handleToggleSignupsAvailable}
-                className="!max-w-none w-max"
-                disabled={loading}
-              >
-                {admin.signup_open ? "Disable signups" : "Enable signups"}
-              </button>
+              <div className="flex flex-wrap gap-2 items-center justify-between py-1">
+                <div className="my-2 flex gap-x-4">
+                  <strong>Clear all game signups:</strong>{" "}
+                </div>
+                <button
+                  onClick={() => {
+                    openDialog({
+                      variant: DialogVariant.CONFIRM,
+                      title: "Careful!",
+                      content: (
+                        <div>
+                          Are you sure you want to remove all players from
+                          signups? This action cannot be undone. <br />
+                          <br />
+                          You should really only be doing this on Sunday night
+                          after the last game has been played and when preparing
+                          next week's games.
+                        </div>
+                      ),
+                      action: async () => {
+                        try {
+                          await handleClearAllSignups();
+                        } catch (error) {
+                          // eslint-disable-next-line no-console
+                          console.error(error);
+                        } finally {
+                          openDialog();
+                        }
+                      },
+                    });
+                  }}
+                  className={`!max-w-none w-max ${RED_TW}`}
+                  disabled={loading}
+                >
+                  Clear all
+                </button>
+              </div>
             </div>
           </div>
         )}

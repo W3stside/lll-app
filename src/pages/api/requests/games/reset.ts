@@ -1,4 +1,3 @@
-import { ObjectId } from "mongodb";
 import type { NextApiRequest, NextApiResponse } from "next";
 
 import client from "@/lib/mongodb";
@@ -12,23 +11,39 @@ export default async (req: NextApiRequest, res: NextApiResponse) => {
   }
 
   try {
-    const body = req.body as IGame;
-    const { _id, ...rest } = body;
-
     const db = client.db("LLL");
     const collection = db.collection<IGame>(Collection.GAMES);
 
-    const result = await collection.updateOne(
-      { _id: new ObjectId(_id) },
+    const games = await collection.find({}).toArray();
+    const result = await collection.updateMany(
+      { _id: { $in: games.map(({ _id }) => _id) } },
       {
-        $set: rest,
+        $set: {
+          players: [],
+        },
       },
     );
 
-    if (result.matchedCount === 0) {
+    const gamesBulkUpdates = games.map(({ _id, organisers = [] }) => ({
+      updateOne: {
+        filter: { _id },
+        update: {
+          $addToSet: {
+            players: {
+              $each: organisers,
+            },
+          },
+        },
+      },
+    }));
+
+    const bulkResults = await collection.bulkWrite(gamesBulkUpdates);
+    const newGames = await collection.find({}).toArray();
+
+    if (bulkResults.matchedCount === 0) {
       res.status(404).json({ message: "Document not found" });
     } else if (result.acknowledged) {
-      res.status(200).json(result);
+      res.status(200).json(newGames);
     } else {
       res.status(500).json({ message: "Error updating document" });
     }

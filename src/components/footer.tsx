@@ -64,7 +64,7 @@ export function Footer() {
           {user?.role === Role.ADMIN && router.pathname !== ADMIN_PATH && (
             <button
               className={cn(
-                "w-[75px] h-[40px] justify-center lg:hidden ml-4 bg-[var(--background-window-highlight)] whitespace-nowrap",
+                "w-[75px] h-[40px] justify-center ml-4 bg-[var(--background-window-highlight)] whitespace-nowrap",
                 { "!p-0": isLoading },
               )}
               onClick={async () => await router.push(ADMIN_PATH)}
