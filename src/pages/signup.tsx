@@ -15,9 +15,10 @@ import { DAYS_IN_WEEK } from "@/constants/date";
 import { MAX_SIGNUPS_PER_GAME } from "@/constants/signups";
 import { useActions } from "@/context/Actions/context";
 import { useGames } from "@/context/Games/context";
+import { useUser } from "@/context/User/context";
 import { useFilterGames } from "@/hooks/useFilterGames";
 import { getUserFromServerSideRequest } from "@/lib/authUtils";
-import { GameStatus } from "@/types";
+import { GameStatus, Role } from "@/types";
 import type { IAdmin } from "@/types/admin";
 import type { IGame, IUser } from "@/types/users";
 import { fetchRequiredCollectionsFromMongoDb } from "@/utils/api/mongodb";
@@ -45,7 +46,7 @@ const Signups: React.FC<ISignups> = ({
   const [selectedGameId, setSelectedGameId] = useState<string | undefined>();
 
   const { games: gamesContext, gamesByDay, setGames } = useGames();
-
+  const { user: userContext } = useUser();
   const { loading: actionLoading, signupForGame } = useActions();
 
   const { filteredGames, searchFilter, filters, setFilter, setSearchFilter } =
@@ -92,8 +93,14 @@ const Signups: React.FC<ISignups> = ({
           />
         </div>
       </div>
-      {admin.signup_open ? (
+      {userContext.role === Role.ADMIN || admin.signup_open ? (
         <>
+          {userContext.role === Role.ADMIN && !admin.signup_open && (
+            <div className="bg-[var(--background-window-highlight)] text-black px-4">
+              SIGNUPS ARE CLOSED. YOU ARE VIEWING THIS AS AN ADMIN - NORMAL
+              USERS WILL NOT SEE GAMES.
+            </div>
+          )}
           <div className="flex flex-col gap-y-6 px-5 !pt-5 !pb-4 w-full container !bg-[var(--background-color-2)]">
             <div className="container-header !h-7 -mt-4 -mx-1.5">
               <strong className="pr-2">X</strong>

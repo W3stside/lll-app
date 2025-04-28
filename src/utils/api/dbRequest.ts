@@ -12,6 +12,7 @@ function _crudFromAction(action: Action) {
     case "get":
       return "GET";
     case "update":
+    case "reset":
       return "PATCH";
     default:
       throw new Error("Unsupported action!");
@@ -24,7 +25,7 @@ export async function dbRequest<T>(
   request?: Partial<T> & { _id?: never },
 ): Promise<JSONResponse<T>>;
 export async function dbRequest<T>(
-  action: "delete" | "get" | "update",
+  action: "delete" | "get" | "reset" | "update",
   path: RequestPath,
   request?: Partial<T> & { _id: ObjectId },
 ): Promise<JSONResponse<T>>;
