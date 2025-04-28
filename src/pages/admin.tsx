@@ -170,21 +170,26 @@ export default function Admin({
 
       setAddGameError(null);
 
-      const res = await dbRequest<IGame>("create", Collection.GAMES, {
-        ...newGame,
-        players: [],
-      });
-      if (res.error !== null) {
-        setGeneralError(res.error);
-        throw res.error;
+      const { data, error } = await dbRequest<IGame>(
+        "create",
+        Collection.GAMES,
+        {
+          ...newGame,
+          players: [],
+        },
+      );
+      if (error !== null) {
+        setGeneralError(error);
+        throw error;
       }
+      setGames((prev) => [...prev, data]);
     } catch (error: unknown) {
       const e = error instanceof Error ? error : new Error("Unknown error");
       setGeneralError(e);
     } finally {
       setLoading(false);
     }
-  }, [games, newGame]);
+  }, [games, newGame, setGames]);
 
   const handleChange = useCallback(
     (key: keyof ErrorUser, value: IGame[keyof ErrorUser]) => {

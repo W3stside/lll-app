@@ -2,28 +2,20 @@
 import type { ObjectId } from "mongodb";
 import type { NextApiRequest, NextApiResponse } from "next";
 
-import clientPromise from "@/lib/mongodb";
+import client from "@/lib/mongodb";
 import { Collection } from "@/types";
 import type { Gender, IGame } from "@/types/users";
 
 export default async (req: NextApiRequest, res: NextApiResponse) => {
   try {
-    const body = req.body as Omit<IGame, "_id" | "players">;
-    const { game_id, time, location, address, mapUrl, speed, day, gender } =
-      body;
+    const body = req.body as Omit<IGame, "_id">;
+    const { gender, ...restGame } = body;
 
-    const client = clientPromise;
     const db = client.db("LLL");
     const collection = db.collection(Collection.GAMES);
 
     const result = await collection.insertOne({
-      time,
-      location,
-      address,
-      mapUrl,
-      speed,
-      game_id,
-      day,
+      ...restGame,
       gender: (gender as Gender | "") !== "" ? gender : null,
     });
 
