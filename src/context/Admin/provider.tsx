@@ -6,10 +6,11 @@ import type { IAdmin } from "@/types/admin";
 
 interface IAdminProvider {
   children: React.ReactNode;
+  initialState: IAdmin;
 }
 
-export function AdminProvider({ children }: IAdminProvider) {
-  const [admin, setAdmin] = useState<IAdmin | undefined>();
+export function AdminProvider({ children, initialState }: IAdminProvider) {
+  const [admin, setAdmin] = useState<IAdmin | undefined>(initialState);
 
   return (
     <AdminContext.Provider value={{ admin, setAdmin }}>

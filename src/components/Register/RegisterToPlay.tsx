@@ -6,6 +6,7 @@ import { cn } from "@/utils/tailwind";
 interface IRegisterToPlay extends Omit<ISignupForm, "handleSubmit"> {
   loading: boolean;
   label: string;
+  submitDisabled?: boolean;
   handleSignup: () => Promise<void>;
 }
 
@@ -16,11 +17,16 @@ export function RegisterToPlay({
   gameId,
   userId,
   disabled = false,
+  submitDisabled = false,
   setGameId,
   handleSignup,
 }: IRegisterToPlay) {
   const isDisabled =
-    loading || gameId === "" || gameId === undefined || disabled;
+    loading ||
+    submitDisabled ||
+    gameId === "" ||
+    gameId === undefined ||
+    disabled;
   return (
     <div
       className={cn("flex flex-col items-center mt-auto mb-8 w-full gap-y-6", {

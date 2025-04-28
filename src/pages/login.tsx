@@ -9,18 +9,17 @@ import { NAVLINKS_MAP } from "@/constants/links";
 import { useUser } from "@/context/User/context";
 import { JWT_REFRESH_SECRET, JWT_SECRET, verifyToken } from "@/lib/authUtils";
 import client from "@/lib/mongodb";
-import type { IUserFromCookies } from "@/types/users";
+import { Collection } from "@/types";
+import type { IUserSafe, IUserFromCookies } from "@/types/users";
 import { dbAuth } from "@/utils/api/dbAuth";
 import { isValidLogin, isValidNewSignup } from "@/utils/signup";
 
 type LoginPage = {
   isConnected: boolean;
-  user: IUserFromCookies | null;
+  user: IUserSafe | null;
 };
 
-export const getServerSideProps: GetServerSideProps<LoginPage> = async (
-  context,
-) => {
+export const getServerSideProps: GetServerSideProps = async (context) => {
   try {
     const { token } = context.req.cookies;
     const user =
@@ -33,23 +32,29 @@ export const getServerSideProps: GetServerSideProps<LoginPage> = async (
           );
 
     await client.connect();
+    const userInfo = await client
+      .db("LLL")
+      .collection<IUserSafe>(Collection.USERS)
+      .findOne({ _id: user?._id });
 
     return {
       props: {
-        user: user ?? null,
+        user: JSON.parse(JSON.stringify(userInfo)) as string | null,
         isConnected: true,
       },
     };
   } catch (e) {
     console.error(e);
-    await client.connect();
     return {
       props: { isConnected: true, user: null },
     };
   }
 };
 
-export default function Login({ isConnected, user }: LoginPage) {
+export default function Login({
+  isConnected,
+  user: userFromCookies,
+}: LoginPage) {
   const [view, setView] = useState<"login" | "register">("register");
   const { user: player } = useUser();
 
@@ -101,6 +106,7 @@ export default function Login({ isConnected, user }: LoginPage) {
             "Login fields are invalid. Please check and try again.",
           );
         }
+
         const { error } = await dbAuth("login", { ...player, password });
 
         if (error !== null) {
@@ -153,8 +159,7 @@ export default function Login({ isConnected, user }: LoginPage) {
             }
             label={view === "login" ? "Login" : "Register"}
             handleAction={view !== "login" ? handleSignup : handleLogin}
-            handleLogout={handleLogout}
-            isLoggedIn={user !== null}
+            handleLogout={userFromCookies !== null ? handleLogout : undefined}
             isLogin={view === "login"}
           />
           {appError !== null && (

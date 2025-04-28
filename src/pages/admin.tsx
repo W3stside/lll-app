@@ -10,19 +10,13 @@ import { NAVLINKS_MAP } from "@/constants/links";
 import { useAdmin } from "@/context/Admin/context";
 import { DialogVariant, useDialog } from "@/context/Dialog/context";
 import { useGames } from "@/context/Games/context";
-import { JWT_REFRESH_SECRET, JWT_SECRET, verifyToken } from "@/lib/authUtils";
+import { withServerSideProps } from "@/hoc/withServerSideProps";
 import client from "@/lib/mongodb";
 import { Collection, Role } from "@/types";
 import type { IAdmin } from "@/types/admin";
-import {
-  Gender,
-  type IUserFromCookies,
-  type IGame,
-  type IUser,
-  type PlaySpeed,
-} from "@/types/users";
+import { Gender, type IGame, type IUser, type PlaySpeed } from "@/types/users";
 import { dbRequest } from "@/utils/api/dbRequest";
-import { fetchRequiredCollectionsFromMongoDb } from "@/utils/api/mongodb";
+import { fetchUsersFromMongodb } from "@/utils/api/mongodb";
 import { isValid24hTime } from "@/utils/date";
 import { sortDaysOfWeek } from "@/utils/sort";
 import { cn } from "@/utils/tailwind";
@@ -39,79 +33,47 @@ type ConnectionStatus = {
   isConnected: boolean;
 };
 
-export const getServerSideProps: GetServerSideProps<ConnectionStatus> = async (
-  context,
-) => {
-  try {
-    const { req } = context;
-    const { token } = req.cookies;
-    const user =
-      token !== undefined
-        ? verifyToken<IUserFromCookies>(
-            token,
-            JWT_SECRET as string,
-            JWT_REFRESH_SECRET,
-          )
-        : null;
+export const getServerSideProps: GetServerSideProps<ConnectionStatus> =
+  // TODO: review
+  // @ts-expect-error error in the custom HOC - doesn't break.
+  withServerSideProps(async ({ parentProps: { user } }) => {
+    try {
+      const adminUser = await client
+        .db("LLL")
+        .collection<IUser>(Collection.USERS)
+        .findOne({
+          _id: new ObjectId(user._id),
+          role: Role.ADMIN,
+        });
 
-    if (user === null) {
+      if (adminUser === null) {
+        return {
+          redirect: {
+            destination: NAVLINKS_MAP.HOME,
+            permanent: false,
+          },
+        };
+      }
+
+      const usersSerialised = await fetchUsersFromMongodb(client, true);
+
       return {
-        redirect: {
-          destination: NAVLINKS_MAP.LOGIN,
-          permanent: false,
+        props: {
+          isConnected: true,
+          user: JSON.parse(JSON.stringify(user)) as string,
+          users: usersSerialised,
+        },
+      };
+    } catch (e) {
+      // eslint-disable-next-line no-console
+      console.error(e);
+      return {
+        props: {
+          users: [],
         },
       };
     }
-
-    await client.connect();
-    const db = client.db("LLL");
-
-    const adminUser = await db.collection<IUser>(Collection.USERS).findOne({
-      _id: new ObjectId(user._id),
-      role: Role.ADMIN,
-    });
-
-    if (adminUser === null) {
-      return {
-        redirect: {
-          destination: NAVLINKS_MAP.HOME,
-          permanent: false,
-        },
-      };
-    }
-
-    const [games, users] = await fetchRequiredCollectionsFromMongoDb(client, {
-      serialised: true,
-    })();
-
-    const [admin] = await db
-      .collection<IAdmin>(Collection.ADMIN)
-      .find({})
-      .toArray();
-
-    return {
-      props: {
-        isConnected: true,
-        admin: JSON.parse(JSON.stringify(admin)) as IAdmin,
-        user: JSON.parse(JSON.stringify(adminUser)) as string,
-        users,
-        games,
-      },
-    };
-  } catch (e) {
-    // eslint-disable-next-line no-console
-    console.error(e);
-    return {
-      props: {
-        isConnected: false,
-        admin: null,
-        user: null,
-        users: [],
-        games: [],
-      },
-    };
-  }
-};
+  });
 
 interface IAdminError {
   errors:

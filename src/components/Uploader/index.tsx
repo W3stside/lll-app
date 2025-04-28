@@ -7,8 +7,10 @@ import { Avatar } from "../Avatar";
 import { MAX_IMAGE_WIDTH } from "../Avatar/constants";
 
 import { RED_TW } from "@/constants/colours";
+import { SUPABASE_BASE_AVATAR_URI } from "@/constants/links";
 import { useActions } from "@/context/Actions/context";
-import type { IUser } from "@/types/users";
+import { useUser } from "@/context/User/context";
+import type { IUserSafe } from "@/types/users";
 import { uploadAvatar } from "@/utils/avatar";
 
 const ONE_MB = 1_048_576;
@@ -44,16 +46,17 @@ function UploadError({ errors, errorKey, className }: IProfileError) {
 }
 
 interface IUploader {
-  user: IUser;
+  user: IUserSafe;
   title?: ReactNode;
 }
 
-export function Uploader({ user, title }: IUploader) {
+export function Uploader({ title }: IUploader) {
   const [loading, setLoading] = useState(false);
 
   const [uploadKey, setUploadKey] = useState(Date.now());
   const [file, setFile] = useState<File | undefined>();
 
+  const { user, setUser } = useUser();
   const { updateUser } = useActions();
 
   const resetFile = useCallback(() => {
@@ -118,6 +121,14 @@ export function Uploader({ user, title }: IUploader) {
                 accept="image/*"
                 onChange={(e) => {
                   setFile(e.target.files?.[0]);
+
+                  if (user._id !== undefined) {
+                    const optimisticUrl = `${SUPABASE_BASE_AVATAR_URI}avatars/avatars/${user._id.toString()}`;
+                    setUser((_user) => ({
+                      ..._user,
+                      avatarUrl: optimisticUrl,
+                    }));
+                  }
                 }}
               />
             </label>

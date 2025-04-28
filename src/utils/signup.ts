@@ -6,10 +6,11 @@ import {
 import type { INewSignup } from "@/types/users";
 
 export function isValidNewSignup(
-  player: Partial<INewSignup>,
+  player: Partial<INewSignup> | null,
   password: string | undefined,
 ): player is INewSignup {
   return (
+    player !== null &&
     player.first_name !== undefined &&
     player.first_name.length > 0 &&
     player.last_name !== undefined &&
@@ -22,9 +23,10 @@ export function isValidNewSignup(
 }
 
 export function isValidUserUpdate(
-  player: Partial<INewSignup>,
+  player: Partial<INewSignup> | null,
 ): player is INewSignup {
   return (
+    player !== null &&
     player.first_name !== undefined &&
     player.first_name.length >= NAME_MIN_LENGTH &&
     player.last_name !== undefined &&
@@ -35,10 +37,11 @@ export function isValidUserUpdate(
 }
 
 export function isValidLogin(
-  player: Partial<INewSignup>,
+  player: Partial<INewSignup> | null,
   password: string | undefined,
 ): player is INewSignup {
   return (
+    player !== null &&
     password !== undefined &&
     password.toString().length >= PASSWORD_MIN_LENGTH &&
     player.phone_number !== undefined &&

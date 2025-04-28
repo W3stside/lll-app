@@ -47,7 +47,7 @@ export function Navbar({ usersById }: INavbar) {
         </Link>
         <h1 className="lowercase font-thin text-[3.5vw] sm:text-xl">
           {userInfoFromPath !== undefined
-            ? `player profile: ${userInfoFromPath.first_name}`
+            ? `player profile: ${userInfoFromPath.first_name} ${userInfoFromPath.last_name}`
             : pathname}
         </h1>
         <div className="flex-1 sm:grow-0 mb-2 sm:m-0 sm:ml-auto m-2 flex items-center justify-center gap-x-4 w-min">
@@ -75,7 +75,11 @@ export function Navbar({ usersById }: INavbar) {
               )}
               onClick={handleLogout}
             >
-              {!isLoading ? "Log out" : <Loader />}
+              {!isLoading ? (
+                "Log out"
+              ) : (
+                <Loader className="w-[34px] h-[34px]" />
+              )}
             </button>
           )}
         </div>

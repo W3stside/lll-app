@@ -8,11 +8,14 @@ import { AdminProvider } from "@/context/Admin/provider";
 import { DialogProvider } from "@/context/Dialog/provider";
 import { GamesProvider } from "@/context/Games/provider";
 import { UserProvider } from "@/context/User/provider";
-import type { IUserSafe, IGame } from "@/types/users";
+import type { IAdmin } from "@/types/admin";
+import type { IUserSafe, IGame, IUser } from "@/types/users";
 
-interface IServerSideProps {
-  user: IUserSafe;
+export interface IServerSideProps {
+  admin: IAdmin;
+  user: IUser;
   games: IGame[];
+  users: IUser[];
   usersById: Record<string, IUserSafe>;
 }
 
@@ -21,11 +24,11 @@ export default function App({
   pageProps,
 }: AppProps<IServerSideProps>) {
   return (
-    <UserProvider>
+    <UserProvider initialState={pageProps.user}>
       <DialogProvider>
         <GamesProvider initialState={pageProps.games}>
           <ActionProvider>
-            <AdminProvider>
+            <AdminProvider initialState={pageProps.admin}>
               <Layout usersById={pageProps.usersById}>
                 <Component {...pageProps} />
               </Layout>

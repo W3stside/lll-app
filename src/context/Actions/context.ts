@@ -1,7 +1,7 @@
 import type { ObjectId } from "mongodb";
 import { createContext, useContext } from "react";
 
-import type { IGame, IUser } from "@/types/users";
+import type { IGame, IUserSafe } from "@/types/users";
 
 export interface IActionContext {
   loading: boolean;
@@ -13,7 +13,7 @@ export interface IActionContext {
   ) => Promise<void>;
   cancelGame: (gameId: ObjectId, userId: ObjectId, date: string) => void;
   signupForGame: (game: IGame | undefined, userId: ObjectId) => Promise<void>;
-  updateUser: (user: IUser) => Promise<void>;
+  updateUser: (user: IUserSafe) => Promise<void>;
 }
 
 export const ActionContext = createContext<IActionContext | undefined>(

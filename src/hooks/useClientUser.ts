@@ -32,7 +32,6 @@ export function useClientUser(condition?: string) {
     void fetchUser();
 
     const timeout = setTimeout(fetchUser, POLLING_TIME);
-
     return () => {
       clearTimeout(timeout);
     };

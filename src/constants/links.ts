@@ -25,4 +25,4 @@ export const RULEBOOK_URL =
 
 export const BUY_ME_A_COFFEE = "https://buymeacoffee.com/w3stside";
 export const SUPABASE_BASE_AVATAR_URI =
-  "https://mcvuagpkcgjesgzmheac.supabase.co/storage/v1/object/public/avatars/avatars/";
+  "https://mcvuagpkcgjesgzmheac.supabase.co/storage/v1/object/public/";

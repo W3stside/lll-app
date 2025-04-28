@@ -1,14 +1,15 @@
 import { useState } from "react";
 
-import { UserContext } from "./context";
+import { type IUserContext, UserContext } from "./context";
 
 import type { IUserSafe } from "@/types/users";
 
 interface IUserProvider {
   children: React.ReactNode;
+  initialState?: IUserContext["user"];
 }
 
-export const DEFAULT_USER: IUserSafe = {
+export const DEFAULT_USER: IUserSafe & { registered_games?: string[] } = {
   _id: undefined,
   createdAt: undefined,
   first_name: "",
@@ -16,10 +17,17 @@ export const DEFAULT_USER: IUserSafe = {
   phone_number: "",
   role: undefined,
   shame: [],
+  avatarUrl: undefined,
 };
 
-export function UserProvider({ children }: IUserProvider) {
-  const [user, setUser] = useState<IUserSafe>(DEFAULT_USER);
+export function UserProvider({
+  children,
+  initialState = DEFAULT_USER,
+}: IUserProvider) {
+  const [user, setUser] = useState<IUserContext["user"]>({
+    ...DEFAULT_USER,
+    ...initialState,
+  });
 
   return (
     <UserContext.Provider

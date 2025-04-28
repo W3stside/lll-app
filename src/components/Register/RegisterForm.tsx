@@ -1,4 +1,7 @@
+import type { ReactNode } from "react";
+
 import { RegisterError } from "./RegisterError";
+import { Loader } from "../ui";
 
 import {
   NAME_MIN_LENGTH,
@@ -58,18 +61,26 @@ function _validatePhoneNumber(phoneNumber?: string): string | null {
 export interface IRegisterForm {
   isLogin?: boolean;
   password: string | undefined;
+  loading: boolean;
+  label: ReactNode;
+  disabled: boolean;
   setPassword: React.Dispatch<React.SetStateAction<string>> | null;
   handleAction: (
     e: React.FormEvent<HTMLFormElement>,
     password: string | undefined,
   ) => Promise<void>;
+  handleLogout?: (e: React.FormEvent) => Promise<void>;
 }
 
 export function RegisterForm({
   isLogin = false,
   password,
+  loading,
+  label,
+  disabled,
   setPassword,
   handleAction,
+  handleLogout,
 }: IRegisterForm) {
   const { user, setUser } = useUser();
 
@@ -83,10 +94,13 @@ export function RegisterForm({
       <div className="flex flex-col items-center gap-y-2 p-2 w-full [&>input]:h-12">
         <form
           className="w-full"
-          onSubmit={async (e) => {
-            await handleAction(e, password);
-            setPassword?.("");
-          }}
+          onSubmit={
+            handleLogout !== undefined
+              ? handleLogout
+              : async (e) => {
+                  await handleAction(e, password);
+                }
+          }
         >
           {!isLogin && (
             <>
@@ -188,6 +202,13 @@ export function RegisterForm({
               )}
             </div>
           )}
+          <button
+            className="mt-4 w-full text-2xl p-4 justify-center"
+            disabled={loading || disabled}
+            type="submit"
+          >
+            {!loading ? label : <Loader />}
+          </button>
         </form>
       </div>
     </div>

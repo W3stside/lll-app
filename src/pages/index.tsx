@@ -3,27 +3,13 @@ import type { GetServerSideProps } from "next";
 import Link from "next/link";
 
 import { NAVLINKS_MAP } from "@/constants/links";
-import client from "@/lib/mongodb";
+import { withServerSideProps } from "@/hoc/withServerSideProps";
 
 type ConnectionStatus = {
   isConnected: boolean;
 };
 
-export const getServerSideProps: GetServerSideProps<
-  ConnectionStatus
-> = async () => {
-  try {
-    await client.connect();
-    return {
-      props: { isConnected: true },
-    };
-  } catch (e) {
-    console.error(e);
-    return {
-      props: { isConnected: false },
-    };
-  }
-};
+export const getServerSideProps: GetServerSideProps = withServerSideProps();
 
 export default function Home({ isConnected }: ConnectionStatus) {
   if (!isConnected) return <h1>Connecting to db...</h1>;

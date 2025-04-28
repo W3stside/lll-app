@@ -1,5 +1,5 @@
 import { supabase } from "@/lib/supabase";
-import type { IUser } from "@/types/users";
+import type { IUserSafe } from "@/types/users";
 
 export const getAvatarUrl = async (userId: string) => {
   const filePath = `avatars/${userId}`;
@@ -10,13 +10,15 @@ export const getAvatarUrl = async (userId: string) => {
   return data;
 };
 
-export const uploadAvatar = async (compressedFile: File, user: IUser) => {
+export const uploadAvatar = async (compressedFile: File, user: IUserSafe) => {
+  if (user._id === undefined) throw new Error("uploadAvatar: missing user _id");
+
   const filePath = `avatars/${user._id.toString()}`;
-  const { error } = await supabase.storage
+  const { data, error } = await supabase.storage
     .from("avatars")
     .upload(filePath, compressedFile, { upsert: true });
 
   if (error !== null) throw error;
 
-  return await getAvatarUrl(user._id.toString());
+  return data.fullPath;
 };
