@@ -3,7 +3,7 @@ import type { GetServerSideProps } from "next";
 import { useCallback, useEffect, useMemo, useState } from "react";
 
 import { PartnerProducts } from "@/components/PartnerProducts";
-import { Loader } from "@/components/ui";
+import { Collapsible, Loader } from "@/components/ui";
 import { RED_TW } from "@/constants/colours";
 import { DAYS_IN_WEEK } from "@/constants/date";
 import { NAVLINKS_MAP } from "@/constants/links";
@@ -102,6 +102,17 @@ interface IAdminPage {
 
 type ErrorUser = Omit<Partial<IGame>, "_id" | "game_id" | "players">;
 
+const DEFAULT_STATE = {
+  _id: undefined,
+  time: "",
+  location: "",
+  address: "",
+  mapUrl: "",
+  gender: undefined,
+  speed: undefined,
+  day: undefined,
+} as const;
+
 export default function Admin({
   isConnected,
   admin: adminInitial,
@@ -127,24 +138,16 @@ export default function Admin({
     }
   }, [admin, adminInitial, setAdmin]);
 
-  const [newGame, setNewGame] = useState<Partial<Omit<IGame, "_id">>>({
-    time: "",
-    location: "",
-    address: "",
-    mapUrl: "",
-    gender: undefined,
-    speed: undefined,
-    day: undefined,
-  });
+  const [targettedGame, setGameInfo] = useState<Partial<IGame>>(DEFAULT_STATE);
 
-  const handleAddNewGame = useCallback(async () => {
+  const handleUpdateGame = useCallback(async () => {
     setLoading(true);
     setGeneralError(null);
     try {
-      const isValidTime = isValid24hTime(newGame.time ?? "");
-      const isValidLocation = (newGame.location?.length ?? 0) > 5;
-      const isValidAddress = (newGame.location?.length ?? 0) > 5;
-      const isValidUrl = GOOGLE_MAPS_REGEX.test(newGame.mapUrl ?? "");
+      const isValidTime = isValid24hTime(targettedGame.time ?? "");
+      const isValidLocation = (targettedGame.location?.length ?? 0) > 5;
+      const isValidAddress = (targettedGame.location?.length ?? 0) > 5;
+      const isValidUrl = GOOGLE_MAPS_REGEX.test(targettedGame.mapUrl ?? "");
       if (!isValidTime || !isValidUrl || !isValidLocation || !isValidAddress) {
         setAddGameError((prev) => ({
           ...prev,
@@ -159,10 +162,10 @@ export default function Admin({
       if (
         games.some(
           (game) =>
-            game.day === newGame.day &&
-            game.time === newGame.time &&
-            game.location === newGame.location &&
-            game.address === newGame.address,
+            game.day === targettedGame.day &&
+            game.time === targettedGame.time &&
+            game.location === targettedGame.location &&
+            game.address === targettedGame.address,
         )
       ) {
         throw new Error("Game already exists for this day");
@@ -170,26 +173,44 @@ export default function Admin({
 
       setAddGameError(null);
 
-      const { data, error } = await dbRequest<IGame>(
-        "create",
-        Collection.GAMES,
-        {
-          ...newGame,
+      let data: IGame | undefined = undefined;
+      let error = null;
+      const { _id, ...gameNoId } = targettedGame;
+      // No _id = create new game
+      if (_id === undefined) {
+        ({ data, error } = await dbRequest<IGame>("create", Collection.GAMES, {
+          ...gameNoId,
           players: [],
-        },
-      );
+        }));
+      } else {
+        ({ data, error } = await dbRequest<IGame>("update", Collection.GAMES, {
+          _id,
+          ...gameNoId,
+        }));
+      }
+
       if (error !== null) {
         setGeneralError(error);
         throw error;
       }
-      setGames((prev) => [...prev, data]);
+
+      setGames((prev) =>
+        _id === undefined
+          ? [...prev, data]
+          : prev
+              .filter(({ _id: gId }) => gId.toString() !== data._id.toString())
+              .concat(data),
+      );
+      setGameInfo(DEFAULT_STATE);
+      setAddGameError(null);
+      setGeneralError(null);
     } catch (error: unknown) {
       const e = error instanceof Error ? error : new Error("Unknown error");
       setGeneralError(e);
     } finally {
       setLoading(false);
     }
-  }, [games, newGame, setGames]);
+  }, [games, targettedGame, setGames]);
 
   const handleChange = useCallback(
     (key: keyof ErrorUser, value: IGame[keyof ErrorUser]) => {
@@ -200,7 +221,7 @@ export default function Admin({
         }));
       }
 
-      setNewGame((prev) => ({
+      setGameInfo((prev) => ({
         ...prev,
         [key]: value,
       }));
@@ -208,19 +229,23 @@ export default function Admin({
     [addGameError],
   );
 
-  const handleRefreshGames = useCallback(async () => {
-    try {
-      const res = await dbRequest<IGame[]>("get", Collection.GAMES);
-      if (res.error !== null) {
-        setGeneralError(res.error);
-        throw res.error;
+  const handleRefreshGames = useCallback(
+    async (e: React.MouseEvent<HTMLButtonElement>) => {
+      e.stopPropagation();
+      try {
+        const res = await dbRequest<IGame[]>("get", Collection.GAMES);
+        if (res.error !== null) {
+          setGeneralError(res.error);
+          throw res.error;
+        }
+        setGames(res.data);
+      } catch (error) {
+        const err = error instanceof Error ? error : new Error("Unknown error");
+        setGeneralError(err);
       }
-      setGames(res.data);
-    } catch (error) {
-      const e = error instanceof Error ? error : new Error("Unknown error");
-      setGeneralError(e);
-    }
-  }, [setGames]);
+    },
+    [setGames],
+  );
 
   const handleToggleSignupsAvailable = useCallback(async () => {
     if (admin === undefined) return;
@@ -304,13 +329,13 @@ export default function Admin({
 
         {admin !== undefined && (
           <div className="flex flex-col gap-y-1 text-black container">
-            <div className="container-header !h-auto -mt-2 -mx-1.5">
+            <div className="container-header !h-auto -mt-2 -mx-1.5 py-2 !text-xl md:!text-2xl">
               Game and signups management
             </div>
             <div className="flex flex-col justify-start p-2">
               <div className="flex flex-wrap gap-2 items-center justify-between py-1">
                 <div className="my-2 flex gap-x-4">
-                  <strong>Game signups status:</strong>{" "}
+                  <strong>Signups enabled?</strong>{" "}
                   <div
                     className={cn("font-bold", {
                       "text-red-700": !admin.signup_open,
@@ -322,10 +347,10 @@ export default function Admin({
                 </div>
                 <button
                   onClick={handleToggleSignupsAvailable}
-                  className="!max-w-none w-max"
+                  className="!max-w-none w-[90px] justify-center"
                   disabled={loading}
                 >
-                  {admin.signup_open ? "Disable signups" : "Enable signups"}
+                  {admin.signup_open ? "Disable" : "Enable"}
                 </button>
               </div>
               <div className="flex flex-wrap gap-2 items-center justify-between py-1">
@@ -370,139 +395,203 @@ export default function Admin({
         )}
 
         <div className="flex flex-col gap-y-1 text-black container">
-          <div className="container-header !h-auto -mt-2 -mx-1.5">
-            Add new game
+          <div className="container-header !h-auto -mt-2 -mx-1.5 py-2 !text-xl md:!text-2xl">
+            Manage games
           </div>
-          <div className="my-2 flex flex-col gap-y-2">
-            <strong>Current games</strong>
+          <Collapsible
+            className="container my-2 flex flex-col gap-y-2 justify-start"
+            collapsedHeight={27}
+            startCollapsed={false}
+          >
+            <div className="container-header !h-auto -mt-2 -mx-1.5 !items-center">
+              <small className="px-2 py-1 text-xs mr-2">
+                tap to open/close
+              </small>
+              Current games
+            </div>
             <div className="flex flex-col gap-y-2 text-xs">
               {sortedGames.map((game, idx) => (
                 <div
                   key={game._id.toString()}
-                  className="flex flex-row flex-wrap gap-x-3"
+                  className="flex flex-row flex-wrap gap-x-3 items-center"
                 >
-                  <span>
-                    {idx + 1}.{" "}
-                    <strong>
-                      {game.day} - {game.time}
-                    </strong>{" "}
-                    - {game.location}
-                  </span>
-                  <a href={game.mapUrl} target="_blank">
-                    {game.address.slice(0, 30)}...
-                  </a>
+                  <div className="flex max-w-[90%] justify-start gap-x-4">
+                    <span>
+                      {idx + 1}.{" "}
+                      <strong>
+                        {game.day} - {game.time}
+                      </strong>{" "}
+                      - {game.location}
+                    </span>
+                    <a href={game.mapUrl} target="_blank">
+                      {game.address.slice(0, 30)}...
+                    </a>
+                  </div>
+                  <button
+                    className="ml-auto"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setGameInfo((prev) => ({ ...prev, ...game }));
+                    }}
+                  >
+                    edit
+                  </button>
                 </div>
               ))}
               <button
                 onClick={handleRefreshGames}
-                className="text-xs mt-2 inline !w-max"
+                className="text-xs mt-2 inline !w-max self-end bg-[var(--background-color-2)]"
               >
                 Refresh games list
               </button>
             </div>
-          </div>
+          </Collapsible>
           {!loading ? (
-            <>
-              <select
-                value={newGame.day}
-                name="day-of-the-week"
-                defaultValue={""}
-                onChange={(e) => {
-                  setNewGame((prev) => ({
-                    ...prev,
-                    day: e.target.value as IGame["day"],
-                  }));
-                }}
-              >
-                <option value="">- Please select a day -</option>
-                {DAYS_IN_WEEK.map((day) => (
-                  <option key={day} value={day}>
-                    {day}
-                  </option>
-                ))}
-              </select>
-              <input
-                value={newGame.time}
-                onChange={(e) => {
-                  handleChange("time", e.target.value);
-                }}
-                placeholder="Time 24h format (e.g 19:00)"
-              />
-              <AdminError errors={addGameError} errorKey="time" />
-              <input
-                value={newGame.location}
-                onChange={(e) => {
-                  handleChange("location", e.target.value);
-                }}
-                placeholder="Location name (e.g Playarena Olais)"
-              />
-              <AdminError errors={addGameError} errorKey="location" />
-              <input
-                value={newGame.address}
-                onChange={(e) => {
-                  handleChange("address", e.target.value);
-                }}
-                placeholder="Address"
-              />
-              <AdminError errors={addGameError} errorKey="address" />
-              <input
-                value={newGame.mapUrl}
-                onChange={(e) => {
-                  handleChange("mapUrl", e.target.value);
-                }}
-                placeholder="Google Maps URL"
-              />
-              <AdminError errors={addGameError} errorKey="mapUrl" />
-              <select
-                value={newGame.speed}
-                name="game-speed"
-                defaultValue={""}
-                onChange={(e) => {
-                  setNewGame((prev) => ({
-                    ...prev,
-                    speed: e.target.value as PlaySpeed,
-                  }));
-                }}
-              >
-                <option value="">- Please select a game speed -</option>
-                <option value="faster">Faster</option>
-                <option value="mixed">Mixed</option>
-                <option value="slower">Slower</option>
-              </select>
-              <select
-                value={newGame.gender}
-                name="gender"
-                defaultValue={""}
-                onChange={(e) => {
-                  setNewGame((prev) => ({
-                    ...prev,
-                    gender: e.target.value as Gender,
-                  }));
-                }}
-              >
-                <option value="">- (optional) Ladies game? -</option>
-                <option value={Gender.FEMALE}>Ladies</option>
-              </select>
-            </>
+            <div className="container my-2 flex flex-col gap-y-2 justify-start">
+              <div className="container-header !h-auto -mt-2 -mx-1.5 !items-center">
+                Edit game
+              </div>
+              <div className="flex flex-col">
+                <select
+                  value={targettedGame.day}
+                  name="day-of-the-week"
+                  defaultValue={""}
+                  onChange={(e) => {
+                    setGameInfo((prev) => ({
+                      ...prev,
+                      day: e.target.value as IGame["day"],
+                    }));
+                  }}
+                >
+                  <option value="">- Please select a day -</option>
+                  {DAYS_IN_WEEK.map((day) => (
+                    <option key={day} value={day}>
+                      {day}
+                    </option>
+                  ))}
+                </select>
+                <input
+                  value={targettedGame.time}
+                  onChange={(e) => {
+                    handleChange("time", e.target.value);
+                  }}
+                  placeholder="Time 24h format (e.g 19:00)"
+                />
+                <AdminError errors={addGameError} errorKey="time" />
+                <input
+                  value={targettedGame.location}
+                  onChange={(e) => {
+                    handleChange("location", e.target.value);
+                  }}
+                  placeholder="Location name (e.g Playarena Olais)"
+                />
+                <AdminError errors={addGameError} errorKey="location" />
+                <input
+                  value={targettedGame.address}
+                  onChange={(e) => {
+                    handleChange("address", e.target.value);
+                  }}
+                  placeholder="Address"
+                />
+                <AdminError errors={addGameError} errorKey="address" />
+                <input
+                  value={targettedGame.mapUrl}
+                  onChange={(e) => {
+                    handleChange("mapUrl", e.target.value);
+                  }}
+                  placeholder="Google Maps URL"
+                />
+                <AdminError errors={addGameError} errorKey="mapUrl" />
+                <select
+                  value={targettedGame.speed}
+                  name="game-speed"
+                  defaultValue={""}
+                  onChange={(e) => {
+                    setGameInfo((prev) => ({
+                      ...prev,
+                      speed: e.target.value as PlaySpeed,
+                    }));
+                  }}
+                >
+                  <option value="">- Please select a game speed -</option>
+                  <option value="faster">Faster</option>
+                  <option value="mixed">Mixed</option>
+                  <option value="slower">Slower</option>
+                </select>
+                <select
+                  value={targettedGame.gender}
+                  name="gender"
+                  defaultValue={""}
+                  onChange={(e) => {
+                    setGameInfo((prev) => ({
+                      ...prev,
+                      gender: e.target.value as Gender,
+                    }));
+                  }}
+                >
+                  <option value="">- (optional) Ladies game? -</option>
+                  <option value={Gender.FEMALE}>Ladies</option>
+                </select>
+              </div>
+            </div>
           ) : (
             <Loader className="w-full h-[300px]" />
           )}
 
-          <button
-            onClick={handleAddNewGame}
-            className="mt-2 flex justify-center"
-            disabled={
-              loading ||
-              newGame.day === undefined ||
-              newGame.time === "" ||
-              newGame.location === "" ||
-              newGame.address === "" ||
-              newGame.mapUrl === "" ||
-              newGame.speed === undefined
-            }
-          >
-            <strong>Add new game</strong>
-          </button>
+          <div className="flex gap-x-2 items-center justify-between h-full mt-2">
+            <button
+              onClick={() => {
+                openDialog({
+                  variant: DialogVariant.CONFIRM,
+                  title: "Careful!",
+                  content: (
+                    <div>
+                      Are you sure you want to update this game? Check that all
+                      the fields are correct. <br />
+                      <br />
+                      Data has passed validation but click "Refresh games list"
+                      above after confirming to make sure everything looks
+                      alright.
+                    </div>
+                  ),
+                  action: async () => {
+                    try {
+                      await handleUpdateGame();
+                    } catch (error) {
+                      // eslint-disable-next-line no-console
+                      console.error(error);
+                    } finally {
+                      openDialog();
+                    }
+                  },
+                });
+              }}
+              className="flex justify-center w-full"
+              disabled={
+                loading ||
+                targettedGame.day === undefined ||
+                targettedGame.time === "" ||
+                targettedGame.location === "" ||
+                targettedGame.address === "" ||
+                targettedGame.mapUrl === "" ||
+                targettedGame.speed === undefined
+              }
+            >
+              <strong>
+                {targettedGame._id === undefined ? "Add new" : "Update"} game
+              </strong>
+            </button>
+            <button
+              className="bg-[var(--background-color-2)]"
+              onClick={() => {
+                setGameInfo(DEFAULT_STATE);
+                setAddGameError(null);
+                setGeneralError(null);
+              }}
+            >
+              reset
+            </button>
+          </div>
           {generalError !== null && (
             <span className="px-2 py-1 text-xs text-red-500">
               {generalError.message}

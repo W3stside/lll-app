@@ -24,11 +24,14 @@ export default async (req: NextApiRequest, res: NextApiResponse) => {
         $set: rest,
       },
     );
+    const updatedGame = await collection.findOne({
+      _id: new ObjectId(_id),
+    });
 
     if (result.matchedCount === 0) {
       res.status(404).json({ message: "Document not found" });
     } else if (result.acknowledged) {
-      res.status(200).json(result);
+      res.status(200).json(updatedGame);
     } else {
       res.status(500).json({ message: "Error updating document" });
     }
