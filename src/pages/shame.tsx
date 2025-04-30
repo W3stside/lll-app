@@ -89,7 +89,7 @@ export default function WallOfShame({ users }: IWallOfShame) {
                                 key={game_id.toString()}
                                 className="flex items-center justify-between w-full"
                               >
-                                <span className="text-sm text-gray-800">
+                                <span className="text-sm text-[var(--text-color-alternate)]">
                                   {idx + 1}.{" "}
                                   <strong>Late cancel/no-show:</strong>{" "}
                                   {new Date(date).toLocaleString()}

@@ -36,7 +36,7 @@ const DynamicPlaceholderAvatar = ({ className }: IPlaceholderAvatar) => (
   <div
     className={cn(
       IMAGE_CLASS,
-      "flex justify-center items-center gap-x-1 text-center bg-white text-md w-[60px] h-[60px] md:text-lg md:w-[80px] md:h-[80px] shrink-0 border-black ",
+      "flex justify-center items-center gap-x-1 text-center !text-[var(--text-color-avatar)] !bg-[var(--background-avatar)] text-md w-[60px] h-[60px] md:text-lg md:w-[80px] md:h-[80px] shrink-0 border-black ",
       className,
     )}
   >

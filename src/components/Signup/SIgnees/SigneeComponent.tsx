@@ -43,7 +43,7 @@ export function SigneeComponent({
         "container flex-col items-start justify-start gap-y-1 h-auto elevation-2",
       )}
     >
-      <div className="container-header w-[calc(100%+12px)] !bg-gray-800 -mt-2 -ml-2">
+      <div className="container-header w-[calc(100%+12px)] !bg-[var(--background-container-header-alt)] -mt-2 -ml-2">
         <span className="cursor-pointer" onClick={handleCancel}>
           {handleCancel !== undefined ? "x" : "-"}
         </span>
@@ -107,7 +107,7 @@ export function SigneeComponent({
                   {first_name} {last_name}
                 </div>{" "}
               </Link>
-              <div className="flex w-full text-sm text-gray-800 justify-end text-right">
+              <div className="flex w-full text-sm text-[var(--text-color-alternate)] justify-end text-right">
                 <a
                   href={`${WHATS_APP}/${formatPhoneNumber(phone_number)}`}
                   target="_blank"

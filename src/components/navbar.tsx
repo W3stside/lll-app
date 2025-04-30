@@ -8,6 +8,7 @@ import { Loader } from "./ui";
 
 import logo from "@/assets/logo.png";
 import { NAVLINKS, NAVLINKS_MAP } from "@/constants/links";
+import { useClientTheme } from "@/hooks/useClientTheme";
 import { useClientUser } from "@/hooks/useClientUser";
 import type { IUser } from "@/types/users";
 import { dbAuth } from "@/utils/api/dbAuth";
@@ -22,6 +23,8 @@ interface INavbar {
 }
 
 export function Navbar({ usersById }: INavbar) {
+  const { isDark, toggleTheme } = useClientTheme();
+
   const router = useRouter();
   const pathname = usePathname();
   const { user, isLoading } = useClientUser(router.pathname);
@@ -43,9 +46,13 @@ export function Navbar({ usersById }: INavbar) {
     <div className="flex flex-col gap-y-8 items-center justify-start pb-10">
       <div className="flex flex-row flex-wrap container-header w-full gap-4 !h-auto !justify-start !bg-[var(--background-color)]">
         <Link href={NAVLINKS_MAP.HOME}>
-          <Image src={logo} alt="LLL logo" className="max-w-25 p-1" />
+          <Image
+            src={logo}
+            alt="LLL logo"
+            className="max-w-25 p-1 filter-[var(--navbar-logo-filter)]"
+          />
         </Link>
-        <h1 className="lowercase font-thin text-[3.5vw] sm:text-xl">
+        <h1 className="lowercase font-thin text-[3.5vw] sm:text-xl text-[var(--text-color-main)]">
           {userInfoFromPath !== undefined
             ? `player profile: ${userInfoFromPath.first_name} ${userInfoFromPath.last_name}`
             : pathname}
@@ -67,6 +74,7 @@ export function Navbar({ usersById }: INavbar) {
                 ]
               : [],
           )}
+          <button onClick={toggleTheme}>{isDark ? "☼" : "☽"}</button>
           {(isLoading || user !== undefined) && (
             <button
               className={cn(
