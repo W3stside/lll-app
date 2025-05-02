@@ -15,12 +15,10 @@ export const getServerSideProps: GetServerSideProps = withServerSideProps(
     } = context;
 
     try {
-      await client.connect();
-
       const userGames = await client
         .db("LLL")
         .collection<IGame[]>(Collection.GAMES)
-        .find({ players: fullUser._id })
+        .find({ players: fullUser._id.toString() })
         .toArray();
 
       return {
