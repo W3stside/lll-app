@@ -11,6 +11,7 @@ import { Collapsible, Loader } from "../ui";
 
 import { NAVLINKS_MAP, WHATS_APP } from "@/constants/links";
 import { useActions } from "@/context/Actions/context";
+import { useGames } from "@/context/Games/context";
 import { useUser } from "@/context/User/context";
 import { GameStatus } from "@/types";
 import type { IAdmin } from "@/types/admin";
@@ -42,15 +43,31 @@ function _dataIsEqual(
   );
 }
 
-export function Profile({ admin, profileUser, userGames }: IProfile) {
-  const { loading, error, updateUser } = useActions();
+export function Profile({
+  admin,
+  profileUser,
+  userGames: userGamesServer,
+}: IProfile) {
+  const { loading, error, cancelGame, updateUser } = useActions();
+
+  const { games } = useGames();
+
   const { user: currentUser } = useUser();
   const userRef = useRef<IUserSafe | null>(currentUser);
 
-  const { gamesByDay, lastGame } = useMemo(() => {
-    const gbd = groupGamesByDay(userGames);
-    return { gamesByDay: gbd, lastGame: getLastGame(gbd, userGames) };
-  }, [userGames]);
+  const { gamesByDay, userGames, lastGame } = useMemo(() => {
+    const gbd = groupGamesByDay(userGamesServer);
+    const ug = games.filter((game) =>
+      game.players.some(
+        (player) => player.toString() === profileUser._id.toString(),
+      ),
+    );
+    return {
+      gamesByDay: gbd,
+      userGames: ug,
+      lastGame: getLastGame(gbd, ug),
+    };
+  }, [games, profileUser._id, userGamesServer]);
 
   const isOwner = profileUser._id === currentUser._id;
   const numberFormatted = formatPhoneNumber(profileUser.phone_number);
@@ -185,13 +202,28 @@ export function Profile({ admin, profileUser, userGames }: IProfile) {
                       {day} - {gameDate.toDateString()}{" "}
                     </h5>
                     {dGames.map((game) => (
-                      <Games
+                      <div
+                        className="flex flex-row gap-x-2"
                         key={game._id.toString()}
-                        {...game}
-                        date={gameDate.toUTCString()}
-                        waitlistAmt={null}
-                        signupsAmt={game.players.length}
-                      />
+                      >
+                        <Games
+                          {...game}
+                          date={gameDate.toUTCString()}
+                          waitlistAmt={null}
+                          signupsAmt={game.players.length}
+                        />
+                        {isOwner && (
+                          <button
+                            className="flex items-center justify-center h-full w-[50px] bg-[var(--background-error)]"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              cancelGame(game._id, profileUser._id, "");
+                            }}
+                          >
+                            X
+                          </button>
+                        )}
+                      </div>
                     ))}
                   </div>,
                 ];
