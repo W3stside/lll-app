@@ -18,7 +18,7 @@ export function Signees({ _id, children, cancelGame, ...rest }: ISignees) {
   return (
     <SigneeComponent
       _id={_id}
-      loading={loading}
+      loading={cancelGame !== undefined && loading}
       errorMsg={error?.message ?? null}
       handleCancel={cancelGame}
       {...rest}

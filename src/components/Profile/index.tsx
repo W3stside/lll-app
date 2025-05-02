@@ -229,12 +229,18 @@ export function Profile({
                 ];
               })
             ) : (
-              <div className="flex flex-col gap-y-1">
+              <div className="flex flex-col items-center gap-y-8">
                 {isOwner ? "You haven't" : `${profileUser.first_name} hasn't`}{" "}
                 signed up to any games yet!
                 {isOwner && (
                   <Link href={NAVLINKS_MAP.SIGNUP}>
-                    <button>Signup here</button>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                      }}
+                    >
+                      Signup here
+                    </button>
                   </Link>
                 )}
               </div>

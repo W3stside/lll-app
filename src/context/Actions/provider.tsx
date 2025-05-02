@@ -109,18 +109,20 @@ export function ActionProvider({ children }: IActionProvider) {
           title: "Cancel game?",
           content:
             options?.bypassThreshold !== true && gamePastThreshold ? (
-              <div>
+              <div className="flex flex-col items-center gap-y-6">
                 <h3>Whoa whoa whoa!</h3>
-                <p>
-                  It's past the cancellation threshold of 12 hours. What are you
-                  doing!?
-                </p>
-                <strong>Don't be a dick.</strong> If this isn't an emergency and
-                you're just too hungover because you're weak, then suck it up
-                and come play!{" "}
+                <div>
+                  <p>
+                    It's past the cancellation threshold of 12 hours. What are
+                    you doing!?
+                  </p>
+                  <strong>Don't be a dick.</strong> If this isn't an emergency
+                  and you're just too hungover because you're weak, then suck it
+                  up and come play!{" "}
+                </div>
               </div>
             ) : (
-              <div>
+              <div className="flex flex-col items-center gap-y-6">
                 <h3>Heads up!</h3>
                 <p>Are you sure you want to cancel and drop your spot?</p>
               </div>

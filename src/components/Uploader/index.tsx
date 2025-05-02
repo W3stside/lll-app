@@ -23,6 +23,8 @@ const COMPRESS_OPTIONS = {
 
 const ERRORS_MAP = {
   fileTooLarge: "File size is too large. Must be less than 1mb",
+  wrongFileType:
+    "File type is not supported. Only JPG/JPEG and PNG are allowed",
 };
 
 interface IProfileError {
@@ -84,7 +86,10 @@ export function Uploader({ title }: IUploader) {
     }
   }, [file, resetFile, updateUser, user]);
 
-  const disabled = file !== undefined && file.size > ONE_MB;
+  const disabled =
+    file === undefined ||
+    file.size > ONE_MB ||
+    (file.type !== "image/jpeg" && file.type !== "image/png");
 
   return (
     <div className="flex flex-col">
@@ -103,11 +108,11 @@ export function Uploader({ title }: IUploader) {
           <div className="flex gap-x-4 items-start h-auto py-2">
             <label
               htmlFor="imageUpload"
-              className="flex flex-row gap-y-2 flex-1 bg-white h-[40px] max-w-[70%] px-2 py-1 cursor-pointer border-2 border-r-[var(--border-light)] border-b-[var(--border-light)]"
+              className="flex flex-row gap-y-2 flex-1 text-[var(--text-color-primary)] bg-[var(--background-color-2)] h-[40px] max-w-[70%] px-2 py-1 cursor-pointer border-2 border-r-[var(--border-light)] border-b-[var(--border-light)]"
             >
               <div className="flex items-center gap-x-2 text-md">
                 {file === undefined ? (
-                  "Select a photo"
+                  "Select a photo [jpg, png]"
                 ) : (
                   <strong>{file.name}</strong>
                 )}
@@ -145,7 +150,6 @@ export function Uploader({ title }: IUploader) {
                   disabled={disabled}
                   onClick={async () => {
                     await handleFileChange();
-                    // ResetFile();
                   }}
                 >
                   Upload
@@ -155,10 +159,10 @@ export function Uploader({ title }: IUploader) {
           </div>
         </div>
       </div>
-      {file !== undefined && file.size > ONE_MB && (
+      {disabled && file !== undefined && (
         <UploadError
           errors={ERRORS_MAP}
-          errorKey="fileTooLarge"
+          errorKey={file.size > ONE_MB ? "fileTooLarge" : "wrongFileType"}
           className="mt-2"
         />
       )}
