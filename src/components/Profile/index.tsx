@@ -68,7 +68,11 @@ export function Profile({ admin, profileUser, userGames }: IProfile) {
         </div>
         <div className="flex gap-x-4 items-start h-auto">
           {avatarUrl !== undefined ? (
-            <Avatar src={avatarUrl} pixelSize={1} />
+            <Avatar
+              src={avatarUrl}
+              pixelSize={1}
+              className="w-[80px] h-[80px]"
+            />
           ) : (
             <PlaceholderAvatar />
           )}

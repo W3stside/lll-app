@@ -90,7 +90,7 @@ export function Uploader({ title }: IUploader) {
     <div className="flex flex-col">
       <div className="flex gap-x-4 items-center h-auto">
         {file !== undefined ? (
-          <Avatar src={URL.createObjectURL(file)} />
+          <Avatar src={URL.createObjectURL(file)} width={80} height={80} />
         ) : loading ? (
           <div className="overflow-hidden w-[80px] h-[80px] relative self-center">
             <Loader className="absolute -top-[23px] -left-[28px] w-[130px] height-[100px] max-w-none" />

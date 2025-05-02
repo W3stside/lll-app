@@ -72,7 +72,7 @@ export default function WallOfShame({ users }: IWallOfShame) {
                     <SigneeComponent
                       errorMsg={null}
                       loading={false}
-                      avatarClassName="text-[8px] md:text-[10px] w-[40px] h-[40px] md:h-[45px] md:w-[45px]"
+                      avatarClassName="text-[8px] md:text-[9px] w-[40px] h-[40px] md:h-[45px] md:w-[45px]"
                       {...user}
                       className="py-[4px] px-[16px]"
                       childrenBelow={
