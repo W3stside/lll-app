@@ -1,42 +1,26 @@
-import type { ObjectId } from "mongodb";
+import type { MouseEventHandler } from "react";
 
 import { type ISigneeComponent, SigneeComponent } from "./SigneeComponent";
 
 import { useActions } from "@/context/Actions/context";
-import type { IGame, IUserSafe } from "@/types/users";
+import type { IUserSafe } from "@/types/users";
 
 interface ISignees
   extends IUserSafe,
     Omit<ISigneeComponent, "_id" | "createdAt" | "errorMsg" | "loading"> {
   children?: React.ReactNode;
-  isUser: boolean;
-  date: string | undefined;
-  games: IGame[];
-  game_id: ObjectId;
+  cancelGame: MouseEventHandler<HTMLButtonElement> | undefined;
 }
 
-export function Signees({
-  game_id,
-  _id,
-  date,
-  children,
-  isUser,
-  ...rest
-}: ISignees) {
-  const { cancelGame, loading, error } = useActions();
+export function Signees({ _id, children, cancelGame, ...rest }: ISignees) {
+  const { loading, error } = useActions();
 
   return (
     <SigneeComponent
       _id={_id}
       loading={loading}
       errorMsg={error?.message ?? null}
-      handleCancel={
-        isUser && _id !== undefined && date !== undefined
-          ? () => {
-              cancelGame(game_id, _id, date);
-            }
-          : undefined
-      }
+      handleCancel={cancelGame}
       {...rest}
     >
       {children}

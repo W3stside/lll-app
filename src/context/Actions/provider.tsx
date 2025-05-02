@@ -1,14 +1,14 @@
 import type { ObjectId } from "mongodb";
 import { useState, useMemo } from "react";
 
-import { ActionContext } from "./context";
+import { ActionContext, type IActionContext } from "./context";
 import { DialogVariant, useDialog } from "../Dialog/context";
 import { useGames } from "../Games/context";
 import { useUser } from "../User/context";
 
 import { CANCELLATION_THRESHOLD_MS } from "@/constants/date";
 import { Collection } from "@/types";
-import type { IGame, IUser, IUserSafe } from "@/types/users";
+import type { IGame, IUser } from "@/types/users";
 import { dbAuth } from "@/utils/api/dbAuth";
 import { dbRequest } from "@/utils/api/dbRequest";
 import { isValidUserUpdate } from "@/utils/signup";
@@ -67,43 +67,48 @@ export function ActionProvider({ children }: IActionProvider) {
   const { games, setGames } = useGames();
   const { openDialog } = useDialog();
 
-  const { addShamefulUser, cancelGame, signupForGame, updateUser } =
-    useMemo(() => {
-      const _addShamefulUser = async (
-        gameId: ObjectId,
-        userId: ObjectId,
-        date: Date | string,
-      ) => {
-        try {
-          setError(null);
-          setLoading(true);
-          await dbRequest<IUser>("update", Collection.USERS, {
-            _id: userId,
-            shame: [{ game_id: gameId, date: new Date(date) }],
-          });
-        } catch (error) {
-          const errFull =
-            error instanceof Error
-              ? error
-              : new Error("addShamefulUser: Unknown error");
-          // eslint-disable-next-line no-console
-          console.error(errFull);
-          setError(errFull);
-        } finally {
-          setLoading(false);
-        }
-      };
+  const { addShamefulUser, cancelGame, signupForGame, updateUser } = useMemo<
+    Pick<
+      IActionContext,
+      "addShamefulUser" | "cancelGame" | "signupForGame" | "updateUser"
+    >
+  >(() => {
+    const _addShamefulUser: IActionContext["addShamefulUser"] = async (
+      gameId,
+      userId,
+      date,
+    ) => {
+      try {
+        setError(null);
+        setLoading(true);
+        await dbRequest<IUser>("update", Collection.USERS, {
+          _id: userId,
+          shame: [{ game_id: gameId, date: new Date(date) }],
+        });
+      } catch (error) {
+        const errFull =
+          error instanceof Error
+            ? error
+            : new Error("addShamefulUser: Unknown error");
+        // eslint-disable-next-line no-console
+        console.error(errFull);
+        setError(errFull);
+      } finally {
+        setLoading(false);
+      }
+    };
 
-      return {
-        addShamefulUser: _addShamefulUser,
-        cancelGame: (gameId: ObjectId, userId: ObjectId, date: string) => {
-          const gamePastThreshold =
-            Date.now() > Date.parse(date) - CANCELLATION_THRESHOLD_MS;
+    return {
+      addShamefulUser: _addShamefulUser,
+      cancelGame: (gameId, userId, date, options) => {
+        const gamePastThreshold =
+          Date.now() > Date.parse(date) - CANCELLATION_THRESHOLD_MS;
 
-          openDialog({
-            variant: DialogVariant.CANCEL,
-            title: "Cancel game?",
-            content: gamePastThreshold ? (
+        openDialog({
+          variant: DialogVariant.CANCEL,
+          title: "Cancel game?",
+          content:
+            options?.bypassThreshold !== true && gamePastThreshold ? (
               <div>
                 <h3>Whoa whoa whoa!</h3>
                 <p>
@@ -120,90 +125,88 @@ export function ActionProvider({ children }: IActionProvider) {
                 <p>Are you sure you want to cancel and drop your spot?</p>
               </div>
             ),
-            action: async () => {
-              try {
-                setLoading(true);
-                setError(null);
+          action: async () => {
+            try {
+              setLoading(true);
+              setError(null);
 
-                const newGames = await _cancelGame(games, gameId, userId);
-                setGames(newGames);
+              const newGames = await _cancelGame(games, gameId, userId);
+              setGames(newGames);
 
-                if (gamePastThreshold) {
-                  void addShamefulUser(gameId, userId, date);
-                }
-
-                openDialog();
-              } catch (error) {
-                const errFull =
-                  error instanceof Error
-                    ? error
-                    : new Error("cancelGame: Unknown error");
-                // eslint-disable-next-line no-console
-                console.error(errFull);
-                setError(errFull);
-              } finally {
-                setLoading(false);
+              if (options?.bypassThreshold !== true && gamePastThreshold) {
+                void addShamefulUser(gameId, userId, date);
               }
-            },
-          });
-        },
-        signupForGame: async (game: IGame | undefined, userId: ObjectId) => {
-          try {
-            setError(null);
-            setLoading(true);
-            // Can't submit w.o valid player but type safety
-            if (game === undefined) {
-              throw new Error("signupForGame: Game doesn't exist!");
+
+              openDialog();
+            } catch (error) {
+              const errFull =
+                error instanceof Error
+                  ? error
+                  : new Error("cancelGame: Unknown error");
+              // eslint-disable-next-line no-console
+              console.error(errFull);
+              setError(errFull);
+            } finally {
+              setLoading(false);
             }
-
-            const newGames = await _dbSignup({
-              ...game,
-              players: [...game.players, userId],
-            });
-
-            setGames(newGames);
-          } catch (error) {
-            const errFull =
-              error instanceof Error
-                ? error
-                : new Error("signupForGame: Unknown error");
-            // eslint-disable-next-line no-console
-            console.error(errFull);
-            setError(errFull);
-          } finally {
-            setLoading(false);
-          }
-        },
-        updateUser: async (_user: IUserSafe) => {
+          },
+        });
+      },
+      signupForGame: async (game, userId) => {
+        try {
           setError(null);
           setLoading(true);
-          try {
-            if (!isValidUserUpdate(_user)) {
-              throw new Error(
-                "User update error: Fields invalid! Check and try again.",
-              );
-            }
-            const { error } = await dbAuth("update", _user);
-
-            if (error !== null) {
-              throw error;
-            }
-
-            setUser(_user);
-          } catch (err) {
-            const errChecked =
-              err instanceof Error
-                ? err
-                : new Error("updateUser: Unknown error");
-            // eslint-disable-next-line no-console
-            console.error(errChecked);
-            setError(errChecked);
-          } finally {
-            setLoading(false);
+          // Can't submit w.o valid player but type safety
+          if (game === undefined) {
+            throw new Error("signupForGame: Game doesn't exist!");
           }
-        },
-      };
-    }, [games, openDialog, setGames, setUser]);
+
+          const newGames = await _dbSignup({
+            ...game,
+            players: [...game.players, userId],
+          });
+
+          setGames(newGames);
+        } catch (error) {
+          const errFull =
+            error instanceof Error
+              ? error
+              : new Error("signupForGame: Unknown error");
+          // eslint-disable-next-line no-console
+          console.error(errFull);
+          setError(errFull);
+        } finally {
+          setLoading(false);
+        }
+      },
+      updateUser: async (_user) => {
+        setError(null);
+        setLoading(true);
+        try {
+          if (!isValidUserUpdate(_user)) {
+            throw new Error(
+              "User update error: Fields invalid! Check and try again.",
+            );
+          }
+          const { error } = await dbAuth("update", _user);
+
+          if (error !== null) {
+            throw error;
+          }
+
+          setUser(_user);
+        } catch (err) {
+          const errChecked =
+            err instanceof Error ? err : new Error("updateUser: Unknown error");
+          // eslint-disable-next-line no-console
+          console.error(errChecked);
+          setError(errChecked);
+        } finally {
+          setLoading(false);
+        }
+      },
+    };
+  }, [games, openDialog, setGames, setUser]);
 
   return (
     <ActionContext.Provider

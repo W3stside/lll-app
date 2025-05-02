@@ -40,7 +40,7 @@ const Signups: React.FC<ISignups> = ({
 
   const { games: gamesContext, gamesByDay, setGames } = useGames();
   const { user: userContext, setUser } = useUser();
-  const { loading: actionLoading, signupForGame } = useActions();
+  const { loading: actionLoading, cancelGame, signupForGame } = useActions();
 
   const { filteredGames, searchFilter, filters, setFilter, setSearchFilter } =
     useFilterGames({
@@ -316,14 +316,20 @@ const Signups: React.FC<ISignups> = ({
                                         return (
                                           <Signees
                                             key={playerId.toString()}
-                                            date={nextGameDate}
                                             {...signee}
-                                            games={games}
-                                            game_id={game._id}
-                                            isUser={checkPlayerIsUser(
-                                              signee,
-                                              user,
-                                            )}
+                                            cancelGame={
+                                              checkPlayerIsUser(signee, user) &&
+                                              nextGameDate !== undefined
+                                                ? (e) => {
+                                                    e.stopPropagation();
+                                                    cancelGame(
+                                                      game._id,
+                                                      signee._id,
+                                                      nextGameDate,
+                                                    );
+                                                  }
+                                                : undefined
+                                            }
                                           />
                                         );
                                       })
@@ -349,13 +355,20 @@ const Signups: React.FC<ISignups> = ({
                                           <Signees
                                             key={playerId.toString()}
                                             {...signee}
-                                            date={nextGameDate}
-                                            games={games}
-                                            game_id={game._id}
-                                            isUser={checkPlayerIsUser(
-                                              signee,
-                                              user,
-                                            )}
+                                            cancelGame={
+                                              checkPlayerIsUser(signee, user) &&
+                                              nextGameDate !== undefined
+                                                ? (e) => {
+                                                    e.stopPropagation();
+                                                    cancelGame(
+                                                      game._id,
+                                                      signee._id,
+                                                      nextGameDate,
+                                                      { bypassThreshold: true },
+                                                    );
+                                                  }
+                                                : undefined
+                                            }
                                           />
                                         );
                                       })}
