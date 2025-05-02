@@ -2,9 +2,19 @@ import { GameFilters, type useFilterGames } from "@/hooks/useFilterGames";
 
 type IGameFilters = Omit<ReturnType<typeof useFilterGames>, "filteredGames"> & {
   searchFilter: string;
+  name: string;
+  type?: FilterType;
 };
 
-export function FilterGames({
+export enum FilterType {
+  GAMES = "games",
+  USERS = "users",
+  SHAMERS = "shamers",
+}
+
+export function FilterStuff({
+  type = FilterType.GAMES,
+  name,
   searchFilter,
   filters,
   setFilter,
@@ -13,7 +23,7 @@ export function FilterGames({
   return (
     <div className="flex flex-col gap-y-1 text-black container">
       <div className="container-header !h-auto -mt-2 -mx-1.5">
-        <h5 className="mr-auto px-2 py-1">Filter Games</h5>{" "}
+        <h5 className="mr-auto px-2 py-1 capitalize">Filter {name}</h5>{" "}
         <strong className="pr-2">x</strong>
       </div>
       <div className="flex items-center gap-x-2">
@@ -33,25 +43,27 @@ export function FilterGames({
               );
             }}
           />
-          <strong className="whitespace-nowrap text-sm">My games</strong>
+          <strong className="whitespace-nowrap text-sm">My {name}</strong>
         </div>
-        <div className="flex gap-x-2 items-center">
-          <input
-            type="radio"
-            id="filter-open-games"
-            name="filter-open-games"
-            checked={filters === GameFilters.OPEN_GAMES}
-            readOnly
-            onClick={() => {
-              setFilter(
-                filters !== GameFilters.OPEN_GAMES
-                  ? GameFilters.OPEN_GAMES
-                  : undefined,
-              );
-            }}
-          />
-          <strong className="whitespace-nowrap text-sm">Open games</strong>
-        </div>
+        {type === FilterType.GAMES && (
+          <div className="flex gap-x-2 items-center">
+            <input
+              type="radio"
+              id="filter-open-games"
+              name="filter-open-games"
+              checked={filters === GameFilters.OPEN_GAMES}
+              readOnly
+              onClick={() => {
+                setFilter(
+                  filters !== GameFilters.OPEN_GAMES
+                    ? GameFilters.OPEN_GAMES
+                    : undefined,
+                );
+              }}
+            />
+            <strong className="whitespace-nowrap text-sm">Open games</strong>
+          </div>
+        )}
       </div>
       <div className="flex gap-x-2 items-center">
         <input

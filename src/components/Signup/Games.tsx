@@ -36,7 +36,7 @@ export function Games({
           <strong className="flex items-center gap-x-2 text-lg">
             Game {game_id}{" "}
             {gender === Gender.FEMALE && (
-              <span className=" text-[var(--text-color-secondary)] text-[11px] bg-red-100 px-2 h-[20px] leading-[1.9]">
+              <span className=" text-black text-[11px] bg-red-100 px-2 h-[20px] leading-[1.9]">
                 Ladies
               </span>
             )}

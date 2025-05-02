@@ -1,13 +1,13 @@
 import type { ObjectId } from "mongodb";
-import { useState, useMemo } from "react";
-import { useDebounce } from "use-debounce";
+import { useMemo } from "react";
+
+import { useSearchFilter } from "./useSearchFilter";
 
 import { MAX_SIGNUPS_PER_GAME } from "@/constants/signups";
 import { GameStatus } from "@/types";
 import type { GamesByDay, IUser } from "@/types/users";
+import { filterUser } from "@/utils/filter";
 import { computeGameStatus, getLastGame } from "@/utils/games";
-
-const SEARCH_DEBOUNCE = 400;
 
 interface IUseFilterGames {
   usersById: Record<string, IUser>;
@@ -25,12 +25,8 @@ export function useFilterGames({
   gamesByDay,
   userId,
 }: IUseFilterGames) {
-  const [searchFilterRaw, setSearchFilter] = useState<string>("");
-  const [searchFilter] = useDebounce(searchFilterRaw, SEARCH_DEBOUNCE, {
-    leading: true,
-  });
-
-  const [filters, setFilter] = useState<GameFilters | undefined>(undefined);
+  const { filters, searchFilterRaw, searchFilter, setFilter, setSearchFilter } =
+    useSearchFilter();
 
   const flatGames = useMemo(
     () => Object.values(gamesByDay).flatMap((g) => [...g]),
@@ -41,14 +37,7 @@ export function useFilterGames({
     const users = Object.values(usersById);
     return searchFilter === ""
       ? users
-      : users.filter((u) => {
-          const fullName = `${u.first_name} ${u.last_name}`;
-          const searchTerm = searchFilter.toLowerCase();
-          return (
-            fullName.toLowerCase().includes(searchTerm) ||
-            u.phone_number.includes(searchTerm)
-          );
-        });
+      : users.filter((u) => filterUser(u, searchFilter));
   }, [searchFilter, usersById]);
 
   return useMemo(() => {
@@ -96,6 +85,8 @@ export function useFilterGames({
     gamesByDay,
     searchFilter,
     searchFilterRaw,
+    setFilter,
+    setSearchFilter,
     userId,
     usersFlatSearched,
   ]);

@@ -3,7 +3,7 @@ import Image from "next/image";
 import { useEffect, useState } from "react";
 
 import ebaumsWorld from "@/assets/ebaums-world.png";
-import { FilterGames } from "@/components/FilterGames";
+import { FilterStuff } from "@/components/FilterStuff";
 import { PartnerProducts } from "@/components/PartnerProducts";
 import { RegisterToPlay } from "@/components/Register/RegisterToPlay";
 import { Signees } from "@/components/Signup";
@@ -416,7 +416,8 @@ const Signups: React.FC<ISignups> = ({
               )}
             </div>
           </div>
-          <FilterGames
+          <FilterStuff
+            name="games"
             searchFilter={searchFilter}
             filters={filters}
             setFilter={setFilter}
