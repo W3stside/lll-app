@@ -112,7 +112,7 @@ export function Uploader({ title }: IUploader) {
             >
               <div className="flex items-center gap-x-2 text-md">
                 {file === undefined ? (
-                  "Select a photo [jpg, png]"
+                  "Select a photo"
                 ) : (
                   <strong>{file.name}</strong>
                 )}

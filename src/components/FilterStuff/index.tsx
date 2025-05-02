@@ -1,9 +1,11 @@
 import { GameFilters, type useFilterGames } from "@/hooks/useFilterGames";
+import { cn } from "@/utils/tailwind";
 
 type IGameFilters = Omit<ReturnType<typeof useFilterGames>, "filteredGames"> & {
   searchFilter: string;
   name: string;
   type?: FilterType;
+  className?: string;
 };
 
 export enum FilterType {
@@ -13,6 +15,7 @@ export enum FilterType {
 }
 
 export function FilterStuff({
+  className,
   type = FilterType.GAMES,
   name,
   searchFilter,
@@ -21,7 +24,9 @@ export function FilterStuff({
   setSearchFilter,
 }: IGameFilters) {
   return (
-    <div className="flex flex-col gap-y-1 text-black container">
+    <div
+      className={cn("flex flex-col gap-y-1 text-black container", className)}
+    >
       <div className="container-header !h-auto -mt-2 -mx-1.5">
         <h5 className="mr-auto px-2 py-1 capitalize">Filter {name}</h5>{" "}
         <strong className="pr-2">x</strong>

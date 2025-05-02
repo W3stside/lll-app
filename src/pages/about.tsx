@@ -65,14 +65,24 @@ export default function About({ isConnected, gamesByDay }: IAbout) {
           <h5 className="mb-3">
             Non-profit social group. <strong>All welcome!</strong>
           </h5>
+          <br />
           <p>
             Sign up for games & view lists{" "}
             <Link href={NAVLINKS_MAP.SIGNUP}>here</Link>
           </p>{" "}
+          <br />
           <p>
-            Cancellations <strong>within 12 hours</strong> of a game pay for
+            !! Cancellations <strong>within 12 hours</strong> of a game pay for
             their spot YOU are responsible for payments of anyone you add to the
-            list.
+            list !!
+          </p>
+          <br />
+          <p>
+            <strong>Bring a black AND white shirt</strong> <br />
+            <small>
+              Just bring both. Don't bring green and call it black. Just bring
+              black and white. No, red is not black.
+            </small>
           </p>
           <br />
           <p>
@@ -87,21 +97,24 @@ export default function About({ isConnected, gamesByDay }: IAbout) {
             <strong>We have a ladies team!</strong>
           </p>{" "}
           <p>Message Josh for the link if you wanna share it with someone.</p>
+          <br />
           <ul>
             <strong>Games:</strong>
-            {Object.entries(gamesByDay).map(([day, games]) => (
+            {Object.entries(gamesByDay).map(([day, games], idx) => (
               <li key={day}>
-                <div className="flex gap-x-2">
+                <div className="flex flex-wrap gap-x-2">
+                  {idx + 1}. {day}
                   {games.map((g, i) => (
                     <span key={g._id.toString()}>
-                      {g.day} @ {g.time}{" "}
-                      {games.length > 1 && i !== games.length - 1 && "//"}
+                      @ {g.time}
+                      {games.length > 1 && i !== games.length - 1 && ","}
                     </span>
                   ))}
                 </div>
               </li>
             ))}
           </ul>
+          <br />
           <div className="mt-2">
             <strong>Group link:</strong>{" "}
             <Link href={WHATS_APP_GROUP_URL} target="_blank" rel="noreferrer">

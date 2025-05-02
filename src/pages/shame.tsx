@@ -69,21 +69,23 @@ export default function WallOfShame({ users }: IWallOfShame) {
           <span className="text-7xl mb-2 mr-2">ಠ_ಠ</span>{" "}
           <span className="ml-6">BAH</span>
         </div>
-        <div className="container flex-col">
-          <div className="container-header !h-auto mb-2 -mt-2 -mx-1.5">x</div>
-          Where the shameful players who drop out less than 12 hours before
-          games are displayed for all of us to laugh at. Don't be like these
-          people!
+        <div className="flex flex-col gap-y-4">
+          <div className="container flex-col">
+            <div className="container-header !h-auto mb-2 -mt-2 -mx-1.5">x</div>
+            Where the shameful players who drop out less than 12 hours before
+            games are displayed for all of us to laugh at. Don't be like these
+            people!
+          </div>
+          <FilterStuff
+            type={FilterType.SHAMERS}
+            name="sins"
+            filters={filters}
+            setFilter={setFilter}
+            searchFilter={searchFilterRaw}
+            setSearchFilter={setSearchFilter}
+          />
         </div>
       </div>
-      <FilterStuff
-        type={FilterType.SHAMERS}
-        name="sins"
-        filters={filters}
-        setFilter={setFilter}
-        searchFilter={searchFilterRaw}
-        setSearchFilter={setSearchFilter}
-      />
       {shamers.length > 0 ? (
         <div className="flex flex-row flex-wrap items-center justify-center gap-y-2 gap-x-5">
           {users
