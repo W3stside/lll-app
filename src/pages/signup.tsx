@@ -156,7 +156,7 @@ const Signups: React.FC<ISignups> = ({
                             : gameStatus === GameStatus.PAST
                               ? userContext.role !== Role.ADMIN
                                 ? 50
-                                : 60
+                                : 58
                               : 103
                         }
                         customState={collapsed[day]}
@@ -220,7 +220,7 @@ const Signups: React.FC<ISignups> = ({
                                   {day}
                                   {gameStatus === GameStatus.PAST &&
                                     userContext.role === Role.ADMIN && (
-                                      <small className="text-xs monospace font-light no-italic lowercase bg-[var(--background-error)] p-[2px_4px] -mt-2">
+                                      <small className="text-xs monospace font-light no-italic lowercase bg-[var(--background-error)] p-[2px_4px] mt-[-2px]">
                                         Game past. Admin view only.
                                       </small>
                                     )}
