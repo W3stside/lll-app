@@ -150,15 +150,15 @@ const Signups: React.FC<ISignups> = ({
                         className="relative flex flex-col items-center justify-start md:px-5 gap-y-8 mb-30 w-full hover:bg-[var(--background-color-2)]"
                         collapsedClassName="container mb-0"
                         collapsedHeight={
-                          gameStatus !== GameStatus.PAST &&
+                          (userContext.role === Role.ADMIN || gameStatus !== GameStatus.PAST) &&
                           gamesFullyCapped.length > 0
                             ? 128
-                            : gameStatus === GameStatus.PAST
+                            : userContext.role !== Role.ADMIN && gameStatus === GameStatus.PAST
                               ? 50
                               : 103
                         }
                         customState={collapsed[day]}
-                        disabled={gameStatus === GameStatus.PAST}
+                        disabled={userContext.role !== Role.ADMIN && gameStatus === GameStatus.PAST}
                       >
                         <div
                           className={cn(
@@ -170,7 +170,7 @@ const Signups: React.FC<ISignups> = ({
                             },
                           )}
                           onClick={
-                            gameStatus === GameStatus.PAST
+                            userContext.role !== Role.ADMIN && gameStatus === GameStatus.PAST
                               ? undefined
                               : () => {
                                   setCollapse((prev) => ({
@@ -254,7 +254,7 @@ const Signups: React.FC<ISignups> = ({
                               Available games
                             </div>
                             {shareList !== undefined &&
-                              gameStatus !== GameStatus.PAST && (
+                              (userContext.role === Role.ADMIN || gameStatus !== GameStatus.PAST) && (
                                 <button
                                   className="flex items-center justify-center w-min whitespace-nowrap h-full underline"
                                   onClick={shareList}
@@ -390,12 +390,13 @@ const Signups: React.FC<ISignups> = ({
                           userId={user._id}
                           gameId={selectedGameId}
                           submitDisabled={
-                            selectedGameId !== undefined &&
+                            gameStatus === GameStatus.PAST ||
+                            (selectedGameId !== undefined &&
                             userContext.registered_games?.includes(
                               selectedGameId,
-                            )
+                            ))
                           }
-                          disabled={userFullyBooked}
+                          disabled={gameStatus === GameStatus.PAST || userFullyBooked}
                           setGameId={setSelectedGameId}
                           handleSignup={async () => {
                             if (selectedGameId === undefined) return;
