@@ -154,11 +154,16 @@ const Signups: React.FC<ISignups> = ({
                           gamesFullyCapped.length > 0
                             ? 128
                             : gameStatus === GameStatus.PAST
-                              ? 50
+                              ? userContext.role !== Role.ADMIN
+                                ? 50
+                                : 60
                               : 103
                         }
                         customState={collapsed[day]}
-                        disabled={gameStatus === GameStatus.PAST}
+                        disabled={
+                          userContext.role !== Role.ADMIN &&
+                          gameStatus === GameStatus.PAST
+                        }
                       >
                         <div
                           className={cn(
@@ -170,6 +175,7 @@ const Signups: React.FC<ISignups> = ({
                             },
                           )}
                           onClick={
+                            userContext.role !== Role.ADMIN &&
                             gameStatus === GameStatus.PAST
                               ? undefined
                               : () => {
@@ -204,11 +210,20 @@ const Signups: React.FC<ISignups> = ({
                               </small>
                               <div className="flex items-center w-full font-bold text-3xl italic uppercase tracking-tight">
                                 <span
-                                  className={cn({
-                                    "-mt-2": gameStatus === GameStatus.PAST,
-                                  })}
+                                  className={cn(
+                                    "flex flex-col items-start gap-x-5",
+                                    {
+                                      "-mt-2": gameStatus === GameStatus.PAST,
+                                    },
+                                  )}
                                 >
                                   {day}
+                                  {gameStatus === GameStatus.PAST &&
+                                    userContext.role === Role.ADMIN && (
+                                      <small className="text-xs monospace font-light no-italic lowercase bg-[var(--background-error)] p-[2px_4px]">
+                                        Game past. Admin view only.
+                                      </small>
+                                    )}
                                 </span>
                                 <strong className="ml-auto not-italic">
                                   {games.length}{" "}
@@ -254,7 +269,8 @@ const Signups: React.FC<ISignups> = ({
                               Available games
                             </div>
                             {shareList !== undefined &&
-                              gameStatus !== GameStatus.PAST && (
+                              (userContext.role === Role.ADMIN ||
+                                gameStatus !== GameStatus.PAST) && (
                                 <button
                                   className="flex items-center justify-center w-min whitespace-nowrap h-full underline"
                                   onClick={shareList}
@@ -390,12 +406,15 @@ const Signups: React.FC<ISignups> = ({
                           userId={user._id}
                           gameId={selectedGameId}
                           submitDisabled={
-                            selectedGameId !== undefined &&
-                            userContext.registered_games?.includes(
-                              selectedGameId,
-                            )
+                            gameStatus === GameStatus.PAST ||
+                            (selectedGameId !== undefined &&
+                              userContext.registered_games?.includes(
+                                selectedGameId,
+                              ))
                           }
-                          disabled={userFullyBooked}
+                          disabled={
+                            gameStatus === GameStatus.PAST || userFullyBooked
+                          }
                           setGameId={setSelectedGameId}
                           handleSignup={async () => {
                             if (selectedGameId === undefined) return;

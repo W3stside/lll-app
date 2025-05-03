@@ -27,6 +27,7 @@ export function RegisterToPlay({
     gameId === "" ||
     gameId === undefined ||
     disabled;
+
   return (
     <div
       className={cn("flex flex-col items-center mt-auto mb-8 w-full gap-y-6", {
