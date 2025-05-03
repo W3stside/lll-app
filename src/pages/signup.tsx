@@ -150,15 +150,20 @@ const Signups: React.FC<ISignups> = ({
                         className="relative flex flex-col items-center justify-start md:px-5 gap-y-8 mb-30 w-full hover:bg-[var(--background-color-2)]"
                         collapsedClassName="container mb-0"
                         collapsedHeight={
-                          (userContext.role === Role.ADMIN || gameStatus !== GameStatus.PAST) &&
+                          gameStatus !== GameStatus.PAST &&
                           gamesFullyCapped.length > 0
                             ? 128
-                            : userContext.role !== Role.ADMIN && gameStatus === GameStatus.PAST
-                              ? 50
+                            : gameStatus === GameStatus.PAST
+                              ? userContext.role !== Role.ADMIN
+                                ? 50
+                                : 60
                               : 103
                         }
                         customState={collapsed[day]}
-                        disabled={userContext.role !== Role.ADMIN && gameStatus === GameStatus.PAST}
+                        disabled={
+                          userContext.role !== Role.ADMIN &&
+                          gameStatus === GameStatus.PAST
+                        }
                       >
                         <div
                           className={cn(
@@ -170,7 +175,8 @@ const Signups: React.FC<ISignups> = ({
                             },
                           )}
                           onClick={
-                            userContext.role !== Role.ADMIN && gameStatus === GameStatus.PAST
+                            userContext.role !== Role.ADMIN &&
+                            gameStatus === GameStatus.PAST
                               ? undefined
                               : () => {
                                   setCollapse((prev) => ({
@@ -204,11 +210,20 @@ const Signups: React.FC<ISignups> = ({
                               </small>
                               <div className="flex items-center w-full font-bold text-3xl italic uppercase tracking-tight">
                                 <span
-                                  className={cn({
-                                    "-mt-2": gameStatus === GameStatus.PAST,
-                                  })}
+                                  className={cn(
+                                    "flex flex-col items-start gap-x-5",
+                                    {
+                                      "-mt-2": gameStatus === GameStatus.PAST,
+                                    },
+                                  )}
                                 >
                                   {day}
+                                  {gameStatus === GameStatus.PAST &&
+                                    userContext.role === Role.ADMIN && (
+                                      <small className="text-xs monospace font-light no-italic lowercase bg-[var(--background-error)] p-[2px_4px]">
+                                        Game past. Admin view only.
+                                      </small>
+                                    )}
                                 </span>
                                 <strong className="ml-auto not-italic">
                                   {games.length}{" "}
@@ -254,7 +269,8 @@ const Signups: React.FC<ISignups> = ({
                               Available games
                             </div>
                             {shareList !== undefined &&
-                              (userContext.role === Role.ADMIN || gameStatus !== GameStatus.PAST) && (
+                              (userContext.role === Role.ADMIN ||
+                                gameStatus !== GameStatus.PAST) && (
                                 <button
                                   className="flex items-center justify-center w-min whitespace-nowrap h-full underline"
                                   onClick={shareList}
@@ -392,11 +408,13 @@ const Signups: React.FC<ISignups> = ({
                           submitDisabled={
                             gameStatus === GameStatus.PAST ||
                             (selectedGameId !== undefined &&
-                            userContext.registered_games?.includes(
-                              selectedGameId,
-                            ))
+                              userContext.registered_games?.includes(
+                                selectedGameId,
+                              ))
                           }
-                          disabled={gameStatus === GameStatus.PAST || userFullyBooked}
+                          disabled={
+                            gameStatus === GameStatus.PAST || userFullyBooked
+                          }
                           setGameId={setSelectedGameId}
                           handleSignup={async () => {
                             if (selectedGameId === undefined) return;
