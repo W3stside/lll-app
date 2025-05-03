@@ -220,7 +220,7 @@ const Signups: React.FC<ISignups> = ({
                                   {day}
                                   {gameStatus === GameStatus.PAST &&
                                     userContext.role === Role.ADMIN && (
-                                      <small className="text-xs monospace font-light no-italic lowercase bg-[var(--background-error)] p-[2px_4px] mt-[-2px] mb-[2px]">
+                                      <small className="text-xs monospace font-light no-italic lowercase bg-[var(--background-error)] p-[2px_4px] mt-[-3px] mb-[3px]">
                                         Game past. Admin view only.
                                       </small>
                                     )}
