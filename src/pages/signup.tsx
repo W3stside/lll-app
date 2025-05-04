@@ -148,7 +148,11 @@ const Signups: React.FC<ISignups> = ({
                       <Collapsible
                         key={day}
                         className="relative flex flex-col items-center justify-start md:px-5 gap-y-8 mb-30 w-full hover:bg-[var(--background-color-2)]"
-                        collapsedClassName="container mb-0"
+                        collapsedClassName={cn("container mb-0", {
+                          "!bg-[var(--background-error-alt)]":
+                            gameStatus === GameStatus.PAST &&
+                            userContext.role === Role.ADMIN,
+                        })}
                         collapsedHeight={
                           gameStatus !== GameStatus.PAST &&
                           gamesFullyCapped.length > 0
@@ -156,7 +160,7 @@ const Signups: React.FC<ISignups> = ({
                             : gameStatus === GameStatus.PAST
                               ? userContext.role !== Role.ADMIN
                                 ? 50
-                                : 60
+                                : 85
                               : 103
                         }
                         customState={collapsed[day]}
@@ -218,12 +222,6 @@ const Signups: React.FC<ISignups> = ({
                                   )}
                                 >
                                   {day}
-                                  {gameStatus === GameStatus.PAST &&
-                                    userContext.role === Role.ADMIN && (
-                                      <small className="text-xs monospace font-light no-italic lowercase bg-[var(--background-error)] p-[2px_4px] mt-[-3px] mb-[3px]">
-                                        Game past. Admin view only.
-                                      </small>
-                                    )}
                                 </span>
                                 <strong className="ml-auto not-italic">
                                   {games.length}{" "}
@@ -233,10 +231,22 @@ const Signups: React.FC<ISignups> = ({
                             </div>
                           </div>
                           <RemainingSpots
-                            title="Spots remaining:"
+                            title={
+                              userContext.role === Role.ADMIN
+                                ? null
+                                : "Spots remaining:"
+                            }
                             disabled={gameStatus === GameStatus.PAST}
                             signedUp={maxSignups - openSpots}
                             maxSignups={maxSignups}
+                            text={
+                              userContext.role === Role.ADMIN && (
+                                <small className="text-xs monospace not-italic normal-case bg-[var(--background-error)] p-[2px_4px] mt-[-2px] mb-[3px]">
+                                  <strong>Game ended</strong> - tap for admin
+                                  details
+                                </small>
+                              )
+                            }
                           />
                           {gameStatus !== GameStatus.PAST &&
                             gamesFullyCapped.length > 0 && (
@@ -266,7 +276,10 @@ const Signups: React.FC<ISignups> = ({
                         <div className="flex flex-col gap-y-2 justify-start w-full">
                           <div className="flex items-center gap-x-2 h-[32.5px]">
                             <div className="container-header !h-auto !text-2xl p-1 w-full pl-4 !justify-start">
-                              Available games
+                              {gameStatus !== GameStatus.PAST
+                                ? "Available "
+                                : "Past "}{" "}
+                              games
                             </div>
                             {shareList !== undefined &&
                               (userContext.role === Role.ADMIN ||
@@ -275,7 +288,7 @@ const Signups: React.FC<ISignups> = ({
                                   className="flex items-center justify-center w-min whitespace-nowrap h-full underline"
                                   onClick={shareList}
                                 >
-                                  Share games!
+                                  Share/Copy list
                                 </button>
                               )}
                           </div>
@@ -330,10 +343,13 @@ const Signups: React.FC<ISignups> = ({
                                               key={playerId.toString()}
                                               {...signee}
                                               cancelGame={
+                                                gameStatus !==
+                                                  GameStatus.PAST &&
                                                 checkPlayerIsUser(
                                                   signee,
                                                   user,
-                                                ) && nextGameDate !== undefined
+                                                ) &&
+                                                nextGameDate !== undefined
                                                   ? (e) => {
                                                       e.stopPropagation();
                                                       cancelGame(
@@ -370,10 +386,13 @@ const Signups: React.FC<ISignups> = ({
                                               key={playerId.toString()}
                                               {...signee}
                                               cancelGame={
+                                                gameStatus !==
+                                                  GameStatus.PAST &&
                                                 checkPlayerIsUser(
                                                   signee,
                                                   user,
-                                                ) && nextGameDate !== undefined
+                                                ) &&
+                                                nextGameDate !== undefined
                                                   ? (e) => {
                                                       e.stopPropagation();
                                                       cancelGame(
@@ -399,40 +418,39 @@ const Signups: React.FC<ISignups> = ({
                           </div>
                         </div>
 
-                        <RegisterToPlay
-                          label="Sign up"
-                          games={games}
-                          loading={actionLoading}
-                          userId={user._id}
-                          gameId={selectedGameId}
-                          submitDisabled={
-                            gameStatus === GameStatus.PAST ||
-                            (selectedGameId !== undefined &&
+                        {gameStatus !== GameStatus.PAST && (
+                          <RegisterToPlay
+                            label="Sign up"
+                            games={games}
+                            loading={actionLoading}
+                            userId={user._id}
+                            gameId={selectedGameId}
+                            submitDisabled={
+                              selectedGameId !== undefined &&
                               userContext.registered_games?.includes(
                                 selectedGameId,
-                              ))
-                          }
-                          disabled={
-                            gameStatus === GameStatus.PAST || userFullyBooked
-                          }
-                          setGameId={setSelectedGameId}
-                          handleSignup={async () => {
-                            if (selectedGameId === undefined) return;
-                            await signupForGame(
-                              gamesByDay[day]?.find(
-                                (g) => g._id.toString() === selectedGameId,
-                              ),
-                              user._id,
-                            );
-                            setUser((u) => ({
-                              ...u,
-                              registered_games: [
-                                ...(u.registered_games ?? []),
-                                selectedGameId,
-                              ],
-                            }));
-                          }}
-                        />
+                              )
+                            }
+                            disabled={userFullyBooked}
+                            setGameId={setSelectedGameId}
+                            handleSignup={async () => {
+                              if (selectedGameId === undefined) return;
+                              await signupForGame(
+                                gamesByDay[day]?.find(
+                                  (g) => g._id.toString() === selectedGameId,
+                                ),
+                                user._id,
+                              );
+                              setUser((u) => ({
+                                ...u,
+                                registered_games: [
+                                  ...(u.registered_games ?? []),
+                                  selectedGameId,
+                                ],
+                              }));
+                            }}
+                          />
+                        )}
                       </Collapsible>
                     );
                   },

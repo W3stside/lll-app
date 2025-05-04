@@ -74,13 +74,15 @@ export const RemainingSpots = ({
 }: IRemainingSpots) => {
   return (
     <div className={cn("flex items-center pl-6 w-full text-lg", className)}>
-      <span
-        className={cn({
-          "line-through decoration-2": disabled,
-        })}
-      >
-        {title}
-      </span>
+      {title !== null && (
+        <span
+          className={cn({
+            "line-through decoration-2": disabled,
+          })}
+        >
+          {title}
+        </span>
+      )}
       <div
         className={cn(
           "inline-flex ml-auto p-1 px-2",

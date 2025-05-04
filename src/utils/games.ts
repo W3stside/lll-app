@@ -24,7 +24,8 @@ export const computeGameStatus = (
   );
 
   const gameStatus =
-    todayIdx > getUSDayIndex(gameDate) && new Date() > gameDate
+    new Date() > lastGameDate ||
+    (todayIdx > getUSDayIndex(gameDate) && new Date() > gameDate)
       ? GameStatus.PAST
       : GameStatus.UPCOMING;
 
@@ -35,7 +36,9 @@ export const getLastGame = (gamesByDay: GamesByDay, games: IGame[]) => {
   if (games.length === 1) return games[0];
   for (const day of DAYS_IN_WEEK_REVERSED) {
     const dayGames = gamesByDay[day];
-    if (dayGames?.[0] !== undefined) return dayGames[0];
+    if (dayGames?.[dayGames.length - 1] !== undefined) {
+      return dayGames[dayGames.length - 1];
+    }
   }
   return undefined; // Default return value if no game is found
 };
