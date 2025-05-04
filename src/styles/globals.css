@@ -23,15 +23,16 @@
   --background-yellow-warn: #d5be4c;
   --background-orange-warn: #ffb86a;
   --background-error: #ef666d;
+  --background-error-alt: #c08585;
  }
 
  .dark-theme {
   --navbar-logo-filter: invert(1);
   --background-color: #0e2757;
   --background-color-2: #050505;
-  --background-windows-blue: #9a7da8;
+  --background-windows-blue: #009688;
   --background-container-header-alt: #525e70;
-  --background-window-highlight: #028383;
+  --background-window-highlight: #b54278;
   --text-color-main: ghostwhite;
   --text-color-secondary: black;
   --text-color-alternate: #a1a1a1;
@@ -44,6 +45,7 @@
   --background-yellow-warn: #9f8e3b;
   --background-orange-warn: #876138;
   --background-error: #86393d;
+  --background-error-alt: #652424;
  }
 
 :root {
