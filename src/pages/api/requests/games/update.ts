@@ -1,4 +1,4 @@
-import { ObjectId, type UpdateResult } from "mongodb";
+import { type WithId, ObjectId } from "mongodb";
 import type { NextApiRequest, NextApiResponse } from "next";
 
 import client from "@/lib/mongodb";
@@ -12,38 +12,45 @@ export default async (req: NextApiRequest, res: NextApiResponse) => {
   }
 
   try {
-    const body = req.body as IGame & { newPlayerId?: ObjectId };
-    const { _id, newPlayerId, ...rest } = body;
+    const body = req.body as IGame & {
+      newPlayerId?: ObjectId;
+      cancelPlayerId?: ObjectId;
+    };
+    const { _id, newPlayerId, cancelPlayerId, ...rest } = body;
 
     const db = client.db("LLL");
     const collection = db.collection<IGame>(Collection.GAMES);
 
-    let result: UpdateResult<IGame>;
-    if (newPlayerId !== undefined) {
-      result = await collection.updateOne(
-        { _id: new ObjectId(_id) },
-        {
-          $addToSet: { players: newPlayerId },
-        },
+    const gameIdWrapped = new ObjectId(_id);
+    let result: WithId<IGame> | null;
+    if (newPlayerId !== undefined || cancelPlayerId !== undefined) {
+      result = await collection.findOneAndUpdate(
+        { _id: gameIdWrapped },
+        // Adding a player
+        newPlayerId !== undefined
+          ? {
+              $addToSet: { players: newPlayerId },
+            }
+          : // Cancelling a player
+            {
+              $pull: { players: cancelPlayerId },
+            },
+        { returnDocument: "after" },
       );
     } else {
-      result = await collection.updateOne(
-        { _id: new ObjectId(_id) },
+      result = await collection.findOneAndUpdate(
+        { _id: gameIdWrapped },
         {
           $set: rest,
         },
+        { returnDocument: "after" },
       );
     }
-    const updatedGame = await collection.findOne({
-      _id: new ObjectId(_id),
-    });
 
-    if (result.matchedCount === 0) {
+    if (result === null) {
       res.status(404).json({ message: "Document not found" });
-    } else if (result.acknowledged) {
-      res.status(200).json(updatedGame);
     } else {
-      throw new Error("Error updating document");
+      res.status(200).json(result);
     }
   } catch (error) {
     // eslint-disable-next-line no-console

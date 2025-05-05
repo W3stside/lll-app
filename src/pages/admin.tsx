@@ -21,6 +21,7 @@ import { isValid24hTime } from "@/utils/date";
 import { sortDaysOfWeek } from "@/utils/sort";
 import { cn } from "@/utils/tailwind";
 
+const ADDRESS_MAX_LENGTH = 40;
 const GOOGLE_MAPS_REGEX = /^(https?:\/\/)?(www\.)?google\.com\/maps/;
 const ERRORS_MAP = {
   time: "Invalid! Must be 24h format (e.g 19:00)",
@@ -413,22 +414,26 @@ export default function Admin({
               </small>
               Current games
             </div>
-            <div className="flex flex-col gap-y-2 text-xs">
+            <div className="flex flex-col gap-y-6 md:gap-y-2 text-xs">
               {sortedGames.map((game, idx) => (
                 <div
                   key={game._id.toString()}
-                  className="flex flex-row flex-wrap gap-x-3 items-center"
+                  className="flex flex-row gap-x-5 items-center"
                 >
                   <div className="flex max-w-[90%] justify-start gap-x-4">
-                    <span>
-                      {idx + 1}.{" "}
+                    <div className="flex flex-col w-auto">
+                      <span className="hidden md:inline">{idx + 1}. </span>
                       <strong>
-                        {game.day} - {game.time}
+                        {game.day} @ {game.time}
                       </strong>{" "}
-                      - {game.location}
-                    </span>
-                    <a href={game.mapUrl} target="_blank">
-                      {game.address.slice(0, 30)}...
+                      {game.location}
+                    </div>
+                    <a
+                      href={game.mapUrl}
+                      target="_blank"
+                      className="min-w-[100px] self-end text-right flex-1"
+                    >
+                      {game.address.slice(0, ADDRESS_MAX_LENGTH)}...
                     </a>
                   </div>
                   <button
