@@ -1,3 +1,5 @@
+import type { ReactNode } from "react";
+
 import { GameFilters, type useFilterGames } from "@/hooks/useFilterGames";
 import { cn } from "@/utils/tailwind";
 
@@ -6,6 +8,7 @@ type IGameFilters = Omit<ReturnType<typeof useFilterGames>, "filteredGames"> & {
   name: string;
   type?: FilterType;
   className?: string;
+  children?: ReactNode;
 };
 
 export enum FilterType {
@@ -20,6 +23,7 @@ export function FilterStuff({
   name,
   searchFilter,
   filters,
+  children,
   setFilter,
   setSearchFilter,
 }: IGameFilters) {
@@ -70,20 +74,25 @@ export function FilterStuff({
           </div>
         )}
       </div>
-      <div className="flex gap-x-2 items-center">
-        <input
-          type="text"
-          id="filter-by-user-info"
-          className="!h-8 !w-40 !px-2 !py-1 text-sm"
-          name="filter-by-user-info"
-          value={searchFilter}
-          onChange={(e) => {
-            setSearchFilter(e.target.value);
-          }}
-        />
-        <strong className="whitespace-nowrap text-sm">
-          Filter by user info
-        </strong>
+      <div className="flex flex-wrap gap-x-4 gap-y-2">
+        <div className="flex gap-x-2 items-center">
+          <input
+            type="text"
+            id="filter-by-user-info"
+            className="!h-8 !w-40 !px-2 !py-1 text-sm"
+            name="filter-by-user-info"
+            value={searchFilter}
+            onChange={(e) => {
+              setSearchFilter(e.target.value);
+            }}
+          />
+          <strong className="whitespace-nowrap text-sm">
+            Filter by user info
+          </strong>
+        </div>
+        {children !== undefined && (
+          <div className="flex gap-x-2 items-center">{children}</div>
+        )}
       </div>
     </div>
   );
