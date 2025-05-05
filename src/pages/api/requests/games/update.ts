@@ -1,4 +1,4 @@
-import { ObjectId } from "mongodb";
+import { ObjectId, type UpdateResult } from "mongodb";
 import type { NextApiRequest, NextApiResponse } from "next";
 
 import client from "@/lib/mongodb";
@@ -12,18 +12,28 @@ export default async (req: NextApiRequest, res: NextApiResponse) => {
   }
 
   try {
-    const body = req.body as IGame;
-    const { _id, ...rest } = body;
+    const body = req.body as IGame & { newPlayerId?: ObjectId };
+    const { _id, newPlayerId, ...rest } = body;
 
     const db = client.db("LLL");
     const collection = db.collection<IGame>(Collection.GAMES);
 
-    const result = await collection.updateOne(
-      { _id: new ObjectId(_id) },
-      {
-        $set: rest,
-      },
-    );
+    let result: UpdateResult<IGame>;
+    if (newPlayerId !== undefined) {
+      result = await collection.updateOne(
+        { _id: new ObjectId(_id) },
+        {
+          $addToSet: { players: newPlayerId },
+        },
+      );
+    } else {
+      result = await collection.updateOne(
+        { _id: new ObjectId(_id) },
+        {
+          $set: rest,
+        },
+      );
+    }
     const updatedGame = await collection.findOne({
       _id: new ObjectId(_id),
     });

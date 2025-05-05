@@ -17,9 +17,9 @@ interface IActionProvider {
   children: React.ReactNode;
 }
 
-const _dbSignup = async (request: IGame) => {
+const _dbGameSignup = async (gameId: ObjectId, newPlayerId: ObjectId) => {
   try {
-    await dbRequest("update", Collection.GAMES, request);
+    await dbRequest("update", Collection.GAMES, { _id: gameId, newPlayerId });
     const { data, error } = await dbRequest<IGame[]>("get", Collection.GAMES);
 
     if (error !== null) throw error;
@@ -163,10 +163,7 @@ export function ActionProvider({ children }: IActionProvider) {
             throw new Error("signupForGame: Game doesn't exist!");
           }
 
-          const newGames = await _dbSignup({
-            ...game,
-            players: [...game.players, userId],
-          });
+          const newGames = await _dbGameSignup(game._id, userId);
 
           setGames(newGames);
         } catch (error) {
