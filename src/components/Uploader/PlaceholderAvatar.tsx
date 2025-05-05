@@ -1,4 +1,5 @@
 import dynamic from "next/dynamic";
+import { memo } from "react";
 
 import { IMAGE_CLASS } from "../Avatar/constants";
 
@@ -32,7 +33,7 @@ const getRandomLenny = () => {
   return PLACEHOLDER_LENNIES[randomIndex];
 };
 
-const DynamicPlaceholderAvatar = ({ className }: IPlaceholderAvatar) => (
+const DynamicPlaceholderAvatar = memo(({ className }: IPlaceholderAvatar) => (
   <div
     className={cn(
       IMAGE_CLASS,
@@ -42,7 +43,7 @@ const DynamicPlaceholderAvatar = ({ className }: IPlaceholderAvatar) => (
   >
     {getRandomLenny()}
   </div>
-);
+));
 
 export const PlaceholderAvatar = dynamic(
   async () => await Promise.resolve(DynamicPlaceholderAvatar),

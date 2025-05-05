@@ -232,6 +232,7 @@ const Signups: React.FC<ISignups> = ({
                           </div>
                           <RemainingSpots
                             title={
+                              gameStatus === GameStatus.PAST &&
                               userContext.role === Role.ADMIN
                                 ? null
                                 : "Spots remaining:"
@@ -240,12 +241,13 @@ const Signups: React.FC<ISignups> = ({
                             signedUp={maxSignups - openSpots}
                             maxSignups={maxSignups}
                             text={
-                              userContext.role === Role.ADMIN && (
+                              gameStatus === GameStatus.PAST &&
+                              userContext.role === Role.ADMIN ? (
                                 <small className="text-xs monospace not-italic normal-case bg-[var(--background-error)] p-[2px_4px] mt-[-2px] mb-[3px]">
                                   <strong>Game ended</strong> - tap for admin
                                   details
                                 </small>
-                              )
+                              ) : undefined
                             }
                           />
                           {gameStatus !== GameStatus.PAST &&
