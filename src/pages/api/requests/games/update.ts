@@ -43,7 +43,7 @@ export default async (req: NextApiRequest, res: NextApiResponse) => {
     } else if (result.acknowledged) {
       res.status(200).json(updatedGame);
     } else {
-      res.status(500).json({ message: "Error updating document" });
+      throw new Error("Error updating document");
     }
   } catch (error) {
     // eslint-disable-next-line no-console

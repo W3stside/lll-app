@@ -51,10 +51,15 @@ export function useWeeklyGamesData(
 
   return useMemo(
     () =>
-      filteredGamesByDay.flatMap<GameData>(([day, games]) => {
-        if (games.length === 0) {
+      filteredGamesByDay.flatMap<GameData>(([day, unsortedGames]) => {
+        if (unsortedGames.length === 0) {
           return [DEFAULT_GAME_DATA];
         }
+
+        const games = unsortedGames.toSorted(
+          (a, b) =>
+            Number(a.time.replace(":", "")) - Number(b.time.replace(":", "")),
+        );
 
         const { gameStatus, gameDate } = computeGameStatus(
           games,
@@ -134,7 +139,7 @@ ${p.name} (${p.phone})`,
             day: day as IGame["day"],
             gameStatus,
             gameDate,
-            games: [...games].sort((a, b) => Number(a.time) - Number(b.time)),
+            games,
             signedUp,
             capacity,
             gamesFullyCapped,
