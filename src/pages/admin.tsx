@@ -165,10 +165,14 @@ export default function Admin({
             game.day === targettedGame.day &&
             game.time === targettedGame.time &&
             game.location === targettedGame.location &&
-            game.address === targettedGame.address,
+            game.address === targettedGame.address &&
+            game.gender === targettedGame.gender &&
+            game.speed === targettedGame.speed,
         )
       ) {
-        throw new Error("Game already exists for this day");
+        throw new Error(
+          "Game already exists for this day with the same configuration",
+        );
       }
 
       setAddGameError(null);
