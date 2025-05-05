@@ -263,8 +263,10 @@ const Signups: React.FC<ISignups> = ({
                                       {" @ "}
                                     </span>
                                     <span>
-                                      {gamesFullyCapped
-                                        .map((_, idx) => games[idx].time)
+                                      {capacity
+                                        .flatMap((gc, idx) =>
+                                          gc <= 0 ? [games[idx].time] : [],
+                                        )
                                         .join(", ")}
                                     </span>
                                   </div>

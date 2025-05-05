@@ -26,31 +26,29 @@ const _dbGameSignup = async (gameId: ObjectId, newPlayerId: ObjectId) => {
 
     return data;
   } catch (e) {
-    throw new Error(e instanceof Error ? e.message : "Unknown error occurred.");
+    throw new Error(
+      e instanceof Error ? e.message : "_dbGameSignup: Unknown error occurred.",
+    );
   }
 };
 
-const _cancelGame = async (
-  games: IGame[],
-  gameId: ObjectId,
-  userId: ObjectId,
-) => {
+const _dbCancelGame = async (gameId: ObjectId, userId: ObjectId) => {
   try {
-    await dbRequest<IGame>("update", Collection.GAMES, {
+    await dbRequest("update", Collection.GAMES, {
       _id: gameId,
-      players:
-        games
-          .find((g) => g._id.toString() === gameId.toString())
-          ?.players.filter((pl) => pl.toString() !== userId.toString()) ?? [],
+      cancelPlayerId: userId,
     });
 
-    const { data } = await dbRequest<IGame[]>("get", Collection.GAMES);
+    const { data, error } = await dbRequest<IGame[]>("get", Collection.GAMES);
+
+    if (error !== null) throw error;
+
     return data;
   } catch (error) {
     const errFull =
       error instanceof Error
         ? error
-        : new Error("_cancelGame: Unknown error occurred");
+        : new Error("_dbCancelGame: Unknown error occurred");
 
     // eslint-disable-next-line no-console
     console.error(errFull);
@@ -64,7 +62,7 @@ export function ActionProvider({ children }: IActionProvider) {
   const [errorState, setError] = useState<Error | null>(null);
 
   const { setUser } = useUser();
-  const { games, setGames } = useGames();
+  const { setGames } = useGames();
   const { openDialog } = useDialog();
 
   const { addShamefulUser, cancelGame, signupForGame, updateUser } = useMemo<
@@ -132,7 +130,7 @@ export function ActionProvider({ children }: IActionProvider) {
               setLoading(true);
               setError(null);
 
-              const newGames = await _cancelGame(games, gameId, userId);
+              const newGames = await _dbCancelGame(gameId, userId);
               setGames(newGames);
 
               if (options?.bypassThreshold !== true && gamePastThreshold) {
@@ -205,7 +203,7 @@ export function ActionProvider({ children }: IActionProvider) {
         }
       },
     };
-  }, [games, openDialog, setGames, setUser]);
+  }, [openDialog, setGames, setUser]);
 
   return (
     <ActionContext.Provider

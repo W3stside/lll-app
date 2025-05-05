@@ -16,7 +16,10 @@ export function groupGamesByDay(games: IGame[]) {
   return sortDaysOfWeek(games).reduce<GamesByDay>(
     (acc, game) => ({
       ...acc,
-      [game.day]: [...(acc[game.day] ?? []), game],
+      [game.day]: [...(acc[game.day] ?? []), game].sort(
+        (a, b) =>
+          Number(a.time.replace(/:/g, "")) - Number(b.time.replace(/:/g, "")),
+      ),
     }),
     {},
   );
