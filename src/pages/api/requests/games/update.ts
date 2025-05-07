@@ -68,8 +68,7 @@ export default async (req: NextApiRequest, res: NextApiResponse) => {
 
         // Player cancelling is in the waitlist
         if (playerIdx < MAX_SIGNUPS_PER_GAME) {
-          const newlyConfirmedPlayer =
-            result.players[result.players.length - 1];
+          const newlyConfirmedPlayer = result.players[MAX_SIGNUPS_PER_GAME - 1];
 
           const newConfirmedUser = await db
             .collection(Collection.USERS)
