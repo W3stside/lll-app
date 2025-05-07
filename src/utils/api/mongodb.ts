@@ -45,9 +45,10 @@ export async function fetchUsersFromMongodb(
 }
 
 type CollectionToDocument = {
-  [Collection.USERS]: IUser;
-  [Collection.GAMES]: IGame;
-  [Collection.ADMIN]: IAdmin;
+  [Collection.USERS]: IUser[];
+  [Collection.GAMES]: IGame[];
+  [Collection.ADMIN]: IAdmin[];
+  [Collection.ME]: IUser;
 };
 
 export function fetchRequiredCollectionsFromMongoDb(
@@ -68,9 +69,9 @@ export function fetchRequiredCollectionsFromMongoDb(
     const db = client.db("LLL");
     const collectionsResults = (await Promise.all(
       [Collection.GAMES, Collection.USERS].map(
-        async (coll) =>
+        async (c) =>
           await db
-            .collection<CollectionToDocument[typeof coll]>(coll)
+            .collection<CollectionToDocument[typeof c]>(c)
             .find({}, { projection: { password: 0 } })
             .toArray(),
       ),
