@@ -16,7 +16,7 @@ export async function dbAuth<T>(
   try {
     const res = await fetch(`/api/auth/${action}`, {
       method: "POST",
-      ...(action === "logout" ? {} : { body: JSON.stringify(body) }),
+      ...(action === "logout" ? undefined : { body: JSON.stringify(body) }),
       headers: {
         "Content-Type": "application/json",
       },

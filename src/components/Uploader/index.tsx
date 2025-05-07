@@ -20,6 +20,7 @@ const COMPRESS_OPTIONS = {
   maxWidthOrHeight: MAX_IMAGE_WIDTH,
   useWebWorker: true,
 };
+const ALLOWED_FILE_TYPES = ["image/jpeg", "image/png", "image/gif"];
 
 const ERRORS_MAP = {
   fileTooLarge: "File size is too large. Must be less than 1mb",
@@ -89,7 +90,7 @@ export function Uploader({ title }: IUploader) {
   const disabled =
     file === undefined ||
     file.size > ONE_MB ||
-    (file.type !== "image/jpeg" && file.type !== "image/png");
+    !ALLOWED_FILE_TYPES.includes(file.type);
 
   return (
     <div className="flex flex-col">
