@@ -127,7 +127,7 @@ export function SigneeComponent({
           <div className="flex flex-col w-full">{childrenBelow}</div>
         )}
         {errorMsg !== null && (
-          <div className="p-2 w-full bg-gray-100 text-red-500 text-sm text-left break-all">
+          <div className="mt-2 p-1 w-full bg-gray-100 text-red-500 text-sm text-left break-all">
             {errorMsg}
           </div>
         )}

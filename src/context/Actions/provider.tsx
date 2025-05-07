@@ -1,14 +1,20 @@
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import type { ObjectId } from "mongodb";
-import { useState, useMemo } from "react";
+import { useCallback } from "react";
 
-import { ActionContext, type IActionContext } from "./context";
+import {
+  ActionContext,
+  type IAddShamefulUserArgs,
+  type ISignupForGameArgs,
+  type ICancelGameArgs,
+} from "./context";
 import { DialogVariant, useDialog } from "../Dialog/context";
 import { useGames } from "../Games/context";
 import { useUser } from "../User/context";
 
 import { CANCELLATION_THRESHOLD_MS } from "@/constants/date";
 import { Collection } from "@/types";
-import type { IGame, IUser } from "@/types/users";
+import type { IGame, IUser, IUserSafe } from "@/types/users";
 import { dbAuth } from "@/utils/api/dbAuth";
 import { dbRequest } from "@/utils/api/dbRequest";
 import { isValidUserUpdate } from "@/utils/signup";
@@ -58,55 +64,129 @@ const _dbCancelGame = async (gameId: ObjectId, userId: ObjectId) => {
 };
 
 export function ActionProvider({ children }: IActionProvider) {
-  const [loading, setLoading] = useState(false);
-  const [errorState, setError] = useState<Error | null>(null);
-
-  const { user, setUser } = useUser();
-  const { setGames } = useGames();
+  const queryClient = useQueryClient();
   const { openDialog } = useDialog();
+  const { games } = useGames();
+  const { setUser } = useUser();
 
-  const { addShamefulUser, cancelGame, signupForGame, updateUser } = useMemo<
-    Pick<
-      IActionContext,
-      "addShamefulUser" | "cancelGame" | "signupForGame" | "updateUser"
-    >
-  >(() => {
-    const _addShamefulUser: IActionContext["addShamefulUser"] = async (
+  const {
+    mutateAsync: signupForGame,
+    error: signupError,
+    isPending: isSignupLoading,
+  } = useMutation({
+    mutationFn: async ({ gameId, userId }: ISignupForGameArgs) => {
+      const game = games.find((g) => g._id.toString() === gameId.toString());
+
+      if (game === undefined) {
+        throw new Error("signupForGame: Game doesn't exist!");
+      }
+
+      return await _dbGameSignup(game._id, userId);
+    },
+    async onSuccess() {
+      // Invalidate and refetch
+      await queryClient.invalidateQueries({
+        queryKey: ["games"],
+      });
+    },
+    mutationKey: ["signupForGame"],
+  });
+
+  const {
+    mutateAsync: addShamefulUser,
+    error: addShamefulUserError,
+    isPending: isAddShamefulUserLoading,
+  } = useMutation({
+    mutationFn: async ({ gameId, userId, date }: IAddShamefulUserArgs) => {
+      const { data, error } = await dbRequest<IUser>(
+        "update",
+        Collection.USERS,
+        {
+          _id: userId,
+          shame: [{ game_id: gameId, date: new Date(date) }],
+        },
+      );
+
+      if (error !== null) throw error;
+
+      return data;
+    },
+    async onSuccess() {
+      // Invalidate and refetch
+      await queryClient.invalidateQueries({
+        queryKey: ["users"],
+      });
+    },
+    mutationKey: ["addShamefulUser"],
+  });
+
+  const {
+    mutateAsync: updateUser,
+    error: updateUserError,
+    isPending: isUpdateUserLoading,
+  } = useMutation({
+    mutationFn: async (_user: IUserSafe) => {
+      try {
+        if (!isValidUserUpdate(_user)) {
+          throw new Error(
+            "User update error: Fields invalid! Check and try again.",
+          );
+        }
+        const { data, error } = await dbAuth("update", _user);
+
+        if (error !== null) {
+          throw error;
+        }
+
+        return data;
+      } catch (err) {
+        throw err instanceof Error
+          ? err
+          : new Error("updateUser: Unknown error");
+      }
+    },
+    async onSuccess() {
+      // Invalidate and refetch
+      await queryClient.invalidateQueries({
+        queryKey: ["users"],
+      });
+    },
+    mutationKey: ["updateUser"],
+  });
+
+  const {
+    mutateAsync: _cancelGame,
+    error: cancelError,
+    isPending: isCancelLoading,
+  } = useMutation({
+    mutationFn: async ({ gameId, userId }: ICancelGameArgs) => {
+      return await _dbCancelGame(gameId, userId);
+    },
+    async onSuccess() {
+      // Invalidate and refetch
+      await queryClient.invalidateQueries({
+        queryKey: ["games"],
+      });
+    },
+    mutationKey: ["cancelGame"],
+  });
+
+  const cancelGame = useCallback(
+    ({
       gameId,
       userId,
       date,
-    ) => {
-      try {
-        setError(null);
-        setLoading(true);
-        await dbRequest<IUser>("update", Collection.USERS, {
-          _id: userId,
-          shame: [{ game_id: gameId, date: new Date(date) }],
-        });
-      } catch (error) {
-        const errFull =
-          error instanceof Error
-            ? error
-            : new Error("addShamefulUser: Unknown error");
-        // eslint-disable-next-line no-console
-        console.error(errFull);
-        setError(errFull);
-      } finally {
-        setLoading(false);
-      }
-    };
+      options: { bypassThreshold } = {},
+    }: ICancelGameArgs) => {
+      const gamePastThreshold =
+        Date.now() > Date.parse(date) - CANCELLATION_THRESHOLD_MS;
 
-    return {
-      addShamefulUser: _addShamefulUser,
-      cancelGame: (gameId, userId, date, options) => {
-        const gamePastThreshold =
-          Date.now() > Date.parse(date) - CANCELLATION_THRESHOLD_MS;
-
-        openDialog({
-          variant: DialogVariant.CANCEL,
-          title: "Cancel game?",
-          content:
-            options?.bypassThreshold !== true && gamePastThreshold ? (
+      openDialog({
+        variant: DialogVariant.CANCEL,
+        title: "Cancel game?",
+        content: (
+          <>
+            {bypassThreshold !== true && gamePastThreshold ? (
               <div className="flex flex-col items-center gap-y-6">
                 <h3>Whoa whoa whoa!</h3>
                 <div>
@@ -124,104 +204,49 @@ export function ActionProvider({ children }: IActionProvider) {
                 <h3>Heads up!</h3>
                 <p>Are you sure you want to cancel and drop your spot?</p>
               </div>
+            )}
+          </>
+        ),
+        action: async () => {
+          await _cancelGame({
+            gameId,
+            userId,
+            date,
+          });
+
+          if (bypassThreshold !== true && gamePastThreshold) {
+            void addShamefulUser({ gameId, userId, date });
+          }
+
+          setUser((state) => ({
+            ...state,
+            registered_games: state.registered_games?.filter(
+              (g) => g !== gameId.toString(),
             ),
-          action: async () => {
-            try {
-              setLoading(true);
-              setError(null);
+          }));
 
-              const newGames = await _dbCancelGame(gameId, userId);
-              setGames(newGames);
-
-              // Remove the canceled game from the user's registered games
-              setUser((state) => ({
-                ...state,
-                registered_games: user.registered_games?.filter(
-                  (g) => g !== gameId.toString(),
-                ),
-              }));
-
-              if (options?.bypassThreshold !== true && gamePastThreshold) {
-                void addShamefulUser(gameId, userId, date);
-              }
-
-              openDialog();
-            } catch (error) {
-              const errFull =
-                error instanceof Error
-                  ? error
-                  : new Error("cancelGame: Unknown error");
-              // eslint-disable-next-line no-console
-              console.error(errFull);
-              setError(errFull);
-            } finally {
-              setLoading(false);
-            }
-          },
-        });
-      },
-      signupForGame: async (game, userId) => {
-        try {
-          setError(null);
-          setLoading(true);
-          // Can't submit w.o valid player but type safety
-          if (game === undefined) {
-            throw new Error("signupForGame: Game doesn't exist!");
-          }
-
-          const newGames = await _dbGameSignup(game._id, userId);
-
-          setGames(newGames);
-        } catch (error) {
-          const errFull =
-            error instanceof Error
-              ? error
-              : new Error("signupForGame: Unknown error");
-          // eslint-disable-next-line no-console
-          console.error(errFull);
-          setError(errFull);
-        } finally {
-          setLoading(false);
-        }
-      },
-      updateUser: async (_user) => {
-        setError(null);
-        setLoading(true);
-        try {
-          if (!isValidUserUpdate(_user)) {
-            throw new Error(
-              "User update error: Fields invalid! Check and try again.",
-            );
-          }
-          const { error } = await dbAuth("update", _user);
-
-          if (error !== null) {
-            throw error;
-          }
-
-          setUser(_user);
-        } catch (err) {
-          const errChecked =
-            err instanceof Error ? err : new Error("updateUser: Unknown error");
-          // eslint-disable-next-line no-console
-          console.error(errChecked);
-          setError(errChecked);
-        } finally {
-          setLoading(false);
-        }
-      },
-    };
-  }, [openDialog, setGames, setUser, user.registered_games]);
+          openDialog();
+        },
+      });
+    },
+    [_cancelGame, addShamefulUser, openDialog, setUser],
+  );
 
   return (
     <ActionContext.Provider
       value={{
         addShamefulUser,
+        isAddShamefulUserLoading,
+        addShamefulUserError,
         cancelGame,
+        isCancelLoading,
+        cancelError,
         signupForGame,
+        isSignupLoading,
+        signupError,
         updateUser,
-        loading,
-        error: errorState,
+        isUpdateUserLoading,
+        updateUserError,
       }}
     >
       {children}
