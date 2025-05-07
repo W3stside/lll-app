@@ -10,7 +10,7 @@ import {
   NAVLINKS_MAP,
   WHATS_APP_GROUP_URL,
 } from "@/constants/links";
-import { useClientUser } from "@/hooks/useClientUser";
+import { useUser } from "@/context/User/context";
 import { Role } from "@/types";
 import { dbAuth } from "@/utils/api/dbAuth";
 import { cn } from "@/utils/tailwind";
@@ -27,7 +27,7 @@ export function Footer() {
     }
   }, [router]);
 
-  const { user, isLoading } = useClientUser(router.pathname);
+  const { user, isLoading } = useUser();
 
   return (
     <footer className="container flex justify-center items-center bg-gray-800 text-white w-full !max-w-none mt-auto">
@@ -50,7 +50,7 @@ export function Footer() {
           >
             LLL WhatsApp
           </a>
-          {(isLoading || user !== undefined) && (
+          {(isLoading || user !== null) && (
             <button
               className={cn(
                 "w-[75px] h-[40px] justify-center lg:hidden ml-4 bg-[var(--background-color-2)] whitespace-nowrap",

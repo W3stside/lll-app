@@ -4,7 +4,7 @@ import type { IAdmin } from "@/types/admin";
 
 interface IAdminContext {
   admin: IAdmin | undefined;
-  setAdmin: React.Dispatch<React.SetStateAction<IAdmin | undefined>>;
+  error: Error | null;
 }
 
 export const AdminContext = createContext<IAdminContext | undefined>(undefined);

@@ -13,13 +13,16 @@ interface ISignees
 }
 
 export function Signees({ _id, children, cancelGame, ...rest }: ISignees) {
-  const { loading, error } = useActions();
+  const { isCancelLoading, isSignupLoading, cancelError, signupError } =
+    useActions();
+
+  const errorMsg = cancelError?.message ?? signupError?.message ?? null;
 
   return (
     <SigneeComponent
       _id={_id}
-      loading={cancelGame !== undefined && loading}
-      errorMsg={error?.message ?? null}
+      loading={cancelGame !== undefined && (isCancelLoading || isSignupLoading)}
+      errorMsg={cancelGame !== undefined ? errorMsg : null}
       handleCancel={cancelGame}
       {...rest}
     >

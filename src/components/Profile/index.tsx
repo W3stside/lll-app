@@ -17,6 +17,7 @@ import { GameStatus } from "@/types";
 import type { IAdmin } from "@/types/admin";
 import type { IGame, IUser, IUserSafe } from "@/types/users";
 import { groupGamesByDay } from "@/utils/data";
+import { computeGameDate } from "@/utils/date";
 import { computeGameStatus, getLastGame } from "@/utils/games";
 import { isValidUserUpdate } from "@/utils/signup";
 import { formatPhoneNumber } from "@/utils/user";
@@ -48,7 +49,13 @@ export function Profile({
   profileUser,
   userGames: userGamesServer,
 }: IProfile) {
-  const { loading, error, cancelGame, updateUser } = useActions();
+  const {
+    cancelError,
+    updateUserError,
+    cancelGame,
+    updateUser,
+    isUpdateUserLoading,
+  } = useActions();
 
   const { games } = useGames();
 
@@ -131,10 +138,10 @@ export function Profile({
             <div className="mr-auto px-2 py-1">Update user info</div> X
           </div>
           <div className="flex flex-col items-center gap-y-2 px-2 py-2">
-            {!loading ? (
+            {!isUpdateUserLoading ? (
               <>
                 <RegisterForm
-                  loading={loading}
+                  loading={isUpdateUserLoading}
                   label={
                     <>
                       Update user{" "}
@@ -154,9 +161,9 @@ export function Profile({
                     userRef.current = currentUser;
                   }}
                 />
-                {error !== null && (
+                {updateUserError !== null && (
                   <span className="px-2 py-1 text-xs text-red-500">
-                    {error.message}
+                    {updateUserError.message}
                   </span>
                 )}
               </>
@@ -217,7 +224,15 @@ export function Profile({
                             className="flex items-center justify-center h-full w-[50px] bg-[var(--background-error)]"
                             onClick={(e) => {
                               e.stopPropagation();
-                              cancelGame(game._id, profileUser._id, "");
+                              cancelGame({
+                                gameId: game._id,
+                                userId: profileUser._id,
+                                date: computeGameDate(
+                                  game.day,
+                                  game.time,
+                                  "WET",
+                                ).toISOString(),
+                              });
                             }}
                           >
                             X
@@ -225,6 +240,11 @@ export function Profile({
                         )}
                       </div>
                     ))}
+                    {cancelError !== null && (
+                      <small className="mt-1 p-1 bg-[var(--background-error)]">
+                        {cancelError.message}
+                      </small>
+                    )}
                   </div>,
                 ];
               })

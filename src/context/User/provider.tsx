@@ -34,6 +34,8 @@ export function UserProvider({
       value={{
         user,
         setUser,
+        error,
+        isLoading,
       }}
     >
       {children}

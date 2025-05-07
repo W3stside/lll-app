@@ -7,6 +7,7 @@ import { ActionProvider } from "@/context/Actions/provider";
 import { AdminProvider } from "@/context/Admin/provider";
 import { DialogProvider } from "@/context/Dialog/provider";
 import { GamesProvider } from "@/context/Games/provider";
+import { QueriesProvider } from "@/context/Queries/provider";
 import { UserProvider } from "@/context/User/provider";
 import type { IAdmin } from "@/types/admin";
 import type { IUserSafe, IGame, IUser } from "@/types/users";
@@ -24,19 +25,21 @@ export default function App({
   pageProps,
 }: AppProps<IServerSideProps>) {
   return (
-    <UserProvider initialState={pageProps.user}>
-      <DialogProvider>
-        <GamesProvider initialState={pageProps.games}>
-          <ActionProvider>
-            <AdminProvider initialState={pageProps.admin}>
-              <Layout usersById={pageProps.usersById}>
-                <Component {...pageProps} />
-              </Layout>
-            </AdminProvider>
-            <VariantDialog />
-          </ActionProvider>
-        </GamesProvider>
-      </DialogProvider>
-    </UserProvider>
+    <QueriesProvider>
+      <UserProvider initialState={pageProps.user}>
+        <DialogProvider>
+          <GamesProvider initialState={pageProps.games}>
+            <ActionProvider>
+              <AdminProvider initialState={pageProps.admin}>
+                <Layout usersById={pageProps.usersById}>
+                  <Component {...pageProps} />
+                </Layout>
+              </AdminProvider>
+              <VariantDialog />
+            </ActionProvider>
+          </GamesProvider>
+        </DialogProvider>
+      </UserProvider>
+    </QueriesProvider>
   );
 }
