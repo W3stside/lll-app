@@ -19,7 +19,6 @@ export interface INewSignup extends IBaseUser {
 
 export interface IUser extends INewSignup {
   _id: ObjectId;
-  // Games?: string[];
 }
 
 export type IUserFromCookies = Pick<IUser, "_id">;
