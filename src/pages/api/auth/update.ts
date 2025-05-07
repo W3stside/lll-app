@@ -1,3 +1,4 @@
+import { ObjectId } from "mongodb";
 import type { NextApiRequest, NextApiResponse } from "next";
 
 import client from "@/lib/mongodb";
@@ -11,13 +12,13 @@ export default async function handler(
 ) {
   verifyAuthBody(req, res, "update");
 
-  const { first_name, last_name, phone_number, avatarUrl } =
+  const { _id, first_name, last_name, phone_number, avatarUrl } =
     req.body as INewSignup;
 
   const db = client.db("LLL");
   const users = db.collection(Collection.USERS);
 
-  const user = await users.findOne<INewSignup>({ phone_number });
+  const user = await users.findOne<INewSignup>({ _id: new ObjectId(_id) });
 
   if (!user) {
     res.status(401).json({ message: "Invalid credentials" });

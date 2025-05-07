@@ -23,14 +23,14 @@ export const getServerSideProps: GetServerSideProps = withServerSideProps(
 
       return {
         props: {
-          admin: JSON.parse(JSON.stringify(admin)) as string,
-          profileUser: JSON.parse(JSON.stringify(fullUser)) as string,
-          usersById: JSON.parse(JSON.stringify(usersById)) as string,
-          users: JSON.parse(JSON.stringify(users)) as string,
           isConnected: true,
+          admin: JSON.parse(JSON.stringify(admin)) as string,
           avatarUrl: fullUser.avatarUrl ?? null,
           games: JSON.parse(JSON.stringify(games)) as string,
+          users: JSON.parse(JSON.stringify(users)) as string,
           userGames: JSON.parse(JSON.stringify(userGames)) as string,
+          usersById: JSON.parse(JSON.stringify(usersById)) as string,
+          profileUser: JSON.parse(JSON.stringify(fullUser)) as string,
         },
       };
     } catch (e) {
@@ -38,14 +38,14 @@ export const getServerSideProps: GetServerSideProps = withServerSideProps(
       console.error(e);
       return {
         props: {
+          isConnected: false,
+          admin: null,
           avatarUrl: null,
-          userGames: [],
           games: [],
           users: [],
-          admin: null,
-          profileUser: null,
+          userGames: [],
           usersById: {},
-          isConnected: false,
+          profileUser: null,
         },
       };
     }

@@ -49,7 +49,7 @@ export function Navbar({ usersById }: INavbar) {
           <Image
             src={logo}
             alt="LLL logo"
-            className="max-w-25 p-1 filter-[var(--navbar-logo-filter)]"
+            className="max-w-25 p-2 filter-[var(--navbar-logo-filter)]"
           />
         </Link>
         <h1 className="lowercase font-thin text-[3.5vw] sm:text-xl text-[var(--text-color-main)]">
