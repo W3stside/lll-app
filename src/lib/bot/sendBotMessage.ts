@@ -15,6 +15,7 @@ export interface BotMessagePayload {
   recipients: string[];
   whatsapp_payload: {
     text: string;
+    mentions?: string[];
   };
 }
 

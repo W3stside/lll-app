@@ -83,7 +83,7 @@ export default async (req: NextApiRequest, res: NextApiResponse) => {
               recipients: [process.env.WHATSAPP_BOT_CHANNEL_ID as string],
               whatsapp_payload: {
                 text: `
-Hi 👋 ${newConfirmedUser.first_name} ${newConfirmedUser.last_name} [${newConfirmedUser.phone_number}] 
+Hi 👋 ${newConfirmedUser.first_name} ${newConfirmedUser.last_name} [@${newConfirmedUser.phone_number}] 
 
 You are confirmed for game ${result.game_id}!
 
@@ -92,6 +92,7 @@ Where: ${result.location}
 Address: ${result.address}
 
 Have fun! 🎉`,
+                mentions: [newConfirmedUser.phone_number],
               },
             });
           }
