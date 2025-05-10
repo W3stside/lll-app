@@ -76,7 +76,7 @@ export function Profile({
     };
   }, [games, profileUser._id, userGamesServer]);
 
-  const isOwner = profileUser._id === currentUser._id;
+  const isOwner = profileUser._id.toString() === currentUser._id?.toString();
   const numberFormatted = formatPhoneNumber(profileUser.phone_number);
 
   const avatarUrl = isOwner ? currentUser.avatarUrl : profileUser.avatarUrl;

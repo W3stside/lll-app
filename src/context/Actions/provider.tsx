@@ -1,28 +1,32 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import type { ObjectId } from "mongodb";
 import { useCallback } from "react";
 
 import {
   ActionContext,
-  type IAddShamefulUserArgs,
   type ISignupForGameArgs,
+  type IAddShamefulUserArgs,
   type ICancelGameArgs,
 } from "./context";
 import { DialogVariant, useDialog } from "../Dialog/context";
 import { useGames } from "../Games/context";
+import { useUser } from "../User/context";
 
 import { CANCELLATION_THRESHOLD_MS } from "@/constants/date";
 import { Collection } from "@/types";
 import type { IGame, IUser, IUserSafe } from "@/types/users";
 import { dbAuth } from "@/utils/api/dbAuth";
 import { dbRequest } from "@/utils/api/dbRequest";
-import { isValidUserUpdate } from "@/utils/signup";
+import {
+  isValidLogin,
+  isValidNewSignup,
+  isValidUserUpdate,
+} from "@/utils/signup";
 
 interface IActionProvider {
   children: React.ReactNode;
 }
 
-const _dbGameSignup = async (gameId: ObjectId, newPlayerId: ObjectId) => {
+const _dbGameSignup = async (gameId: string, newPlayerId: string) => {
   try {
     await dbRequest("update", Collection.GAMES, { _id: gameId, newPlayerId });
     const { data, error } = await dbRequest<IGame[]>("get", Collection.GAMES);
@@ -32,12 +36,12 @@ const _dbGameSignup = async (gameId: ObjectId, newPlayerId: ObjectId) => {
     return data;
   } catch (e) {
     throw new Error(
-      e instanceof Error ? e.message : "_dbGameSignup: Unknown error occurred.",
+      e instanceof Error ? e.message : "Signup error: Unknown error occurred.",
     );
   }
 };
 
-const _dbCancelGame = async (gameId: ObjectId, userId: ObjectId) => {
+const _dbCancelGame = async (gameId: string, userId: string) => {
   try {
     await dbRequest("update", Collection.GAMES, {
       _id: gameId,
@@ -53,7 +57,7 @@ const _dbCancelGame = async (gameId: ObjectId, userId: ObjectId) => {
     const errFull =
       error instanceof Error
         ? error
-        : new Error("_dbCancelGame: Unknown error occurred");
+        : new Error("Cancellation error: Unknown error occurred");
 
     // eslint-disable-next-line no-console
     console.error(errFull);
@@ -66,6 +70,7 @@ export function ActionProvider({ children }: IActionProvider) {
   const queryClient = useQueryClient();
   const { openDialog } = useDialog();
   const { games } = useGames();
+  const { user } = useUser();
 
   const {
     mutateAsync: signupForGame,
@@ -73,10 +78,10 @@ export function ActionProvider({ children }: IActionProvider) {
     isPending: isSignupLoading,
   } = useMutation({
     mutationFn: async ({ gameId, userId }: ISignupForGameArgs) => {
-      const game = games.find((g) => g._id.toString() === gameId.toString());
+      const game = games.find((g) => g._id.toString() === gameId);
 
       if (game === undefined) {
-        throw new Error("signupForGame: Game doesn't exist!");
+        throw new Error("Signup error: Game doesn't exist!");
       }
 
       return await _dbGameSignup(game._id, userId);
@@ -140,7 +145,7 @@ export function ActionProvider({ children }: IActionProvider) {
       } catch (err) {
         throw err instanceof Error
           ? err
-          : new Error("updateUser: Unknown error");
+          : new Error("User update error: Unknown error");
       }
     },
     async onSuccess() {
@@ -223,6 +228,75 @@ export function ActionProvider({ children }: IActionProvider) {
     [_cancelGame, addShamefulUser, openDialog],
   );
 
+  const {
+    mutateAsync: registerUser,
+    error: registerUserError,
+    isPending: isRegisterUserLoading,
+  } = useMutation({
+    mutationFn: async (password: string | undefined) => {
+      try {
+        if (!isValidNewSignup(user, password)) {
+          throw new Error("Player is invalid. Check fields.");
+        }
+
+        await dbAuth("register", { ...user, password });
+      } catch (error) {
+        throw error instanceof Error ? error : new Error("Unknown error");
+      }
+    },
+    async onSuccess() {
+      // Invalidate and refetch
+      await queryClient.invalidateQueries({
+        queryKey: ["users"],
+      });
+    },
+    mutationKey: ["registerUser"],
+  });
+
+  const {
+    mutateAsync: loginUser,
+    error: loginUserError,
+    isPending: isLoginUserLoading,
+  } = useMutation({
+    mutationFn: async (password: string | undefined) => {
+      try {
+        if (!isValidLogin(user, password)) {
+          throw new Error(
+            "Login fields are invalid. Please check and try again.",
+          );
+        }
+
+        await dbAuth("login", { ...user, password });
+      } catch (error) {
+        throw error instanceof Error ? error : new Error("Unknown error");
+      }
+    },
+    async onSuccess() {
+      // Invalidate and refetch
+      await queryClient.invalidateQueries({
+        queryKey: ["users"],
+      });
+    },
+    mutationKey: ["loginUser"],
+  });
+
+  const {
+    mutateAsync: logoutUser,
+    error: logoutUserError,
+    isPending: isLogoutUserLoading,
+  } = useMutation({
+    mutationFn: async () => {
+      await dbAuth("logout");
+    },
+    async onSuccess() {
+      // Invalidate and refetch
+      await queryClient.invalidateQueries({
+        queryKey: ["users"],
+      });
+    },
+    mutationKey: ["loginUser"],
+  });
+
   return (
     <ActionContext.Provider
       value={{
@@ -238,38 +312,18 @@ export function ActionProvider({ children }: IActionProvider) {
         updateUser,
         isUpdateUserLoading,
         updateUserError,
+        registerUser,
+        registerUserError,
+        isRegisterUserLoading,
+        loginUser,
+        loginUserError,
+        isLoginUserLoading,
+        logoutUser,
+        logoutUserError,
+        isLogoutUserLoading,
       }}
     >
       {children}
     </ActionContext.Provider>
   );
 }
-/* 
-
-UpdateUser: async (_user) => {
-        setError(null);
-        setLoading(true);
-        try {
-          if (!isValidUserUpdate(_user)) {
-            throw new Error(
-              "User update error: Fields invalid! Check and try again.",
-            );
-          }
-          const { error } = await dbAuth("update", _user);
-
-          if (error !== null) {
-            throw error;
-          }
-
-          setUser(_user);
-        } catch (err) {
-          const errChecked =
-            err instanceof Error ? err : new Error("updateUser: Unknown error");
-          // eslint-disable-next-line no-console
-          console.error(errChecked);
-          setError(errChecked);
-        } finally {
-          setLoading(false);
-        }
-      },
-*/

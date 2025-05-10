@@ -6,13 +6,11 @@ import { useCallback, useState } from "react";
 import { RegisterUser } from "@/components/Register/RegisterUser";
 import { Loader } from "@/components/ui";
 import { NAVLINKS_MAP } from "@/constants/links";
-import { useUser } from "@/context/User/context";
+import { useActions } from "@/context/Actions/context";
 import { JWT_REFRESH_SECRET, JWT_SECRET, verifyToken } from "@/lib/authUtils";
 import client from "@/lib/mongodb";
 import { Collection } from "@/types";
 import type { IUserSafe, IUserFromCookies } from "@/types/users";
-import { dbAuth } from "@/utils/api/dbAuth";
-import { isValidLogin, isValidNewSignup } from "@/utils/signup";
 
 type LoginPage = {
   isConnected: boolean;
@@ -56,87 +54,49 @@ export default function Login({
   user: userFromCookies,
 }: LoginPage) {
   const [view, setView] = useState<"login" | "register">("register");
-  const { user: player } = useUser();
-
-  const [appError, setError] = useState<string | null>(null);
-  const [loading, setLoading] = useState(false);
+  const {
+    registerUser,
+    loginUser,
+    logoutUser,
+    registerUserError,
+    loginUserError,
+    logoutUserError,
+    isRegisterUserLoading,
+    isLoginUserLoading,
+    isLogoutUserLoading,
+  } = useActions();
 
   const router = useRouter();
 
   const handleSignup = useCallback(
     async (e: React.FormEvent, password: string | undefined) => {
       e.preventDefault();
-      setError(null);
-      setLoading(true);
-
-      try {
-        if (!isValidNewSignup(player, password)) {
-          throw new Error("Player is invalid. Check fields.");
-        }
-
-        const { error } = await dbAuth("register", { ...player, password });
-
-        if (error !== null) {
-          setError(error.message);
-          throw error;
-        }
-
-        void router.push(NAVLINKS_MAP.HOME);
-      } catch (error) {
-        const newError = new Error(
-          error instanceof Error ? error.message : "Unknown error occurred.",
-        );
-        setError(newError.message);
-      } finally {
-        setLoading(false);
-      }
+      await registerUser(password);
+      void router.push(NAVLINKS_MAP.HOME);
     },
-    [player, router],
+    [registerUser, router],
   );
 
   const handleLogin = useCallback(
     async (e: React.FormEvent, password: string | undefined) => {
       e.preventDefault();
-      setError(null);
-      setLoading(true);
-
-      try {
-        if (!isValidLogin(player, password)) {
-          throw new Error(
-            "Login fields are invalid. Please check and try again.",
-          );
-        }
-
-        const { error } = await dbAuth("login", { ...player, password });
-
-        if (error !== null) {
-          setError(error.message);
-          throw error;
-        }
-
-        void router.push(NAVLINKS_MAP.HOME);
-      } catch (error) {
-        const newError = new Error(
-          error instanceof Error ? error.message : "Unknown error occurred.",
-        );
-        setError(newError.message);
-      } finally {
-        setLoading(false);
-      }
+      await loginUser(password);
+      void router.push(NAVLINKS_MAP.HOME);
     },
-    [player, router],
+    [loginUser, router],
   );
 
-  const handleLogout = useCallback(async (e: React.FormEvent) => {
-    e.preventDefault();
-    try {
-      await dbAuth("logout");
-    } catch (error) {
-      throw new Error(
-        error instanceof Error ? error.message : "Unknown error occurred.",
-      );
-    }
-  }, []);
+  const handleLogout = useCallback(
+    async (e: React.FormEvent) => {
+      e.preventDefault();
+      await logoutUser();
+    },
+    [logoutUser],
+  );
+
+  const appError = registerUserError ?? loginUserError ?? logoutUserError;
+  const loading =
+    isRegisterUserLoading || isLoginUserLoading || isLogoutUserLoading;
 
   return (
     <div className="flex flex-col gap-y-1 text-black container">
@@ -164,7 +124,8 @@ export default function Login({
           />
           {appError !== null && (
             <p className="flex mb-6 w-full justify-center text-red-700">
-              {view !== "login" ? "Registration" : "Login"} error: {appError}
+              {view !== "login" ? "Registration" : "Login"} error:{" "}
+              {appError.message}
             </p>
           )}
           <p

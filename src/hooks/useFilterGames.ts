@@ -1,4 +1,3 @@
-import type { ObjectId } from "mongodb";
 import { useMemo } from "react";
 
 import { useSearchFilter } from "./useSearchFilter";
@@ -12,7 +11,7 @@ import { computeGameStatus, getLastGame } from "@/utils/games";
 interface IUseFilterGames {
   usersById: Record<string, IUser>;
   gamesByDay: GamesByDay;
-  userId: ObjectId;
+  userId: string;
 }
 
 export enum GameFilters {

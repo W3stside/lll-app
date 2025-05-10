@@ -1,11 +1,10 @@
-import type { ObjectId } from "mongodb";
 import { createContext, useContext } from "react";
 
 import type { IGame, IUser, IUserSafe } from "@/types/users";
 
 export interface ISignupForGameArgs {
-  gameId: ObjectId;
-  userId: ObjectId;
+  gameId: string;
+  userId: string;
 }
 
 export interface IAddShamefulUserArgs extends ISignupForGameArgs {
@@ -29,6 +28,15 @@ export interface IActionContext {
   updateUser: (user: IUserSafe) => Promise<IUserSafe>;
   isUpdateUserLoading: boolean;
   updateUserError: Error | null;
+  registerUser: (password: string | undefined) => Promise<void>;
+  isRegisterUserLoading: boolean;
+  registerUserError: Error | null;
+  loginUser: (password: string | undefined) => Promise<void>;
+  isLoginUserLoading: boolean;
+  loginUserError: Error | null;
+  logoutUser: () => Promise<void>;
+  isLogoutUserLoading: boolean;
+  logoutUserError: Error | null;
 }
 
 export const ActionContext = createContext<IActionContext | undefined>(

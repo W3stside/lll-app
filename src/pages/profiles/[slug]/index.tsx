@@ -30,7 +30,7 @@ export const getServerSideProps: GetServerSideProps = withServerSideProps(
 
       const fullUser = await client
         .db("LLL")
-        .collection<IUser>(Collection.USERS)
+        .collection<IUser<ObjectId>>(Collection.USERS)
         .findOne(
           {
             _id: specificUserId,

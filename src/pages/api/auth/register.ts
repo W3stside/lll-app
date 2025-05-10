@@ -1,4 +1,5 @@
 import bcrypt from "bcryptjs";
+import type { ObjectId } from "mongodb";
 import type { NextApiRequest, NextApiResponse } from "next";
 
 import { SALT_ROUNDS } from "@/constants/api";
@@ -18,7 +19,7 @@ export default async function handler(
     req.body as INewSignup;
 
   const db = client.db("LLL");
-  const users = db.collection<INewSignup>(Collection.USERS);
+  const users = db.collection<INewSignup<ObjectId>>(Collection.USERS);
 
   const existingUser = await users.findOne({ phone_number });
   if (existingUser) {

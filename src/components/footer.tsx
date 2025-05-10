@@ -50,7 +50,7 @@ export function Footer() {
           >
             LLL WhatsApp
           </a>
-          {(isLoading || user !== null) && (
+          {user._id !== undefined && (
             <button
               className={cn(
                 "w-[75px] h-[40px] justify-center lg:hidden ml-4 bg-[var(--background-color-2)] whitespace-nowrap",
@@ -58,10 +58,10 @@ export function Footer() {
               )}
               onClick={handleLogout}
             >
-              {!isLoading ? "Log out" : <Loader />}
+              {isLoading ? <Loader /> : "Logout"}
             </button>
           )}
-          {user?.role === Role.ADMIN && router.pathname !== ADMIN_PATH && (
+          {user.role === Role.ADMIN && router.pathname !== ADMIN_PATH && (
             <button
               className={cn(
                 "w-[75px] h-[40px] justify-center ml-4 bg-[var(--background-window-highlight)] whitespace-nowrap",

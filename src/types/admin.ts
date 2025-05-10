@@ -1,7 +1,7 @@
 import type { ObjectId } from "mongodb";
 
-export interface IAdmin {
-  _id: ObjectId;
+export type IAdmin<T = string> = {
+  _id: T;
   users?: ObjectId[];
   signup_open: boolean;
-}
+};

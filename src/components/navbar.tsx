@@ -75,7 +75,7 @@ export function Navbar({ usersById }: INavbar) {
               : [],
           )}
           <button onClick={toggleTheme}>{isDark ? "☼" : "☽"}</button>
-          {(isLoading || user !== null) && (
+          {user._id !== undefined && (
             <button
               className={cn(
                 "hidden w-[75px] justify-center lg:flex bg-[var(--background-color-2)]",
@@ -83,11 +83,7 @@ export function Navbar({ usersById }: INavbar) {
               )}
               onClick={handleLogout}
             >
-              {!isLoading ? (
-                "Log out"
-              ) : (
-                <Loader className="w-[34px] h-[34px]" />
-              )}
+              {isLoading ? <Loader className="w-[34px] h-[34px]" /> : "Logout"}
             </button>
           )}
         </div>

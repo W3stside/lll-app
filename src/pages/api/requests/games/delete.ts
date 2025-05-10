@@ -1,10 +1,9 @@
-/* eslint-disable no-console */
 import { ObjectId } from "mongodb";
 import type { NextApiRequest, NextApiResponse } from "next";
 
 import clientPromise from "@/lib/mongodb";
 import { Collection } from "@/types";
-import type { IUser } from "@/types/users";
+import type { IGame, IUser } from "@/types/users";
 
 export default async (req: NextApiRequest, res: NextApiResponse) => {
   try {
@@ -12,7 +11,7 @@ export default async (req: NextApiRequest, res: NextApiResponse) => {
 
     const client = clientPromise;
     const db = client.db("LLL");
-    const collection = db.collection(Collection.GAMES);
+    const collection = db.collection<IGame<ObjectId>>(Collection.GAMES);
 
     const result = await collection.deleteOne({
       _id: new ObjectId(_id),
@@ -26,7 +25,6 @@ export default async (req: NextApiRequest, res: NextApiResponse) => {
       res.status(500).json({ message: "Error deleting record" });
     }
   } catch (error) {
-    console.error(error);
     res.status(500).json({ message: "Error deleting record" });
   }
 };
