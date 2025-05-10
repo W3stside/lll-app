@@ -1,3 +1,4 @@
+import type { ObjectId } from "mongodb";
 import type { NextApiRequest, NextApiResponse } from "next";
 
 import client from "@/lib/mongodb";
@@ -12,7 +13,7 @@ export default async (req: NextApiRequest, res: NextApiResponse) => {
 
   try {
     const db = client.db("LLL");
-    const collection = db.collection<IGame>(Collection.GAMES);
+    const collection = db.collection<IGame<ObjectId>>(Collection.GAMES);
 
     const games = await collection.find({}).toArray();
     const result = await collection.updateMany(

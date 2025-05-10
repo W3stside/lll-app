@@ -17,7 +17,7 @@ export default async (req: NextApiRequest, res: NextApiResponse) => {
     const { _id, signup_open } = body;
 
     const db = client.db("LLL");
-    const collection = db.collection<IAdmin>(Collection.ADMIN);
+    const collection = db.collection<IAdmin<ObjectId>>(Collection.ADMIN);
 
     const result = await collection.findOneAndUpdate(
       { _id: new ObjectId(_id) },

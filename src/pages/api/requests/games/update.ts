@@ -25,16 +25,16 @@ export default async (req: NextApiRequest, res: NextApiResponse) => {
 
   try {
     const body = req.body as IGame & {
-      newPlayerId?: ObjectId;
-      cancelPlayerId?: ObjectId;
+      newPlayerId?: string;
+      cancelPlayerId?: string;
     };
     const { _id, newPlayerId, cancelPlayerId, ...rest } = body;
 
     const db = client.db("LLL");
-    const collection = db.collection<IGame>(Collection.GAMES);
+    const collection = db.collection<IGame<ObjectId>>(Collection.GAMES);
 
     const gameIdWrapped = new ObjectId(_id);
-    let result: WithId<IGame> | null;
+    let result: WithId<IGame<ObjectId>> | null;
     if (newPlayerId !== undefined || cancelPlayerId !== undefined) {
       const previous = await collection.findOne({
         _id: gameIdWrapped,
@@ -72,7 +72,7 @@ export default async (req: NextApiRequest, res: NextApiResponse) => {
 
           const newConfirmedUser = await db
             .collection(Collection.USERS)
-            .findOne<IUser>({
+            .findOne<IUser<ObjectId>>({
               _id: new ObjectId(newlyConfirmedPlayer),
             });
 

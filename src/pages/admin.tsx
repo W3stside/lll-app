@@ -42,7 +42,7 @@ export const getServerSideProps: GetServerSideProps<ConnectionStatus> =
     try {
       const adminUser = await client
         .db("LLL")
-        .collection<IUser>(Collection.USERS)
+        .collection<IUser<ObjectId>>(Collection.USERS)
         .findOne({
           _id: new ObjectId(user._id),
           role: Role.ADMIN,

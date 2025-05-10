@@ -21,7 +21,7 @@ export default async (req: NextApiRequest, res: NextApiResponse) => {
     } = body;
 
     const db = client.db("LLL");
-    const collection = db.collection<IUser>(Collection.USERS);
+    const collection = db.collection<IUser<ObjectId>>(Collection.USERS);
 
     const result = await collection.updateOne(
       { _id: new ObjectId(_id) },

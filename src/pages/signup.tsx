@@ -34,7 +34,7 @@ const Signups: React.FC<ISignups> = ({ admin, user, usersById }) => {
   const [selectedGameId, setSelectedGameId] = useState<string | undefined>();
 
   const { gamesByDay } = useGames();
-  const { user: userContext } = useUser();
+  const { user: userContext, setUser } = useUser();
   const { isSignupLoading, cancelGame, signupForGame } = useActions();
 
   const { filteredGames, searchFilter, filters, setFilter, setSearchFilter } =

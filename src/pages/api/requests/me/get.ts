@@ -14,7 +14,7 @@ export default async function handler(
   if (token === undefined) {
     res.status(401).json({ message: "No token" });
   } else {
-    const decodedUser = verifyToken<IUser>(
+    const decodedUser = verifyToken<IUser<ObjectId>>(
       token,
       JWT_SECRET as string,
       JWT_REFRESH_SECRET,
@@ -23,7 +23,7 @@ export default async function handler(
     await client.connect();
     const db = client.db("LLL");
     const user = await db
-      .collection<IUser>(Collection.USERS)
+      .collection<IUser<ObjectId>>(Collection.USERS)
       .findOne(
         { _id: new ObjectId(decodedUser._id) },
         { projection: { password: 0 } },

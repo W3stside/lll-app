@@ -18,7 +18,9 @@ export default async function handler(
   const db = client.db("LLL");
   const users = db.collection(Collection.USERS);
 
-  const user = await users.findOne<INewSignup>({ _id: new ObjectId(_id) });
+  const user = await users.findOne<INewSignup<ObjectId>>({
+    _id: new ObjectId(_id),
+  });
 
   if (!user) {
     res.status(401).json({ message: "Invalid credentials" });
