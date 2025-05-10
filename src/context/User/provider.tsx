@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 
 import { type IUserContext, UserContext } from "./context";
 
@@ -57,10 +57,18 @@ export function UserProvider({
     ...dbUser,
   });
 
+  const mergedUser = useMemo(
+    () => ({
+      ...user,
+      ...dbUser,
+    }),
+    [dbUser, user],
+  );
+
   return (
     <UserContext.Provider
       value={{
-        user,
+        user: mergedUser,
         setUser,
         error,
         isLoading,
