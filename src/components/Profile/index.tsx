@@ -10,8 +10,8 @@ import { PlaceholderAvatar } from "../Uploader/PlaceholderAvatar";
 import { Collapsible, Loader } from "../ui";
 
 import { NAVLINKS_MAP, WHATS_APP } from "@/constants/links";
+import { MAX_SIGNUPS_PER_GAME } from "@/constants/signups";
 import { useActions } from "@/context/Actions/context";
-import { useGames } from "@/context/Games/context";
 import { useUser } from "@/context/User/context";
 import { GameStatus } from "@/types";
 import type { IAdmin } from "@/types/admin";
@@ -50,29 +50,75 @@ export function Profile({
 }: IProfile) {
   const { loading, error, cancelGame, updateUser } = useActions();
 
-  const { games } = useGames();
-
   const { user: currentUser } = useUser();
   const userRef = useRef<IUserSafe | null>(currentUser);
 
-  const { gamesByDay, userGames, lastGame } = useMemo(() => {
-    const gbd = groupGamesByDay(userGamesServer);
-    const ug = games.filter((game) =>
-      game.players.some(
-        (player) => player.toString() === profileUser._id.toString(),
-      ),
-    );
-    return {
-      gamesByDay: gbd,
-      userGames: ug,
-      lastGame: getLastGame(gbd, ug),
-    };
-  }, [games, profileUser._id, userGamesServer]);
-
   const isOwner = profileUser._id === currentUser._id;
-  const numberFormatted = formatPhoneNumber(profileUser.phone_number);
 
-  const avatarUrl = isOwner ? currentUser.avatarUrl : profileUser.avatarUrl;
+  const userGames = useMemo(() => {
+    const gbd = groupGamesByDay(userGamesServer);
+
+    return Object.entries(gbd).flatMap(([day, dGames]) => {
+      if (dGames.length === 0) return [];
+
+      const lGame = getLastGame(gbd, dGames);
+      const { gameDate, gameStatus } = computeGameStatus(
+        dGames,
+        day as IGame["day"],
+        lGame,
+      );
+
+      if (gameDate === undefined || gameStatus === GameStatus.PAST) {
+        return [];
+      }
+
+      return [
+        <div className="flex flex-col gap-y-1" key={day}>
+          <h5 className="ml-1 font-bold">
+            {day} - {gameDate.toDateString()}{" "}
+          </h5>
+          {dGames.map((game) => (
+            <div className="flex flex-row gap-x-2" key={game._id.toString()}>
+              <Games
+                {...game}
+                date={gameDate.toUTCString()}
+                waitlistLabel={`${isOwner ? "You're" : `${profileUser.first_name} is`} on the waitlist`}
+                waitlistAmt={
+                  game.players.findIndex(
+                    (pl) => pl.toString() === profileUser._id.toString(),
+                  ) < MAX_SIGNUPS_PER_GAME
+                    ? null
+                    : 0
+                }
+                signupsAmt={game.players.length}
+              />
+              {isOwner && (
+                <button
+                  className="flex items-center justify-center h-full w-[50px] bg-[var(--background-error)]"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    cancelGame(game._id, profileUser._id, "");
+                  }}
+                >
+                  X
+                </button>
+              )}
+            </div>
+          ))}
+        </div>,
+      ];
+    });
+  }, [
+    cancelGame,
+    isOwner,
+    profileUser._id,
+    profileUser.first_name,
+    userGamesServer,
+  ]);
+
+  const numberFormatted = formatPhoneNumber(profileUser.phone_number);
+  const avatarUrl =
+    (isOwner ? currentUser.avatarUrl : profileUser.avatarUrl) ?? undefined;
 
   return (
     <div className="flex flex-col gap-y-5 min-h-[60vh] justify-between">
@@ -185,49 +231,7 @@ export function Profile({
           </div>
           <div className="px-2 py-2 flex flex-col gap-y-6">
             {userGames.length > 0 ? (
-              Object.entries(gamesByDay).flatMap(([day, dGames]) => {
-                const { gameDate, gameStatus } = computeGameStatus(
-                  userGames,
-                  day as IGame["day"],
-                  lastGame,
-                );
-
-                if (gameDate === undefined || gameStatus === GameStatus.PAST) {
-                  return [];
-                }
-
-                return [
-                  <div className="flex flex-col gap-y-1" key={day}>
-                    <h5 className="ml-1 font-bold">
-                      {day} - {gameDate.toDateString()}{" "}
-                    </h5>
-                    {dGames.map((game) => (
-                      <div
-                        className="flex flex-row gap-x-2"
-                        key={game._id.toString()}
-                      >
-                        <Games
-                          {...game}
-                          date={gameDate.toUTCString()}
-                          waitlistAmt={null}
-                          signupsAmt={game.players.length}
-                        />
-                        {isOwner && (
-                          <button
-                            className="flex items-center justify-center h-full w-[50px] bg-[var(--background-error)]"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              cancelGame(game._id, profileUser._id, "");
-                            }}
-                          >
-                            X
-                          </button>
-                        )}
-                      </div>
-                    ))}
-                  </div>,
-                ];
-              })
+              userGames
             ) : (
               <div className="flex flex-col items-center gap-y-8">
                 {isOwner ? "You haven't" : `${profileUser.first_name} hasn't`}{" "}

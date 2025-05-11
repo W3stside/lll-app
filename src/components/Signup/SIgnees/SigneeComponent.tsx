@@ -15,7 +15,6 @@ export interface ISigneeComponent extends IUserSafe {
   childrenBelow?: React.ReactNode;
   errorMsg: string | null;
   loading: boolean;
-  avatarUrl?: string;
   avatarClassName?: string;
   hideAvatar?: boolean;
   className?: string;
@@ -27,7 +26,7 @@ export function SigneeComponent({
   first_name,
   last_name,
   phone_number,
-  avatarUrl,
+  avatarUrl = null,
   avatarClassName = "text-[8px] md:text-[10px] h-[40px] w-[40px] md:h-[55px] md:w-[55px]",
   hideAvatar = false,
   errorMsg,
@@ -63,7 +62,7 @@ export function SigneeComponent({
               }}
               className="no-underline"
             >
-              {avatarUrl !== undefined ? (
+              {avatarUrl !== null ? (
                 <Avatar
                   src={avatarUrl}
                   className={avatarClassName}
