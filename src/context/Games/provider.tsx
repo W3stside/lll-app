@@ -33,6 +33,7 @@ export function GamesProvider({ children, initialState = [] }: IGamesProvider) {
     },
     initialData: initialState,
     initialDataUpdatedAt: 0,
+    refetchInterval: 1000 * 60 * 5, // 5 minutes
   });
 
   const gamesByDay = useMemo(() => groupGamesByDay(games), [games]);
