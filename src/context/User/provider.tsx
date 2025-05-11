@@ -17,7 +17,7 @@ export const DEFAULT_USER: IUserSafe & { registered_games?: string[] } = {
   phone_number: "",
   role: undefined,
   shame: [],
-  avatarUrl: undefined,
+  avatarUrl: null,
 };
 
 export function UserProvider({

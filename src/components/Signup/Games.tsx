@@ -5,10 +5,13 @@ import { MAX_SIGNUPS_PER_GAME } from "@/constants/signups";
 import { Gender, type IGame } from "@/types/users";
 import { cn } from "@/utils/tailwind";
 
+const MAX_ADDRESS_LENGTH = 22;
+
 interface IGames extends IGame {
   date: string | undefined;
   signupsAmt: number | null;
   waitlistAmt: number | null;
+  waitlistLabel?: string;
   children?: React.ReactNode;
   className?: string;
 }
@@ -23,6 +26,7 @@ export function Games({
   gender,
   signupsAmt,
   waitlistAmt,
+  waitlistLabel = "Waitlist only",
   children,
   className,
 }: IGames) {
@@ -59,7 +63,7 @@ export function Games({
             className="underline text-blue-500 ml-auto"
           >
             <strong className="flex lg:hidden whitespace-nowrap">
-              {address.substring(0, 22)}...
+              {address.substring(0, MAX_ADDRESS_LENGTH)}...
             </strong>
             <strong className="hidden lg:flex whitespace-nowrap">
               {address}
@@ -79,7 +83,7 @@ export function Games({
           className="pl-0 text-md [&>div]:!px-2.5 [&>div]:!py-0.5"
         />
         {waitlistAmt !== null && waitlistAmt <= 0 && (
-          <div className={`px-2 p-1 ${ORANGE_TW}`}>Waitlist only</div>
+          <div className={`px-2 p-1 ${ORANGE_TW}`}>{waitlistLabel}</div>
         )}
         {/* {waitlistAmt < 0 && (
           <RemainingSpots
