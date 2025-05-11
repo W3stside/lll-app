@@ -61,7 +61,7 @@ export function ActionProvider({ children }: IActionProvider) {
   const [loading, setLoading] = useState(false);
   const [errorState, setError] = useState<Error | null>(null);
 
-  const { setUser } = useUser();
+  const { user, setUser } = useUser();
   const { setGames } = useGames();
   const { openDialog } = useDialog();
 
@@ -133,6 +133,14 @@ export function ActionProvider({ children }: IActionProvider) {
               const newGames = await _dbCancelGame(gameId, userId);
               setGames(newGames);
 
+              // Remove the canceled game from the user's registered games
+              setUser((state) => ({
+                ...state,
+                registered_games: user.registered_games?.filter(
+                  (g) => g !== gameId.toString(),
+                ),
+              }));
+
               if (options?.bypassThreshold !== true && gamePastThreshold) {
                 void addShamefulUser(gameId, userId, date);
               }
@@ -203,7 +211,7 @@ export function ActionProvider({ children }: IActionProvider) {
         }
       },
     };
-  }, [openDialog, setGames, setUser]);
+  }, [openDialog, setGames, setUser, user.registered_games]);
 
   return (
     <ActionContext.Provider
