@@ -32,7 +32,7 @@ export function UserProvider({
     error,
     isLoading,
   } = useQuery({
-    queryKey: ["users-me"],
+    queryKey: ["users"],
     queryFn: async () => {
       try {
         const { data, error: dbError } = await dbRequest<IUser | null>(

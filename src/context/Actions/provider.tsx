@@ -92,7 +92,7 @@ export function ActionProvider({ children }: IActionProvider) {
         queryKey: ["games"],
       });
     },
-    mutationKey: ["signupForGame"],
+    mutationKey: ["game-signup"],
   });
 
   const {
@@ -120,7 +120,7 @@ export function ActionProvider({ children }: IActionProvider) {
         queryKey: ["users"],
       });
     },
-    mutationKey: ["addShamefulUser"],
+    mutationKey: ["user-add-shame"],
   });
 
   const {
@@ -154,7 +154,7 @@ export function ActionProvider({ children }: IActionProvider) {
         queryKey: ["users"],
       });
     },
-    mutationKey: ["updateUser"],
+    mutationKey: ["user-update"],
   });
 
   const {
@@ -165,13 +165,20 @@ export function ActionProvider({ children }: IActionProvider) {
     mutationFn: async ({ gameId, userId }: ICancelGameArgs) => {
       return await _dbCancelGame(gameId, userId);
     },
-    async onSuccess() {
+    async onSuccess(_, { gameId }) {
       // Invalidate and refetch
       await queryClient.invalidateQueries({
         queryKey: ["games"],
       });
+
+      setUser((state) => ({
+        ...state,
+        registered_games: state.registered_games?.filter(
+          (g) => g !== gameId.toString(),
+        ),
+      }));
     },
-    mutationKey: ["cancelGame"],
+    mutationKey: ["game-cancel"],
   });
 
   const cancelGame = useCallback(
@@ -181,7 +188,8 @@ export function ActionProvider({ children }: IActionProvider) {
       date,
       options: { bypassThreshold } = {},
     }: ICancelGameArgs) => {
-      const gamePastThreshold =
+      const isShameful =
+        bypassThreshold !== true &&
         Date.now() > Date.parse(date) - CANCELLATION_THRESHOLD_MS;
 
       openDialog({
@@ -189,7 +197,7 @@ export function ActionProvider({ children }: IActionProvider) {
         title: "Cancel game?",
         content: (
           <>
-            {bypassThreshold !== true && gamePastThreshold ? (
+            {isShameful ? (
               <div className="flex flex-col items-center gap-y-6">
                 <h3>Whoa whoa whoa!</h3>
                 <div>
@@ -217,22 +225,15 @@ export function ActionProvider({ children }: IActionProvider) {
             date,
           });
 
-          if (bypassThreshold !== true && gamePastThreshold) {
+          if (isShameful) {
             void addShamefulUser({ gameId, userId, date });
           }
-
-          setUser((state) => ({
-            ...state,
-            registered_games: state.registered_games?.filter(
-              (g) => g !== gameId.toString(),
-            ),
-          }));
 
           openDialog();
         },
       });
     },
-    [_cancelGame, addShamefulUser, openDialog, setUser],
+    [_cancelGame, addShamefulUser, openDialog],
   );
 
   const {
@@ -257,7 +258,7 @@ export function ActionProvider({ children }: IActionProvider) {
         queryKey: ["users"],
       });
     },
-    mutationKey: ["registerUser"],
+    mutationKey: ["user-register"],
   });
 
   const {
@@ -284,7 +285,7 @@ export function ActionProvider({ children }: IActionProvider) {
         queryKey: ["users"],
       });
     },
-    mutationKey: ["loginUser"],
+    mutationKey: ["user-login"],
   });
 
   const {
@@ -301,7 +302,7 @@ export function ActionProvider({ children }: IActionProvider) {
         queryKey: ["users"],
       });
     },
-    mutationKey: ["loginUser"],
+    mutationKey: ["user-logout"],
   });
 
   return (
