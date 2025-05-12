@@ -1,4 +1,3 @@
-/* eslint-disable no-console */
 import { ObjectId } from "mongodb";
 import type { NextApiRequest, NextApiResponse } from "next";
 
@@ -16,18 +15,18 @@ export default async (req: NextApiRequest, res: NextApiResponse) => {
     const body = req.body as IAdmin;
     const { _id, signup_open } = body;
 
-    const db = client.db("LLL");
-    const collection = db.collection<IAdmin<ObjectId>>(Collection.ADMIN);
-
-    const result = await collection.findOneAndUpdate(
-      { _id: new ObjectId(_id) },
-      {
-        $set: {
-          signup_open,
+    const result = await client
+      .db("LLL")
+      .collection<IAdmin<ObjectId>>(Collection.ADMIN)
+      .findOneAndUpdate(
+        { _id: new ObjectId(_id) },
+        {
+          $set: {
+            signup_open,
+          },
         },
-      },
-      { returnDocument: "after" },
-    );
+        { returnDocument: "after" },
+      );
 
     if (result === null) {
       res.status(404).json({ message: "Document not found" });
@@ -35,7 +34,6 @@ export default async (req: NextApiRequest, res: NextApiResponse) => {
       res.status(200).json(result);
     }
   } catch (error) {
-    console.error(error);
     res.status(500).json({ message: "Error updating document" });
   }
 };

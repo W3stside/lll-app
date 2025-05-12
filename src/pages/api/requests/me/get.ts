@@ -14,21 +14,26 @@ export default async function handler(
   if (token === undefined) {
     res.status(401).json({ message: "No token" });
   } else {
-    const decodedUser = verifyToken<IUser<ObjectId>>(
-      token,
-      JWT_SECRET as string,
-      JWT_REFRESH_SECRET,
-    );
-
-    await client.connect();
-    const db = client.db("LLL");
-    const user = await db
-      .collection<IUser<ObjectId>>(Collection.USERS)
-      .findOne(
-        { _id: new ObjectId(decodedUser._id) },
-        { projection: { password: 0 } },
+    try {
+      const decodedUser = verifyToken<IUser<ObjectId>>(
+        token,
+        JWT_SECRET as string,
+        JWT_REFRESH_SECRET,
       );
 
-    res.status(200).json(user);
+      await client.connect();
+
+      const user = await client
+        .db("LLL")
+        .collection<IUser<ObjectId>>(Collection.USERS)
+        .findOne(
+          { _id: new ObjectId(decodedUser._id) },
+          { projection: { password: 0 } },
+        );
+
+      res.status(200).json(user);
+    } catch (error) {
+      res.status(500).json({ message: "Error deleting record" });
+    }
   }
 }

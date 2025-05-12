@@ -1,6 +1,6 @@
 import { createContext, useContext } from "react";
 
-import type { IGame, IUser, IUserSafe } from "@/types/users";
+import type { IUserSafe } from "@/types/users";
 
 export interface ISignupForGameArgs {
   gameId: string;
@@ -16,16 +16,16 @@ export interface ICancelGameArgs extends IAddShamefulUserArgs {
 }
 
 export interface IActionContext {
-  addShamefulUser: (args: IAddShamefulUserArgs) => Promise<IUser>;
+  addShamefulUser: (args: IAddShamefulUserArgs) => Promise<void>;
   isAddShamefulUserLoading: boolean;
   addShamefulUserError: Error | null;
   cancelGame: (args: ICancelGameArgs) => void;
   isCancelLoading: boolean;
   cancelError: Error | null;
-  signupForGame: (args: ISignupForGameArgs) => Promise<IGame[]>;
+  signupForGame: (args: ISignupForGameArgs) => Promise<void>;
   isSignupLoading: boolean;
   signupError: Error | null;
-  updateUser: (user: IUserSafe) => Promise<IUserSafe>;
+  updateUser: (user: IUserSafe) => Promise<void>;
   isUpdateUserLoading: boolean;
   updateUserError: Error | null;
   registerUser: (password: string | undefined) => Promise<void>;

@@ -13,7 +13,7 @@ import { useUser } from "../User/context";
 
 import { CANCELLATION_THRESHOLD_MS } from "@/constants/date";
 import { Collection } from "@/types";
-import type { IGame, IUser, IUserSafe } from "@/types/users";
+import type { IUser, IUserSafe } from "@/types/users";
 import { dbAuth } from "@/utils/api/dbAuth";
 import { dbRequest } from "@/utils/api/dbRequest";
 import {
@@ -25,46 +25,6 @@ import {
 interface IActionProvider {
   children: React.ReactNode;
 }
-
-const _dbGameSignup = async (gameId: string, newPlayerId: string) => {
-  try {
-    await dbRequest("update", Collection.GAMES, { _id: gameId, newPlayerId });
-    const { data, error } = await dbRequest<IGame[]>("get", Collection.GAMES);
-
-    if (error !== null) throw error;
-
-    return data;
-  } catch (e) {
-    throw new Error(
-      e instanceof Error ? e.message : "Signup error: Unknown error occurred.",
-    );
-  }
-};
-
-const _dbCancelGame = async (gameId: string, userId: string) => {
-  try {
-    await dbRequest("update", Collection.GAMES, {
-      _id: gameId,
-      cancelPlayerId: userId,
-    });
-
-    const { data, error } = await dbRequest<IGame[]>("get", Collection.GAMES);
-
-    if (error !== null) throw error;
-
-    return data;
-  } catch (error) {
-    const errFull =
-      error instanceof Error
-        ? error
-        : new Error("Cancellation error: Unknown error occurred");
-
-    // eslint-disable-next-line no-console
-    console.error(errFull);
-
-    throw errFull;
-  }
-};
 
 export function ActionProvider({ children }: IActionProvider) {
   const queryClient = useQueryClient();
@@ -84,7 +44,10 @@ export function ActionProvider({ children }: IActionProvider) {
         throw new Error("Signup error: Game doesn't exist!");
       }
 
-      return await _dbGameSignup(game._id, userId);
+      await dbRequest("update", Collection.GAMES, {
+        _id: gameId,
+        newPlayerId: userId,
+      });
     },
     async onSuccess() {
       // Invalidate and refetch
@@ -101,18 +64,12 @@ export function ActionProvider({ children }: IActionProvider) {
     isPending: isAddShamefulUserLoading,
   } = useMutation({
     mutationFn: async ({ gameId, userId, date }: IAddShamefulUserArgs) => {
-      const { data, error } = await dbRequest<IUser>(
-        "update",
-        Collection.USERS,
-        {
-          _id: userId,
-          shame: [{ game_id: gameId, date: new Date(date) }],
-        },
-      );
+      const { error } = await dbRequest<IUser>("update", Collection.USERS, {
+        _id: userId,
+        shame: [{ game_id: gameId, date: new Date(date) }],
+      });
 
       if (error !== null) throw error;
-
-      return data;
     },
     async onSuccess() {
       // Invalidate and refetch
@@ -135,13 +92,7 @@ export function ActionProvider({ children }: IActionProvider) {
             "User update error: Fields invalid! Check and try again.",
           );
         }
-        const { data, error } = await dbAuth("update", _user);
-
-        if (error !== null) {
-          throw error;
-        }
-
-        return data;
+        await dbAuth("update", _user);
       } catch (err) {
         throw err instanceof Error
           ? err
@@ -163,7 +114,10 @@ export function ActionProvider({ children }: IActionProvider) {
     isPending: isCancelLoading,
   } = useMutation({
     mutationFn: async ({ gameId, userId }: ICancelGameArgs) => {
-      return await _dbCancelGame(gameId, userId);
+      return await dbRequest("update", Collection.GAMES, {
+        _id: gameId,
+        cancelPlayerId: userId,
+      });
     },
     async onSuccess(_, { gameId }) {
       // Invalidate and refetch
