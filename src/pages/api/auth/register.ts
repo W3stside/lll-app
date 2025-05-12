@@ -1,4 +1,5 @@
 import bcrypt from "bcryptjs";
+import type { ObjectId } from "mongodb";
 import type { NextApiRequest, NextApiResponse } from "next";
 
 import { SALT_ROUNDS } from "@/constants/api";
@@ -17,29 +18,33 @@ export default async function handler(
   const { first_name, last_name, phone_number, password } =
     req.body as INewSignup;
 
-  const db = client.db("LLL");
-  const users = db.collection<INewSignup>(Collection.USERS);
+  try {
+    const users = client
+      .db("LLL")
+      .collection<INewSignup<ObjectId>>(Collection.USERS);
 
-  const existingUser = await users.findOne({ phone_number });
-  if (existingUser) {
-    res.status(400).json({ message: "User already exists" });
-    return;
+    const existingUser = await users.findOne({ phone_number });
+    if (existingUser) {
+      res.status(400).json({ message: "User already exists" });
+    } else {
+      const hashedPassword = await bcrypt.hash(password, SALT_ROUNDS);
+
+      const createdAt = new Date();
+      const newUser = await users.insertOne({
+        first_name,
+        last_name,
+        phone_number,
+        password: hashedPassword,
+        createdAt,
+        shame: [],
+      });
+
+      refreshAndSetJwtTokens({ _id: newUser.insertedId }, res);
+      res.status(200).json({
+        message: "User created successfully!",
+      });
+    }
+  } catch (error) {
+    res.status(500).json({ message: "Error registering user" });
   }
-
-  const hashedPassword = await bcrypt.hash(password, SALT_ROUNDS);
-
-  const createdAt = new Date();
-  const newUser = await users.insertOne({
-    first_name,
-    last_name,
-    phone_number,
-    password: hashedPassword,
-    createdAt,
-    shame: [],
-  });
-
-  refreshAndSetJwtTokens({ _id: newUser.insertedId }, res);
-  res.status(200).json({
-    message: "User created successfully!",
-  });
 }

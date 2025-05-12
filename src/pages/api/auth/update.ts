@@ -15,32 +15,34 @@ export default async function handler(
   const { _id, first_name, last_name, phone_number, avatarUrl } =
     req.body as INewSignup;
 
-  const db = client.db("LLL");
-  const users = db.collection(Collection.USERS);
-
-  const user = await users.findOne<INewSignup>({ _id: new ObjectId(_id) });
-
-  if (!user) {
-    res.status(401).json({ message: "Invalid credentials" });
-  } else {
-    await users.updateOne(
-      { _id: user._id },
-      {
-        $set: {
-          first_name,
-          last_name,
-          phone_number,
-          avatarUrl,
+  try {
+    const user = await client
+      .db("LLL")
+      .collection(Collection.USERS)
+      .findOneAndUpdate(
+        { _id: new ObjectId(_id) },
+        {
+          $set: {
+            first_name,
+            last_name,
+            phone_number,
+            avatarUrl,
+          },
         },
-      },
-    );
+      );
 
-    res.status(200).json({
-      _id: user._id,
-      first_name,
-      last_name,
-      phone_number,
-      avatarUrl,
-    });
+    if (user === null) {
+      res.status(401).json({ message: "Invalid credentials" });
+    } else {
+      res.status(200).json({
+        _id: user._id,
+        first_name,
+        last_name,
+        phone_number,
+        avatarUrl,
+      });
+    }
+  } catch (error) {
+    res.status(500).json({ message: "Error updating user" });
   }
 }

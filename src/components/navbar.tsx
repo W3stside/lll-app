@@ -8,8 +8,8 @@ import { Loader } from "./ui";
 
 import logo from "@/assets/logo.png";
 import { NAVLINKS, NAVLINKS_MAP } from "@/constants/links";
+import { useUser } from "@/context/User/context";
 import { useClientTheme } from "@/hooks/useClientTheme";
-import { useClientUser } from "@/hooks/useClientUser";
 import type { IUser } from "@/types/users";
 import { dbAuth } from "@/utils/api/dbAuth";
 import { cn } from "@/utils/tailwind";
@@ -27,7 +27,7 @@ export function Navbar({ usersById }: INavbar) {
 
   const router = useRouter();
   const pathname = usePathname();
-  const { user, isLoading } = useClientUser(router.pathname);
+  const { user, isLoading } = useUser();
 
   const userInfoFromPath = usersById?.[_formatPathname(pathname)];
 
@@ -75,7 +75,7 @@ export function Navbar({ usersById }: INavbar) {
               : [],
           )}
           <button onClick={toggleTheme}>{isDark ? "☼" : "☽"}</button>
-          {(isLoading || user !== undefined) && (
+          {user._id !== undefined && (
             <button
               className={cn(
                 "hidden w-[75px] justify-center lg:flex bg-[var(--background-color-2)]",
@@ -83,11 +83,7 @@ export function Navbar({ usersById }: INavbar) {
               )}
               onClick={handleLogout}
             >
-              {!isLoading ? (
-                "Log out"
-              ) : (
-                <Loader className="w-[34px] h-[34px]" />
-              )}
+              {isLoading ? <Loader className="w-[34px] h-[34px]" /> : "Logout"}
             </button>
           )}
         </div>

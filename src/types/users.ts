@@ -1,5 +1,3 @@
-import type { ObjectId } from "mongodb";
-
 import type { Role } from ".";
 
 export interface IBaseUser {
@@ -9,17 +7,17 @@ export interface IBaseUser {
   avatarUrl?: string | null;
 }
 
-export interface INewSignup extends IBaseUser {
-  _id?: ObjectId;
+export type INewSignup<T = string> = IBaseUser & {
+  _id?: T;
   password: string;
   createdAt: Date;
-  shame: { game_id: ObjectId; date: Date }[];
+  shame: { game_id: string; date: Date }[];
   role?: Role;
-}
+};
 
-export interface IUser extends INewSignup {
-  _id: ObjectId;
-}
+export type IUser<T = string> = INewSignup<T> & {
+  _id: T;
+};
 
 export type IUserFromCookies = Pick<IUser, "_id">;
 
@@ -29,8 +27,8 @@ export type IUserSafe = Omit<IUser, "_id" | "createdAt" | "password"> & {
 };
 
 export interface IShamer extends IBaseUser {
-  _id: ObjectId;
-  games?: ObjectId[];
+  _id: string;
+  games?: string[];
 }
 
 export type PlaySpeed = "faster" | "mixed" | "slower";
@@ -39,8 +37,8 @@ export enum Gender {
   MALE = "male",
   UNSPECIFIED = "unspecified",
 }
-export interface IGame {
-  _id: ObjectId;
+export type IGame<T = string> = {
+  _id: T;
   game_id: number;
   time: string;
   speed: PlaySpeed;
@@ -55,9 +53,9 @@ export interface IGame {
     | "Thursday"
     | "Tuesday"
     | "Wednesday";
-  players: ObjectId[];
+  players: string[];
   gender?: Gender;
-  organisers?: ObjectId[];
-}
+  organisers?: string[];
+};
 
 export type GamesByDay = Partial<Record<IGame["day"], IGame[]>>;

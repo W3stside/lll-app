@@ -1,6 +1,6 @@
 import type { GetServerSideProps } from "next";
 import Image from "next/image";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 
 import ebaumsWorld from "@/assets/ebaums-world.png";
 import { FilterStuff } from "@/components/FilterStuff";
@@ -30,17 +30,12 @@ export interface ISignups {
   admin: IAdmin;
 }
 
-const Signups: React.FC<ISignups> = ({
-  admin,
-  user,
-  usersById,
-  games: gamesServerSide,
-}) => {
+const Signups: React.FC<ISignups> = ({ admin, user, usersById }) => {
   const [selectedGameId, setSelectedGameId] = useState<string | undefined>();
 
-  const { games: gamesContext, gamesByDay, setGames } = useGames();
+  const { gamesByDay } = useGames();
   const { user: userContext, setUser } = useUser();
-  const { loading: actionLoading, cancelGame, signupForGame } = useActions();
+  const { isSignupLoading, cancelGame, signupForGame } = useActions();
 
   const { filteredGames, searchFilter, filters, setFilter, setSearchFilter } =
     useFilterGames({
@@ -58,13 +53,6 @@ const Signups: React.FC<ISignups> = ({
       {},
     ),
   );
-
-  // Sync server-side games with client-side games
-  useEffect(() => {
-    if (gamesServerSide.length !== gamesContext.length) {
-      setGames(gamesServerSide);
-    }
-  }, [gamesContext.length, gamesByDay, gamesServerSide, setGames]);
 
   const gamesData = useWeeklyGamesData(filteredGames, user, usersById);
 
@@ -356,11 +344,11 @@ const Signups: React.FC<ISignups> = ({
                                                 nextGameDate !== undefined
                                                   ? (e) => {
                                                       e.stopPropagation();
-                                                      cancelGame(
-                                                        game._id,
-                                                        signee._id,
-                                                        nextGameDate,
-                                                      );
+                                                      cancelGame({
+                                                        gameId: game._id,
+                                                        userId: signee._id,
+                                                        date: nextGameDate,
+                                                      });
                                                     }
                                                   : undefined
                                               }
@@ -399,14 +387,14 @@ const Signups: React.FC<ISignups> = ({
                                                 nextGameDate !== undefined
                                                   ? (e) => {
                                                       e.stopPropagation();
-                                                      cancelGame(
-                                                        game._id,
-                                                        signee._id,
-                                                        nextGameDate,
-                                                        {
+                                                      cancelGame({
+                                                        gameId: game._id,
+                                                        userId: signee._id,
+                                                        date: nextGameDate,
+                                                        options: {
                                                           bypassThreshold: true,
                                                         },
-                                                      );
+                                                      });
                                                     }
                                                   : undefined
                                               }
@@ -426,7 +414,7 @@ const Signups: React.FC<ISignups> = ({
                           <RegisterToPlay
                             label="Sign up"
                             games={games}
-                            loading={actionLoading}
+                            loading={isSignupLoading}
                             userId={user._id}
                             gameId={selectedGameId}
                             submitDisabled={
@@ -439,12 +427,11 @@ const Signups: React.FC<ISignups> = ({
                             setGameId={setSelectedGameId}
                             handleSignup={async () => {
                               if (selectedGameId === undefined) return;
-                              await signupForGame(
-                                gamesByDay[day]?.find(
-                                  (g) => g._id.toString() === selectedGameId,
-                                ),
-                                user._id,
-                              );
+                              await signupForGame({
+                                gameId: selectedGameId,
+                                userId: user._id,
+                              });
+                              setSelectedGameId(undefined);
                               setUser((u) => ({
                                 ...u,
                                 registered_games: [

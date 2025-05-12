@@ -48,7 +48,13 @@ export function Profile({
   profileUser,
   userGames: userGamesServer,
 }: IProfile) {
-  const { loading, error, cancelGame, updateUser } = useActions();
+  const {
+    cancelError,
+    updateUserError,
+    cancelGame,
+    updateUser,
+    isUpdateUserLoading,
+  } = useActions();
 
   const { user: currentUser } = useUser();
   const userRef = useRef<IUserSafe | null>(currentUser);
@@ -92,12 +98,17 @@ export function Profile({
                 }
                 signupsAmt={game.players.length}
               />
+
               {isOwner && (
                 <button
                   className="flex items-center justify-center h-full w-[50px] bg-[var(--background-error)]"
                   onClick={(e) => {
                     e.stopPropagation();
-                    cancelGame(game._id, profileUser._id, "");
+                    cancelGame({
+                      gameId: game._id,
+                      userId: profileUser._id,
+                      date: "",
+                    });
                   }}
                 >
                   X
@@ -105,10 +116,16 @@ export function Profile({
               )}
             </div>
           ))}
+          {cancelError !== null && (
+            <span className="px-2 py-1 text-xs text-red-500">
+              {cancelError.message}
+            </span>
+          )}
         </div>,
       ];
     });
   }, [
+    cancelError,
     cancelGame,
     isOwner,
     profileUser._id,
@@ -177,10 +194,10 @@ export function Profile({
             <div className="mr-auto px-2 py-1">Update user info</div> X
           </div>
           <div className="flex flex-col items-center gap-y-2 px-2 py-2">
-            {!loading ? (
+            {!isUpdateUserLoading ? (
               <>
                 <RegisterForm
-                  loading={loading}
+                  loading={isUpdateUserLoading}
                   label={
                     <>
                       Update user{" "}
@@ -200,9 +217,9 @@ export function Profile({
                     userRef.current = currentUser;
                   }}
                 />
-                {error !== null && (
+                {updateUserError !== null && (
                   <span className="px-2 py-1 text-xs text-red-500">
-                    {error.message}
+                    {updateUserError.message}
                   </span>
                 )}
               </>

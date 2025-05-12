@@ -1,6 +1,7 @@
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { ObjectId } from "mongodb";
 import type { GetServerSideProps } from "next";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 
 import { PartnerProducts } from "@/components/PartnerProducts";
 import { Collapsible, Loader } from "@/components/ui";
@@ -41,7 +42,7 @@ export const getServerSideProps: GetServerSideProps<ConnectionStatus> =
     try {
       const adminUser = await client
         .db("LLL")
-        .collection<IUser>(Collection.USERS)
+        .collection<IUser<ObjectId>>(Collection.USERS)
         .findOne({
           _id: new ObjectId(user._id),
           role: Role.ADMIN,
@@ -114,13 +115,7 @@ const DEFAULT_STATE = {
   day: undefined,
 } as const;
 
-export default function Admin({
-  isConnected,
-  admin: adminInitial,
-  user,
-}: IAdminPage) {
-  const [loading, setLoading] = useState(false);
-  const [generalError, setGeneralError] = useState<Error | null>(null);
+export default function Admin({ isConnected, user }: IAdminPage) {
   const [addGameError, setAddGameError] = useState<
     | {
         [key in keyof ErrorUser]: string;
@@ -128,22 +123,95 @@ export default function Admin({
     | null
   >(null);
 
-  const { games, setGames } = useGames();
-  const { admin, setAdmin } = useAdmin();
-  const { openDialog } = useDialog();
+  const queryClient = useQueryClient();
 
-  // Sync server-side games with client-side games
-  useEffect(() => {
-    if (adminInitial !== null && admin === undefined) {
-      setAdmin(adminInitial);
-    }
-  }, [admin, adminInitial, setAdmin]);
+  const { games } = useGames();
+  const { admin } = useAdmin();
+  const { openDialog } = useDialog();
 
   const [targettedGame, setGameInfo] = useState<Partial<IGame>>(DEFAULT_STATE);
 
-  const handleUpdateGame = useCallback(async () => {
-    setLoading(true);
-    setGeneralError(null);
+  const {
+    mutateAsync: _updateGame,
+    error: updateGameError,
+    isPending: isUpdateGameLoading,
+  } = useMutation({
+    mutationFn: async (gameToUpdate: Partial<IGame>) => {
+      try {
+        const { _id, ...gameNoId } = gameToUpdate;
+        // No _id = create new game
+        if (_id === undefined) {
+          return await dbRequest<IGame>("create", Collection.GAMES, {
+            ...gameNoId,
+            players: [],
+          });
+        }
+        return await dbRequest<IGame>("update", Collection.GAMES, {
+          _id,
+          ...gameNoId,
+        });
+      } catch (error: unknown) {
+        const e = error instanceof Error ? error : new Error("Unknown error");
+        throw e;
+      }
+    },
+    async onSuccess() {
+      setGameInfo(DEFAULT_STATE);
+      setAddGameError(null);
+      // Invalidate and refetch
+      await queryClient.invalidateQueries({
+        queryKey: ["games"],
+      });
+    },
+  });
+
+  const {
+    mutateAsync: _clearAllSignups,
+    error: clearSignupsError,
+    isPending: isClearSignupsLoading,
+  } = useMutation({
+    mutationFn: async () => {
+      try {
+        return await dbRequest<IGame[]>("reset", Collection.GAMES);
+      } catch (error: unknown) {
+        const e = error instanceof Error ? error : new Error("Unknown error");
+        throw e;
+      }
+    },
+    async onSuccess() {
+      // Invalidate and refetch
+      await queryClient.invalidateQueries({
+        queryKey: ["games"],
+      });
+    },
+  });
+
+  const {
+    mutateAsync: _toggleSignupsAvailable,
+    error: signupsAvailableError,
+    isPending: isSignupsAvailableLoading,
+  } = useMutation({
+    mutationFn: async (_admin: IAdmin | undefined) => {
+      try {
+        if (_admin === undefined) throw new Error("Admin not found");
+
+        return await dbRequest<IAdmin>("update", Collection.ADMIN, {
+          _id: _admin._id,
+          signup_open: !_admin.signup_open,
+        });
+      } catch (error: unknown) {
+        throw error instanceof Error ? error : new Error("Unknown error");
+      }
+    },
+    async onSuccess() {
+      // Invalidate and refetch
+      await queryClient.invalidateQueries({
+        queryKey: ["admin"],
+      });
+    },
+  });
+
+  const handleUpdateGame = useCallback(() => {
     try {
       const isValidTime = isValid24hTime(targettedGame.time ?? "");
       const isValidLocation = (targettedGame.location?.length ?? 0) > 5;
@@ -166,6 +234,7 @@ export default function Admin({
             game.day === targettedGame.day &&
             game.time === targettedGame.time &&
             game.location === targettedGame.location &&
+            game.location === targettedGame.mapUrl &&
             game.address === targettedGame.address &&
             game.gender === targettedGame.gender &&
             game.speed === targettedGame.speed,
@@ -175,49 +244,79 @@ export default function Admin({
           "Game already exists for this day with the same configuration",
         );
       }
-
-      setAddGameError(null);
-
-      let data: IGame | undefined = undefined;
-      let error = null;
-      const { _id, ...gameNoId } = targettedGame;
-      // No _id = create new game
-      if (_id === undefined) {
-        ({ data, error } = await dbRequest<IGame>("create", Collection.GAMES, {
-          ...gameNoId,
-          players: [],
-        }));
-      } else {
-        ({ data, error } = await dbRequest<IGame>("update", Collection.GAMES, {
-          _id,
-          ...gameNoId,
-        }));
-      }
-
-      if (error !== null) {
-        setGeneralError(error);
-        throw error;
-      }
-
-      setGames((prev) =>
-        _id === undefined
-          ? [...prev, data]
-          : prev
-              .filter(({ _id: gId }) => gId.toString() !== data._id.toString())
-              .concat(data),
-      );
-      setGameInfo(DEFAULT_STATE);
-      setAddGameError(null);
-      setGeneralError(null);
+      openDialog({
+        variant: DialogVariant.CONFIRM,
+        title: "Careful!",
+        content: (
+          <div>
+            Are you sure you want to update this game? Check that all the fields
+            are correct. <br />
+            <br />
+            Data has passed validation but click "Refresh games list" above
+            after confirming to make sure everything looks alright.
+          </div>
+        ),
+        action: async () => {
+          try {
+            await _updateGame(targettedGame);
+          } catch (error) {
+            throw error instanceof Error ? error : new Error("Unknown error");
+          } finally {
+            openDialog();
+          }
+        },
+      });
     } catch (error: unknown) {
-      const e = error instanceof Error ? error : new Error("Unknown error");
-      setGeneralError(e);
-    } finally {
-      setLoading(false);
+      throw error instanceof Error ? error : new Error("Unknown error");
     }
-  }, [games, targettedGame, setGames]);
+  }, [_updateGame, games, openDialog, targettedGame]);
 
-  const handleChange = useCallback(
+  const handleRefreshGames = useCallback(
+    async (e: React.MouseEvent<HTMLButtonElement>) => {
+      e.stopPropagation();
+      try {
+        await queryClient.invalidateQueries({
+          queryKey: ["games"],
+        });
+      } catch (error) {
+        throw error instanceof Error ? error : new Error("Unknown error");
+      }
+    },
+    [queryClient],
+  );
+
+  const handleToggleSignupsAvailable = useCallback(async () => {
+    return await _toggleSignupsAvailable(admin);
+  }, [_toggleSignupsAvailable, admin]);
+
+  const handleClearAllSignups = useCallback(() => {
+    if (admin === undefined) throw new Error("Admin not found");
+
+    openDialog({
+      variant: DialogVariant.CONFIRM,
+      title: "Careful!",
+      content: (
+        <div>
+          Are you sure you want to remove all players from signups? This action
+          cannot be undone. <br />
+          <br />
+          You should really only be doing this on Sunday night after the last
+          game has been played and when preparing next week's games.
+        </div>
+      ),
+      action: async () => {
+        try {
+          return await _clearAllSignups();
+        } catch (error) {
+          throw error instanceof Error ? error : new Error("Unknown error");
+        } finally {
+          openDialog();
+        }
+      },
+    });
+  }, [_clearAllSignups, admin, openDialog]);
+
+  const handleGameInfoUpdate = useCallback(
     (key: keyof ErrorUser, value: IGame[keyof ErrorUser]) => {
       if (addGameError?.[key] !== undefined) {
         setAddGameError((prev) => ({
@@ -234,87 +333,17 @@ export default function Admin({
     [addGameError],
   );
 
-  const handleRefreshGames = useCallback(
-    async (e: React.MouseEvent<HTMLButtonElement>) => {
-      e.stopPropagation();
-      try {
-        const res = await dbRequest<IGame[]>("get", Collection.GAMES);
-        if (res.error !== null) {
-          setGeneralError(res.error);
-          throw res.error;
-        }
-        setGames(res.data);
-      } catch (error) {
-        const err = error instanceof Error ? error : new Error("Unknown error");
-        setGeneralError(err);
-      }
-    },
-    [setGames],
-  );
-
-  const handleToggleSignupsAvailable = useCallback(async () => {
-    if (admin === undefined) return;
-    try {
-      setLoading(true);
-      setGeneralError(null);
-
-      const { data, error } = await dbRequest<IAdmin>(
-        "update",
-        Collection.ADMIN,
-        {
-          _id: admin._id,
-          signup_open: !admin.signup_open,
-        },
-      );
-
-      if (error !== null) {
-        setGeneralError(error);
-        throw error;
-      }
-
-      setAdmin(data);
-    } catch (error) {
-      const e =
-        error instanceof Error
-          ? error
-          : new Error("handleToggleSignupsAvailable: Unknown error");
-      setGeneralError(e);
-    } finally {
-      setLoading(false);
-    }
-  }, [admin, setAdmin]);
-
-  const handleClearAllSignups = useCallback(async () => {
-    if (admin === undefined) return;
-    try {
-      setLoading(true);
-      setGeneralError(null);
-
-      const { data, error } = await dbRequest<IGame[]>(
-        "reset",
-        Collection.GAMES,
-      );
-
-      if (error !== null) {
-        setGeneralError(error);
-        throw error;
-      }
-
-      setGames(data);
-    } catch (error) {
-      const e =
-        error instanceof Error
-          ? error
-          : new Error("handleToggleSignupsAvailable: Unknown error");
-      setGeneralError(e);
-    } finally {
-      setLoading(false);
-    }
-  }, [admin, setGames]);
-
   const sortedGames = useMemo(() => sortDaysOfWeek(games), [games]);
+  const generalError =
+    updateGameError ?? clearSignupsError ?? signupsAvailableError;
 
-  if (!isConnected) return <h1>Connecting to db...</h1>;
+  if (!isConnected) {
+    return (
+      <p className="bg-[var(--background-error)] p-1">
+        Error connecting to database. Please refresh.
+      </p>
+    );
+  }
 
   return (
     <>
@@ -332,9 +361,9 @@ export default function Admin({
           More coming soon!
         </div>
 
-        {admin !== undefined && (
+        {admin === undefined ? null : !isClearSignupsLoading ? (
           <div className="flex flex-col gap-y-1 text-black container">
-            <div className="container-header !h-auto -mt-2 -mx-1.5 py-2 !text-xl md:!text-2xl">
+            <div className="container-header !h-auto -mt-2 -mx-1.5 py-2 !text-xl">
               Game and signups management
             </div>
             <div className="flex flex-col justify-start p-2">
@@ -353,7 +382,7 @@ export default function Admin({
                 <button
                   onClick={handleToggleSignupsAvailable}
                   className="!max-w-none w-[90px] justify-center"
-                  disabled={loading}
+                  disabled={isSignupsAvailableLoading}
                 >
                   {admin.signup_open ? "Disable" : "Enable"}
                 </button>
@@ -363,44 +392,21 @@ export default function Admin({
                   <strong>Clear all game signups:</strong>{" "}
                 </div>
                 <button
-                  onClick={() => {
-                    openDialog({
-                      variant: DialogVariant.CONFIRM,
-                      title: "Careful!",
-                      content: (
-                        <div>
-                          Are you sure you want to remove all players from
-                          signups? This action cannot be undone. <br />
-                          <br />
-                          You should really only be doing this on Sunday night
-                          after the last game has been played and when preparing
-                          next week's games.
-                        </div>
-                      ),
-                      action: async () => {
-                        try {
-                          await handleClearAllSignups();
-                        } catch (error) {
-                          // eslint-disable-next-line no-console
-                          console.error(error);
-                        } finally {
-                          openDialog();
-                        }
-                      },
-                    });
-                  }}
+                  onClick={handleClearAllSignups}
                   className={`!max-w-none w-max ${RED_TW}`}
-                  disabled={loading}
+                  disabled={isClearSignupsLoading}
                 >
                   Clear all
                 </button>
               </div>
             </div>
           </div>
+        ) : (
+          <Loader className="w-full h-[300px]" />
         )}
 
         <div className="flex flex-col gap-y-1 text-black container">
-          <div className="container-header !h-auto -mt-2 -mx-1.5 py-2 !text-xl md:!text-2xl">
+          <div className="container-header !h-auto -mt-2 -mx-1.5 py-2 !text-xl">
             Manage games
           </div>
           <Collapsible
@@ -431,6 +437,9 @@ export default function Admin({
                       href={game.mapUrl}
                       target="_blank"
                       className="min-w-[100px] self-end text-right flex-1"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                      }}
                     >
                       {game.address.slice(0, ADDRESS_MAX_LENGTH)}...
                     </a>
@@ -453,7 +462,7 @@ export default function Admin({
               </button>
             </div>
           </Collapsible>
-          {!loading ? (
+          {admin === undefined ? null : !isUpdateGameLoading ? (
             <div className="container my-2 flex flex-col gap-y-2 justify-start">
               <div className="container-header !h-auto -mt-2 -mx-1.5 !items-center">
                 Edit game
@@ -480,7 +489,7 @@ export default function Admin({
                 <input
                   value={targettedGame.time}
                   onChange={(e) => {
-                    handleChange("time", e.target.value);
+                    handleGameInfoUpdate("time", e.target.value);
                   }}
                   placeholder="Time 24h format (e.g 19:00)"
                 />
@@ -488,7 +497,7 @@ export default function Admin({
                 <input
                   value={targettedGame.location}
                   onChange={(e) => {
-                    handleChange("location", e.target.value);
+                    handleGameInfoUpdate("location", e.target.value);
                   }}
                   placeholder="Location name (e.g Playarena Olais)"
                 />
@@ -496,7 +505,7 @@ export default function Admin({
                 <input
                   value={targettedGame.address}
                   onChange={(e) => {
-                    handleChange("address", e.target.value);
+                    handleGameInfoUpdate("address", e.target.value);
                   }}
                   placeholder="Address"
                 />
@@ -504,7 +513,7 @@ export default function Admin({
                 <input
                   value={targettedGame.mapUrl}
                   onChange={(e) => {
-                    handleChange("mapUrl", e.target.value);
+                    handleGameInfoUpdate("mapUrl", e.target.value);
                   }}
                   placeholder="Google Maps URL"
                 />
@@ -547,35 +556,10 @@ export default function Admin({
 
           <div className="flex gap-x-2 items-center justify-between h-full mt-2">
             <button
-              onClick={() => {
-                openDialog({
-                  variant: DialogVariant.CONFIRM,
-                  title: "Careful!",
-                  content: (
-                    <div>
-                      Are you sure you want to update this game? Check that all
-                      the fields are correct. <br />
-                      <br />
-                      Data has passed validation but click "Refresh games list"
-                      above after confirming to make sure everything looks
-                      alright.
-                    </div>
-                  ),
-                  action: async () => {
-                    try {
-                      await handleUpdateGame();
-                    } catch (error) {
-                      // eslint-disable-next-line no-console
-                      console.error(error);
-                    } finally {
-                      openDialog();
-                    }
-                  },
-                });
-              }}
+              onClick={handleUpdateGame}
               className="flex justify-center w-full"
               disabled={
-                loading ||
+                isUpdateGameLoading ||
                 targettedGame.day === undefined ||
                 targettedGame.time === "" ||
                 targettedGame.location === "" ||
@@ -593,14 +577,13 @@ export default function Admin({
               onClick={() => {
                 setGameInfo(DEFAULT_STATE);
                 setAddGameError(null);
-                setGeneralError(null);
               }}
             >
               reset
             </button>
           </div>
           {generalError !== null && (
-            <span className="px-2 py-1 text-xs text-red-500">
+            <span className="px-2 py-1 text-xs bg-[var(--background-error)]">
               {generalError.message}
             </span>
           )}

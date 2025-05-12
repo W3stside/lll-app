@@ -25,16 +25,18 @@ export default async (req: NextApiRequest, res: NextApiResponse) => {
 
   try {
     const body = req.body as IGame & {
-      newPlayerId?: ObjectId;
-      cancelPlayerId?: ObjectId;
+      newPlayerId?: string;
+      cancelPlayerId?: string;
     };
     const { _id, newPlayerId, cancelPlayerId, ...rest } = body;
 
-    const db = client.db("LLL");
-    const collection = db.collection<IGame>(Collection.GAMES);
+    const collection = client
+      .db("LLL")
+      .collection<IGame<ObjectId>>(Collection.GAMES);
 
     const gameIdWrapped = new ObjectId(_id);
-    let result: WithId<IGame> | null;
+
+    let result: WithId<IGame<ObjectId>> | null;
     if (newPlayerId !== undefined || cancelPlayerId !== undefined) {
       const previous = await collection.findOne({
         _id: gameIdWrapped,
@@ -70,11 +72,9 @@ export default async (req: NextApiRequest, res: NextApiResponse) => {
         if (playerIdx < MAX_SIGNUPS_PER_GAME) {
           const newlyConfirmedPlayer = result.players[MAX_SIGNUPS_PER_GAME - 1];
 
-          const newConfirmedUser = await db
-            .collection(Collection.USERS)
-            .findOne<IUser>({
-              _id: new ObjectId(newlyConfirmedPlayer),
-            });
+          const newConfirmedUser = await collection.findOne<IUser<ObjectId>>({
+            _id: new ObjectId(newlyConfirmedPlayer),
+          });
 
           if (newConfirmedUser !== null) {
             await sendBotNotification({
@@ -114,8 +114,6 @@ Have fun! 🎉`,
       res.status(200).json(result);
     }
   } catch (error) {
-    // eslint-disable-next-line no-console
-    console.error(error);
     res.status(500).json({ message: "Error updating document" });
   }
 };

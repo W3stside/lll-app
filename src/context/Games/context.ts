@@ -5,7 +5,7 @@ import type { GamesByDay, IGame } from "@/types/users";
 interface IGamesContext {
   games: IGame[];
   gamesByDay: GamesByDay;
-  setGames: React.Dispatch<React.SetStateAction<IGame[]>>;
+  error: Error | null;
 }
 
 export const GamesContext = createContext<IGamesContext | undefined>(undefined);

@@ -1,4 +1,3 @@
-/* eslint-disable no-console */
 import { ObjectId } from "mongodb";
 import type { NextApiRequest, NextApiResponse } from "next";
 
@@ -20,16 +19,16 @@ export default async (req: NextApiRequest, res: NextApiResponse) => {
       ...rest
     } = body;
 
-    const db = client.db("LLL");
-    const collection = db.collection<IUser>(Collection.USERS);
-
-    const result = await collection.updateOne(
-      { _id: new ObjectId(_id) },
-      {
-        $set: rest,
-        $addToSet: { shame: shameOne },
-      },
-    );
+    const result = await client
+      .db("LLL")
+      .collection<IUser<ObjectId>>(Collection.USERS)
+      .updateOne(
+        { _id: new ObjectId(_id) },
+        {
+          $set: rest,
+          $addToSet: { shame: shameOne },
+        },
+      );
 
     if (result.matchedCount === 0) {
       res.status(404).json({ message: "Document not found" });
@@ -39,7 +38,6 @@ export default async (req: NextApiRequest, res: NextApiResponse) => {
       throw new Error("Error updating document");
     }
   } catch (error) {
-    console.error(error);
     res.status(500).json({ message: "Error updating document" });
   }
 };

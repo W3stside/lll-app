@@ -10,7 +10,7 @@ import {
   NAVLINKS_MAP,
   WHATS_APP_GROUP_URL,
 } from "@/constants/links";
-import { useClientUser } from "@/hooks/useClientUser";
+import { useUser } from "@/context/User/context";
 import { Role } from "@/types";
 import { dbAuth } from "@/utils/api/dbAuth";
 import { cn } from "@/utils/tailwind";
@@ -27,7 +27,7 @@ export function Footer() {
     }
   }, [router]);
 
-  const { user, isLoading } = useClientUser(router.pathname);
+  const { user, isLoading } = useUser();
 
   return (
     <footer className="container flex justify-center items-center bg-gray-800 text-white w-full !max-w-none mt-auto">
@@ -50,7 +50,7 @@ export function Footer() {
           >
             LLL WhatsApp
           </a>
-          {(isLoading || user !== undefined) && (
+          {user._id !== undefined && (
             <button
               className={cn(
                 "w-[75px] h-[40px] justify-center lg:hidden ml-4 bg-[var(--background-color-2)] whitespace-nowrap",
@@ -58,10 +58,10 @@ export function Footer() {
               )}
               onClick={handleLogout}
             >
-              {!isLoading ? "Log out" : <Loader />}
+              {isLoading ? <Loader /> : "Logout"}
             </button>
           )}
-          {user?.role === Role.ADMIN && router.pathname !== ADMIN_PATH && (
+          {user.role === Role.ADMIN && router.pathname !== ADMIN_PATH && (
             <button
               className={cn(
                 "w-[75px] h-[40px] justify-center ml-4 bg-[var(--background-window-highlight)] whitespace-nowrap",

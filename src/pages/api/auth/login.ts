@@ -15,26 +15,30 @@ export default async function handler(
 
   const { phone_number, password } = req.body as INewSignup;
 
-  const db = client.db("LLL");
-  const users = db.collection(Collection.USERS);
+  try {
+    const user = await client
+      .db("LLL")
+      .collection(Collection.USERS)
+      .findOne<INewSignup>({ phone_number });
 
-  const user = await users.findOne<INewSignup>({ phone_number });
-
-  if (!user) {
-    res.status(401).json({ message: "Invalid credentials" });
-  } else {
-    const isValid = await bcrypt.compare(password, user.password);
-
-    if (!isValid) {
+    if (!user) {
       res.status(401).json({ message: "Invalid credentials" });
     } else {
-      refreshAndSetJwtTokens({ _id: user._id }, res);
-      res.status(200).json({
-        message: "Login successful",
-        user: {
-          _id: user._id,
-        },
-      });
+      const isValid = await bcrypt.compare(password, user.password);
+
+      if (!isValid) {
+        res.status(401).json({ message: "Invalid credentials" });
+      } else {
+        refreshAndSetJwtTokens({ _id: user._id }, res);
+        res.status(200).json({
+          message: "Login successful",
+          user: {
+            _id: user._id,
+          },
+        });
+      }
     }
+  } catch (error) {
+    res.status(500).json({ message: "Error logging in" });
   }
 }

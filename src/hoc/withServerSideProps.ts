@@ -1,4 +1,3 @@
-// Hoc/withServerSideProps.ts
 import { ObjectId } from "mongodb";
 import type {
   GetServerSideProps,
@@ -46,7 +45,7 @@ export function withServerSideProps<P extends object>(
 
       const fullUser = await client
         .db("LLL")
-        .collection<IUser>(Collection.USERS)
+        .collection<IUser<ObjectId>>(Collection.USERS)
         .findOne(
           {
             _id: new ObjectId(userFromCookies._id),
@@ -72,7 +71,7 @@ export function withServerSideProps<P extends object>(
           ...context,
           parentProps: {
             admin,
-            user: fullUser,
+            user: JSON.parse(JSON.stringify(fullUser)) as IUser,
             games,
             users,
             usersById,
