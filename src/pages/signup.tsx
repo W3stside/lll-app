@@ -347,7 +347,7 @@ const Signups: React.FC<ISignups> = ({
                                               key={playerId.toString()}
                                               {...signee}
                                               cancelGame={
-                                                gameStatus ===
+                                                gameStatus !==
                                                   GameStatus.PAST &&
                                                 checkPlayerIsUser(
                                                   signee,
