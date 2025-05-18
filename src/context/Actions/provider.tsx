@@ -107,7 +107,7 @@ export function ActionProvider({ children }: IActionProvider) {
           title: "Cancel game?",
           content:
             options?.bypassThreshold !== true && gamePastThreshold ? (
-              <div className="flex flex-col items-center gap-y-6">
+              <div className="flex flex-col items-center gap-y-4">
                 <h3>Whoa whoa whoa!</h3>
                 <div>
                   <p>
@@ -120,7 +120,7 @@ export function ActionProvider({ children }: IActionProvider) {
                 </div>
               </div>
             ) : (
-              <div className="flex flex-col items-center gap-y-6">
+              <div className="flex flex-col items-start gap-y-4">
                 <h3>Heads up!</h3>
                 <p>Are you sure you want to cancel and drop your spot?</p>
               </div>

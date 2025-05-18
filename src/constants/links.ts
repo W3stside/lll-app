@@ -1,12 +1,17 @@
+import doc from "@/assets/doc.png";
+import error from "@/assets/error.png";
+import games from "@/assets/games.png";
+import info from "@/assets/info.png";
+
 export const WHATS_APP = "https://wa.me";
 export const WHATS_APP_GROUP_URL =
   "https://chat.whatsapp.com/HtFbF7KNjyg7rnDmHek9e5";
 export const NAVLINKS = [
   { name: "Home", url: "/" },
-  { name: "Games", url: "/signup" },
-  { name: "Profile", url: "/me" },
-  { name: "Wall of Shame", url: "/shame" },
-  { name: "About", url: "/about" },
+  { name: "Games", url: "/signup", icon: games },
+  { name: "Profile", url: "/me", icon: doc },
+  { name: "Wall of Shame", url: "/shame", icon: error },
+  { name: "About", url: "/about", icon: info },
 ] as const;
 export const NAVLINKS_MAP = {
   HOME: "/",

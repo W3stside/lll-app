@@ -1,9 +1,14 @@
-/* eslint-disable no-console */
+import Image from "next/image";
 import { useRouter } from "next/router";
 import { useCallback } from "react";
 
+import { LogoffButton } from "./Buttons/Logoff";
 import { Loader } from "./ui";
 
+import mail from "@/assets/mail.png";
+import moon from "@/assets/moon.png";
+import programs from "@/assets/programs.png";
+import sun from "@/assets/sun.png";
 import {
   ADMIN_PATH,
   BUY_ME_A_COFFEE,
@@ -25,8 +30,7 @@ export function Footer() {
       await dbAuth("logout");
       void router.push(NAVLINKS_MAP.LOGIN);
     } catch (error) {
-      const err = error instanceof Error ? error : new Error("Unknown error");
-      console.error(err);
+      throw error instanceof Error ? error : new Error("Unknown error");
     }
   }, [router]);
 
@@ -51,51 +55,56 @@ export function Footer() {
             })}
             onClick={toggleTheme}
           >
-            {isDark ? (
-              <div>
-                Go light <span className="text-black bg-yellow-200">☼</span>
-              </div>
-            ) : (
-              <div>
-                Go dark <span className="text-black bg-yellow-400">☽</span>
-              </div>
-            )}
+            <div className="flex gap-x-2 items-center justify-center w-full text-sm">
+              <Image
+                src={isDark ? sun : moon}
+                alt={isDark ? "sun" : "moon"}
+                className="w-[16px] h-[16px]"
+              />
+              Go {isDark ? "light" : "dark"}{" "}
+            </div>
           </button>
           <a
             href={WHATS_APP_GROUP_URL}
-            className={cn(
-              "flex justify-center w-[98px] h-[40px] underline text-blue-500 container !bg-green-200",
-              {
-                "!bg-green-800": isDark,
-              },
-            )}
+            className="flex justify-center no-underline items-center w-[98px] h-[40px] text-sm text-blue-500 container"
             target="_blank"
             rel="noopener noreferrer"
           >
-            WhatsApp
+            <div className="flex gap-x-2 items-center">
+              <Image src={mail} alt="whatsapp" /> WhatsApp
+            </div>
           </a>
-          {(isLoading || user !== undefined) && (
-            <button
-              className={cn(
-                "w-[98px] h-[40px] justify-center lg:hidden ml-4 bg-[var(--background-color-2)] whitespace-nowrap",
-                { "!p-0": isLoading },
-              )}
-              onClick={handleLogout}
-            >
-              {!isLoading ? "Log out" : <Loader />}
-            </button>
-          )}
-          {user?.role === Role.ADMIN && router.pathname !== ADMIN_PATH && (
-            <button
-              className={cn(
-                "w-[98px] h-[40px] justify-center ml-4 bg-[var(--background-window-highlight)] whitespace-nowrap",
-                { "!p-0": isLoading },
-              )}
-              onClick={async () => await router.push(ADMIN_PATH)}
-            >
-              {!isLoading ? "Admin" : <Loader />}
-            </button>
-          )}
+          <div className="flex gap-x-1 ml-4">
+            {user?.role === Role.ADMIN && router.pathname !== ADMIN_PATH && (
+              <button
+                className={cn(
+                  "w-[98px] h-[40px] justify-center bg-[var(--background-window-highlight)] whitespace-nowrap",
+                  { "!p-0": isLoading },
+                )}
+                onClick={async () => await router.push(ADMIN_PATH)}
+              >
+                {!isLoading ? (
+                  <div className="flex gap-x-2 items-center text-sm">
+                    <Image
+                      src={programs}
+                      alt="log-off"
+                      className="w-[22px] h-[22px]"
+                    />{" "}
+                    Admin
+                  </div>
+                ) : (
+                  <Loader />
+                )}
+              </button>
+            )}
+            {(isLoading || user !== undefined) && (
+              <LogoffButton
+                action={handleLogout}
+                loading={isLoading}
+                className="lg:hidden"
+              />
+            )}
+          </div>
         </div>
       </div>
     </footer>

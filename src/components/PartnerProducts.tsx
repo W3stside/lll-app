@@ -21,7 +21,7 @@ export function PartnerProducts({ className }: IPartnerProducts) {
     >
       <div className="container-header !h-auto -mt-2 -mx-1.5">
         <h5 className="mr-auto px-2 py-1">Explore our partner products</h5>{" "}
-        <strong className="pr-2">x</strong>
+        <strong className="pr-2">X</strong>
       </div>
       <div className="flex flex-wrap gap-x-4 items-start justify-center">
         <div className="flex flex-col gap-y-1 flex-1 max-w-full">
