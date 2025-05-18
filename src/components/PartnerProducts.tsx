@@ -1,8 +1,10 @@
-import Image from "next/image";
+import Image, { type StaticImageData } from "next/image";
+import Link from "next/link";
 
 import ebaumsWorld from "@/assets/ebaums-world.png";
 import fedRates from "@/assets/fed-rates.png";
 import findClassmates from "@/assets/find-classmates.png";
+import pastelle from "@/assets/pastelle.svg";
 import { cn } from "@/utils/tailwind";
 
 interface IPartnerProducts {
@@ -25,13 +27,20 @@ export function PartnerProducts({ className }: IPartnerProducts) {
         <div className="flex flex-col gap-y-1 flex-1 max-w-full">
           <p>There's always more at LLL! </p>
           <div className="flex gap-x-2 h-20">
+            <Link
+              href="https://pastelle.shop/collection"
+              className="w-[160px]"
+              target="_blank"
+              referrerPolicy="no-referrer"
+            >
+              <Image
+                src={pastelle as StaticImageData}
+                alt="pastelle-apparel"
+                className="max-h-full max-w-full"
+              />
+            </Link>
             <Image
               src={ebaumsWorld}
-              alt="ebaums world"
-              className="max-h-full max-w-fit"
-            />
-            <Image
-              src={findClassmates}
               alt="find classmates"
               className="max-h-full max-w-fit"
             />

@@ -121,7 +121,7 @@ export function Profile({
     (isOwner ? currentUser.avatarUrl : profileUser.avatarUrl) ?? undefined;
 
   return (
-    <div className="flex flex-col gap-y-5 min-h-[60vh] justify-between">
+    <div className="flex flex-col gap-y-5 w-full min-h-[60vh] justify-between items-center">
       <div className="flex flex-col gap-y-3 text-black container">
         <div className="container-header !h-auto -mt-2 -mx-1.5">
           <h4 className="mr-auto px-2 py-1">

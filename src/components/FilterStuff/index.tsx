@@ -42,6 +42,7 @@ export function FilterStuff({
             type="radio"
             id="filter-my-games"
             name="filter-my-games"
+            className="w-auto"
             checked={filters === GameFilters.MY_GAMES}
             readOnly
             onClick={() => {
@@ -60,6 +61,7 @@ export function FilterStuff({
               type="radio"
               id="filter-open-games"
               name="filter-open-games"
+              className="w-auto"
               checked={filters === GameFilters.OPEN_GAMES}
               readOnly
               onClick={() => {

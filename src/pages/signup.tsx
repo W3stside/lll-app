@@ -159,7 +159,7 @@ const Signups: React.FC<ISignups> = ({
                             ? 128
                             : gameStatus === GameStatus.PAST
                               ? userContext.role !== Role.ADMIN
-                                ? 50
+                                ? 49
                                 : 85
                               : 103
                         }
@@ -197,9 +197,9 @@ const Signups: React.FC<ISignups> = ({
                                 "mb-[-4px]": !collapsed[day],
                               })}
                             >
-                              {collapsed[day] && gameStatus !== GameStatus.PAST
-                                ? "+"
-                                : "-"}
+                              {collapsed[day] &&
+                                gameStatus !== GameStatus.PAST &&
+                                "+"}
                             </h2>
                             <div
                               className={cn(
