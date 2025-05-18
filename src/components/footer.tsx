@@ -1,10 +1,12 @@
 import Image from "next/image";
+import Link from "next/link";
 import { useRouter } from "next/router";
 import { useCallback } from "react";
 
 import { LogoffButton } from "./Buttons/Logoff";
 import { Loader } from "./ui";
 
+import info from "@/assets/info.png";
 import mail from "@/assets/mail.png";
 import moon from "@/assets/moon.png";
 import programs from "@/assets/programs.png";
@@ -39,16 +41,16 @@ export function Footer() {
   return (
     <footer className="container flex justify-center items-center bg-gray-800 text-white w-full !max-w-none mt-auto">
       <div className="mx-auto p-4 !w-full">
-        <div className="flex flex-wrap gap-2 justify-end items-center justify-self-end w-full">
-          <a
+        <div className="flex flex-wrap gap-1 justify-end items-center justify-self-end w-full">
+          <Link
             className="underline text-xs mr-auto"
             href={BUY_ME_A_COFFEE}
             target="_blank"
             rel="noopener noreferrer"
           >
-            made with love for LLL by daveo <br />
+            made with love by daveo <br />
             (buy me a beer? 🍻)
-          </a>
+          </Link>
           <button
             className={cn("w-[98px] h-[40px] whitespace-nowrap bg-blue-400", {
               "bg-purple-900 text-yellow-400": !isDark,
@@ -64,27 +66,24 @@ export function Footer() {
               Go {isDark ? "light" : "dark"}{" "}
             </div>
           </button>
-          <a
-            href={NAVLINKS_MAP.ABOUT}
-            className="lg:hidden flex justify-center no-underline items-center w-[98px] h-[40px] text-sm text-blue-500 container"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <div className="flex gap-x-2 items-center">
-              <Image src={mail} alt="whatsapp" /> About
-            </div>
-          </a>
-          <a
+          <Link href={NAVLINKS_MAP.ABOUT} className="no-underline">
+            <button className="justify-center items-center w-[98px] h-[40px] text-sm lg:hidden">
+              <div className="flex gap-x-2 items-center">
+                <Image src={info} alt="whatsapp" className="w-[17px]" /> About
+              </div>
+            </button>
+          </Link>
+          <Link
             href={WHATS_APP_GROUP_URL}
-            className="flex justify-center no-underline items-center w-[98px] h-[40px] text-sm text-blue-500 container"
+            className="flex justify-center no-underline items-center w-[98px] h-[40px] text-sm container"
             target="_blank"
             rel="noopener noreferrer"
           >
             <div className="flex gap-x-2 items-center">
-              <Image src={mail} alt="whatsapp" /> WhatsApp
+              <Image src={mail} alt="whatsapp" className="w-[17px]" /> WhatsApp
             </div>
-          </a>
-          <div className="flex gap-x-1 ml-4">
+          </Link>
+          <div className="flex gap-x-1 ml-0 md:ml-4">
             {user?.role === Role.ADMIN && router.pathname !== ADMIN_PATH && (
               <button
                 className={cn(
