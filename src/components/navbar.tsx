@@ -62,7 +62,14 @@ export function Navbar({ usersById }: INavbar) {
           {NAVLINKS.flatMap(({ name, url, ...rest }) =>
             !router.pathname.includes(url)
               ? [
-                  <Link key={url} href={url} className="whitespace-nowrap">
+                  <Link
+                    key={url}
+                    href={url}
+                    className={cn(
+                      "whitespace-nowrap",
+                      "className" in rest && rest.className,
+                    )}
+                  >
                     <button
                       className={cn(
                         "underline flex items-center gap-x-1.5 w-max",

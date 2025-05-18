@@ -11,7 +11,7 @@ export const NAVLINKS = [
   { name: "Games", url: "/signup", icon: games },
   { name: "Profile", url: "/me", icon: doc },
   { name: "Wall of Shame", url: "/shame", icon: error },
-  { name: "About", url: "/about", icon: info },
+  { name: "About", url: "/about", icon: info, className: "hidden lg:flex" },
 ] as const;
 export const NAVLINKS_MAP = {
   HOME: "/",
