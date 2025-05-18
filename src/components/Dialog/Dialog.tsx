@@ -36,8 +36,8 @@ function DialogContent({
         {...props}
       >
         <div className="container flex flex-col min-h-50 mb-[20%]">
-          <div className="container-header !h-auto -mt-2 -mx-1.5 items-center gap-4">
-            <h4>{title}</h4>
+          <div className="container-header !h-auto -mt-2 -mx-1.5 items-center gap-4 px-[8px] !justify-between">
+            <h5>{title}</h5>
             <div
               className="cursor-pointer p-1 pt-1.5 font-bold"
               onClick={closeModal}

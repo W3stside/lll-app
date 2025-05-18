@@ -73,7 +73,7 @@ const Signups: React.FC<ISignups> = ({
       <div className="flex flex-col gap-y-1 text-black container">
         <div className="container-header !h-auto -mt-2 -mx-1.5">
           <h3 className="mr-auto px-2 py-1">Weekly Games</h3>{" "}
-          <strong className="pr-2">x</strong>
+          <strong className="pr-2">X</strong>
         </div>
         <div className="flex gap-x-4 items-start justify-between">
           <div className="flex flex-col gap-y-1">
@@ -134,7 +134,7 @@ const Signups: React.FC<ISignups> = ({
                       return (
                         <div className="container flex-col">
                           <div className="container-header !h-auto -mt-2 -mx-1.5">
-                            x
+                            X
                           </div>
                           <p className="ml-0 pl-6 text-black p-6 m-auto">
                             <span className="text-3xl mr-2">ಠ_ಠ</span> No {day}{" "}
@@ -159,7 +159,7 @@ const Signups: React.FC<ISignups> = ({
                             ? 128
                             : gameStatus === GameStatus.PAST
                               ? userContext.role !== Role.ADMIN
-                                ? 50
+                                ? 49
                                 : 85
                               : 103
                         }
@@ -197,9 +197,9 @@ const Signups: React.FC<ISignups> = ({
                                 "mb-[-4px]": !collapsed[day],
                               })}
                             >
-                              {collapsed[day] && gameStatus !== GameStatus.PAST
-                                ? "+"
-                                : "-"}
+                              {collapsed[day] &&
+                                gameStatus !== GameStatus.PAST &&
+                                "+"}
                             </h2>
                             <div
                               className={cn(
@@ -347,7 +347,7 @@ const Signups: React.FC<ISignups> = ({
                                               key={playerId.toString()}
                                               {...signee}
                                               cancelGame={
-                                                gameStatus !==
+                                                gameStatus ===
                                                   GameStatus.PAST &&
                                                 checkPlayerIsUser(
                                                   signee,

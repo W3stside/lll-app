@@ -66,7 +66,7 @@ export default function WallOfShame({ users }: IWallOfShame) {
         </div>
         <div className="flex flex-col gap-y-4">
           <div className="container flex-col">
-            <div className="container-header !h-auto mb-2 -mt-2 -mx-1.5">x</div>
+            <div className="container-header !h-auto mb-2 -mt-2 -mx-1.5">X</div>
             Where the shameful players who drop out less than 12 hours before
             games are displayed for all of us to laugh at. Don't be like these
             people!

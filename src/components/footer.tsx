@@ -1,15 +1,21 @@
-/* eslint-disable no-console */
+import Image from "next/image";
 import { useRouter } from "next/router";
 import { useCallback } from "react";
 
+import { LogoffButton } from "./Buttons/Logoff";
 import { Loader } from "./ui";
 
+import mail from "@/assets/mail.png";
+import moon from "@/assets/moon.png";
+import programs from "@/assets/programs.png";
+import sun from "@/assets/sun.png";
 import {
   ADMIN_PATH,
   BUY_ME_A_COFFEE,
   NAVLINKS_MAP,
   WHATS_APP_GROUP_URL,
 } from "@/constants/links";
+import { useClientTheme } from "@/hooks/useClientTheme";
 import { useClientUser } from "@/hooks/useClientUser";
 import { Role } from "@/types";
 import { dbAuth } from "@/utils/api/dbAuth";
@@ -17,13 +23,14 @@ import { cn } from "@/utils/tailwind";
 
 export function Footer() {
   const router = useRouter();
+  const { isDark, toggleTheme } = useClientTheme();
+
   const handleLogout = useCallback(async () => {
     try {
       await dbAuth("logout");
       void router.push(NAVLINKS_MAP.LOGIN);
     } catch (error) {
-      const err = error instanceof Error ? error : new Error("Unknown error");
-      console.error(err);
+      throw error instanceof Error ? error : new Error("Unknown error");
     }
   }, [router]);
 
@@ -42,36 +49,62 @@ export function Footer() {
             made with love for LLL by daveo <br />
             (buy me a beer? 🍻)
           </a>
+          <button
+            className={cn("w-[98px] h-[40px] whitespace-nowrap bg-blue-400", {
+              "bg-purple-900 text-yellow-400": !isDark,
+            })}
+            onClick={toggleTheme}
+          >
+            <div className="flex gap-x-2 items-center justify-center w-full text-sm">
+              <Image
+                src={isDark ? sun : moon}
+                alt={isDark ? "sun" : "moon"}
+                className="w-[16px] h-[16px]"
+              />
+              Go {isDark ? "light" : "dark"}{" "}
+            </div>
+          </button>
           <a
             href={WHATS_APP_GROUP_URL}
-            className="underline text-blue-500"
+            className="flex justify-center no-underline items-center w-[98px] h-[40px] text-sm text-blue-500 container"
             target="_blank"
             rel="noopener noreferrer"
           >
-            LLL WhatsApp
+            <div className="flex gap-x-2 items-center">
+              <Image src={mail} alt="whatsapp" /> WhatsApp
+            </div>
           </a>
-          {(isLoading || user !== undefined) && (
-            <button
-              className={cn(
-                "w-[75px] h-[40px] justify-center lg:hidden ml-4 bg-[var(--background-color-2)] whitespace-nowrap",
-                { "!p-0": isLoading },
-              )}
-              onClick={handleLogout}
-            >
-              {!isLoading ? "Log out" : <Loader />}
-            </button>
-          )}
-          {user?.role === Role.ADMIN && router.pathname !== ADMIN_PATH && (
-            <button
-              className={cn(
-                "w-[75px] h-[40px] justify-center ml-4 bg-[var(--background-window-highlight)] whitespace-nowrap",
-                { "!p-0": isLoading },
-              )}
-              onClick={async () => await router.push(ADMIN_PATH)}
-            >
-              {!isLoading ? "Admin" : <Loader />}
-            </button>
-          )}
+          <div className="flex gap-x-1 ml-4">
+            {user?.role === Role.ADMIN && router.pathname !== ADMIN_PATH && (
+              <button
+                className={cn(
+                  "w-[98px] h-[40px] justify-center bg-[var(--background-window-highlight)] whitespace-nowrap",
+                  { "!p-0": isLoading },
+                )}
+                onClick={async () => await router.push(ADMIN_PATH)}
+              >
+                {!isLoading ? (
+                  <div className="flex gap-x-2 items-center text-sm">
+                    <Image
+                      src={programs}
+                      alt="log-off"
+                      className="w-[22px] h-[22px]"
+                    />{" "}
+                    Admin
+                  </div>
+                ) : (
+                  <Loader />
+                )}
+              </button>
+            )}
+            {(isLoading || user !== undefined) && (
+              <LogoffButton
+                action={handleLogout}
+                loading={isLoading}
+                className="lg:hidden"
+              />
+            )}
+          </div>
         </div>
       </div>
     </footer>

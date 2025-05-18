@@ -4,11 +4,10 @@ import { usePathname } from "next/navigation";
 import { useRouter } from "next/router";
 import { useCallback } from "react";
 
-import { Loader } from "./ui";
+import { LogoffButton } from "./Buttons/Logoff";
 
 import logo from "@/assets/logo.png";
 import { NAVLINKS, NAVLINKS_MAP } from "@/constants/links";
-import { useClientTheme } from "@/hooks/useClientTheme";
 import { useClientUser } from "@/hooks/useClientUser";
 import type { IUser } from "@/types/users";
 import { dbAuth } from "@/utils/api/dbAuth";
@@ -23,8 +22,6 @@ interface INavbar {
 }
 
 export function Navbar({ usersById }: INavbar) {
-  const { isDark, toggleTheme } = useClientTheme();
-
   const router = useRouter();
   const pathname = usePathname();
   const { user, isLoading } = useClientUser(router.pathname);
@@ -53,9 +50,13 @@ export function Navbar({ usersById }: INavbar) {
           />
         </Link>
         <h1 className="lowercase font-thin text-[3.5vw] sm:text-xl text-[var(--text-color-main)]">
-          {userInfoFromPath !== undefined
-            ? `player profile: ${userInfoFromPath.first_name} ${userInfoFromPath.last_name}`
-            : pathname}
+          {userInfoFromPath !== undefined ? (
+            <div className="container uppercase">
+              Player: {userInfoFromPath.first_name} {userInfoFromPath.last_name}
+            </div>
+          ) : (
+            pathname
+          )}
         </h1>
         <div className="flex-1 sm:grow-0 mb-2 sm:m-0 sm:ml-auto m-2 flex items-center justify-center gap-x-4 w-min">
           {NAVLINKS.flatMap(({ name, url, ...rest }) =>
@@ -63,32 +64,33 @@ export function Navbar({ usersById }: INavbar) {
               ? [
                   <Link key={url} href={url} className="whitespace-nowrap">
                     <button
-                      className={cn("underline", {
-                        "bg-[var(--background-window-highlight)]":
-                          "highlight" in rest && rest.highlight,
-                      })}
+                      className={cn(
+                        "underline flex items-center gap-x-1.5 w-max",
+                        {
+                          "bg-[var(--background-window-highlight)]":
+                            "highlight" in rest && rest.highlight,
+                        },
+                      )}
                     >
+                      {"icon" in rest && (
+                        <Image
+                          src={rest.icon}
+                          alt={name}
+                          className="w-[16px] h-[16px]"
+                        />
+                      )}
                       {name}
                     </button>
                   </Link>,
                 ]
               : [],
           )}
-          <button onClick={toggleTheme}>{isDark ? "☼" : "☽"}</button>
           {(isLoading || user !== undefined) && (
-            <button
-              className={cn(
-                "hidden w-[75px] justify-center lg:flex bg-[var(--background-color-2)]",
-                { "!p-0": isLoading },
-              )}
-              onClick={handleLogout}
-            >
-              {!isLoading ? (
-                "Log out"
-              ) : (
-                <Loader className="w-[34px] h-[34px]" />
-              )}
-            </button>
+            <LogoffButton
+              action={handleLogout}
+              loading={isLoading}
+              className="hidden lg:flex"
+            />
           )}
         </div>
       </div>
