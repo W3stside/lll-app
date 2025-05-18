@@ -405,7 +405,7 @@ export default function Admin({
           </div>
           <Collapsible
             className="container my-2 flex flex-col gap-y-2 justify-start"
-            collapsedHeight={27}
+            collapsedHeight={32}
             startCollapsed={false}
           >
             <div className="container-header !h-auto -mt-2 -mx-1.5 !items-center">

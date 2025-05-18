@@ -65,6 +65,16 @@ export function Footer() {
             </div>
           </button>
           <a
+            href={NAVLINKS_MAP.ABOUT}
+            className="lg:hidden flex justify-center no-underline items-center w-[98px] h-[40px] text-sm text-blue-500 container"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            <div className="flex gap-x-2 items-center">
+              <Image src={mail} alt="whatsapp" /> About
+            </div>
+          </a>
+          <a
             href={WHATS_APP_GROUP_URL}
             className="flex justify-center no-underline items-center w-[98px] h-[40px] text-sm text-blue-500 container"
             target="_blank"
