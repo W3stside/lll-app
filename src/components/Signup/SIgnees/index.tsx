@@ -9,10 +9,17 @@ interface ISignees
   extends IUserSafe,
     Omit<ISigneeComponent, "_id" | "createdAt" | "errorMsg" | "loading"> {
   children?: React.ReactNode;
+  addToShame?: MouseEventHandler<HTMLButtonElement> | undefined;
   cancelGame: MouseEventHandler<HTMLButtonElement> | undefined;
 }
 
-export function Signees({ _id, children, cancelGame, ...rest }: ISignees) {
+export function Signees({
+  _id,
+  children,
+  addToShame,
+  cancelGame,
+  ...rest
+}: ISignees) {
   const { loading, error } = useActions();
 
   return (
@@ -21,6 +28,7 @@ export function Signees({ _id, children, cancelGame, ...rest }: ISignees) {
       loading={cancelGame !== undefined && loading}
       errorMsg={error?.message ?? null}
       handleCancel={cancelGame}
+      handleAddToShame={addToShame}
       {...rest}
     >
       {children}

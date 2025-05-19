@@ -1,25 +1,9 @@
-import {
-  NAME_MIN_LENGTH,
-  PASSWORD_MIN_LENGTH,
-  PHONE_MIN_LENGTH,
-} from "@/constants/signups";
+import { NAME_MIN_LENGTH, PASSWORD_MIN_LENGTH } from "@/constants/signups";
 import type { INewSignup } from "@/types/users";
 
-export function isValidNewSignup(
-  player: Partial<INewSignup> | null,
-  password: string | undefined,
-): player is INewSignup {
-  return (
-    player !== null &&
-    player.first_name !== undefined &&
-    player.first_name.length > 0 &&
-    player.last_name !== undefined &&
-    player.last_name.length > 0 &&
-    password !== undefined &&
-    password.toString().length >= PASSWORD_MIN_LENGTH &&
-    player.phone_number !== undefined &&
-    player.phone_number.length >= PHONE_MIN_LENGTH
-  );
+function _isValidPhoneNumber(phone_number?: number | string): boolean {
+  const phoneRegex = /^\d{7,15}$/; // E.164 format
+  return phone_number !== undefined && phoneRegex.test(phone_number.toString());
 }
 
 export function isValidUserUpdate(
@@ -31,8 +15,18 @@ export function isValidUserUpdate(
     player.first_name.length >= NAME_MIN_LENGTH &&
     player.last_name !== undefined &&
     player.last_name.length > 0 &&
-    player.phone_number !== undefined &&
-    player.phone_number.length >= PHONE_MIN_LENGTH
+    _isValidPhoneNumber(player.phone_number)
+  );
+}
+
+export function isValidNewSignup(
+  player: Partial<INewSignup> | null,
+  password: string | undefined,
+): player is INewSignup {
+  return (
+    isValidUserUpdate(player) &&
+    password !== undefined &&
+    password.toString().length >= PASSWORD_MIN_LENGTH
   );
 }
 
@@ -44,7 +38,6 @@ export function isValidLogin(
     player !== null &&
     password !== undefined &&
     password.toString().length >= PASSWORD_MIN_LENGTH &&
-    player.phone_number !== undefined &&
-    player.phone_number.length >= PHONE_MIN_LENGTH
+    _isValidPhoneNumber(player.phone_number)
   );
 }

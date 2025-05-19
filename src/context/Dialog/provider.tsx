@@ -21,17 +21,21 @@ export function DialogProvider({ children }: IDialogProvider) {
   const [content, setContent] = useState<IDialogContext["content"] | undefined>(
     undefined,
   );
+  const [confirmLabel, setConfirmLabel] = useState<
+    IDialogContext["confirmLabel"] | undefined
+  >(undefined);
 
   const openDialog: IDialogContext["openDialog"] = useCallback((props) => {
     setVariant(props?.variant);
     setTitle(props?.title);
     setContent(props?.content);
+    setConfirmLabel(props?.confirmLabel);
     setAction(() => props?.action);
   }, []);
 
   return (
     <DialogContext.Provider
-      value={{ action, title, content, variant, openDialog }}
+      value={{ action, title, confirmLabel, content, variant, openDialog }}
     >
       {children}
     </DialogContext.Provider>

@@ -19,6 +19,7 @@ export interface ISigneeComponent extends IUserSafe {
   hideAvatar?: boolean;
   className?: string;
   handleCancel?: MouseEventHandler<HTMLButtonElement>;
+  handleAddToShame?: MouseEventHandler<HTMLButtonElement>;
 }
 
 export function SigneeComponent({
@@ -35,6 +36,7 @@ export function SigneeComponent({
   children,
   childrenBelow = null,
   handleCancel,
+  handleAddToShame,
 }: ISigneeComponent) {
   return (
     <div
@@ -76,21 +78,31 @@ export function SigneeComponent({
             </Link>
           )}
           <div className="flex flex-wrap items-center gap-x-4 size-full">
-            <div className="flex h-full mr-auto">
+            <div className="flex flex-col justify-center gap-y-1 h-full mr-auto">
               {loading ? (
                 <div className="overflow-hidden w-[50px] h-[50px] relative">
                   <Loader className="absolute -top-[24px] -left-[26px] w-[100px] height-[100px] max-w-none" />
                 </div>
               ) : (
-                handleCancel !== undefined && (
-                  <button
-                    className={`self-center h-full md:h-[70%] items-center py-[2px] px-[12px] text-md font-bold ${RED_TW}`}
-                    onClick={handleCancel}
-                  >
-                    <span className="flex sm:hidden">x</span>
-                    <span className="hidden sm:flex">Cancel</span>
-                  </button>
-                )
+                <>
+                  {handleCancel !== undefined && (
+                    <button
+                      className={`self-start h-full md:h-[70%] items-center py-[2px] px-[12px] text-md font-bold ${RED_TW}`}
+                      onClick={handleCancel}
+                    >
+                      <span className="flex sm:hidden">x</span>
+                      <span className="hidden sm:flex">Cancel</span>
+                    </button>
+                  )}
+                  {handleAddToShame !== undefined && (
+                    <button
+                      className={`self-start h-full md:h-[70%] items-center py-[2px] px-[12px] text-md font-bold ${RED_TW}`}
+                      onClick={handleAddToShame}
+                    >
+                      <span className="flex">Shame</span>
+                    </button>
+                  )}
+                </>
               )}
             </div>
 

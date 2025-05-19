@@ -9,6 +9,7 @@ export interface IOpenDialog {
   variant?: DialogVariant;
   title?: string;
   content?: ReactNode;
+  confirmLabel?: string;
   action?: (() => Promise<void>) | (() => void);
 }
 

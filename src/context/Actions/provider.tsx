@@ -65,10 +65,20 @@ export function ActionProvider({ children }: IActionProvider) {
   const { setGames } = useGames();
   const { openDialog } = useDialog();
 
-  const { addShamefulUser, cancelGame, signupForGame, updateUser } = useMemo<
+  const {
+    addShamefulUser,
+    addShamefulUserWithDialog,
+    cancelGame,
+    signupForGame,
+    updateUser,
+  } = useMemo<
     Pick<
       IActionContext,
-      "addShamefulUser" | "cancelGame" | "signupForGame" | "updateUser"
+      | "addShamefulUser"
+      | "addShamefulUserWithDialog"
+      | "cancelGame"
+      | "signupForGame"
+      | "updateUser"
     >
   >(() => {
     const _addShamefulUser: IActionContext["addShamefulUser"] = async (
@@ -98,6 +108,41 @@ export function ActionProvider({ children }: IActionProvider) {
 
     return {
       addShamefulUser: _addShamefulUser,
+      addShamefulUserWithDialog: (gameId, userId, date) => {
+        openDialog({
+          variant: DialogVariant.CANCEL,
+          title: "Shame player?",
+          confirmLabel: "Shame them!",
+          content: (
+            <div className="flex flex-col items-center lg:items-start gap-y-4">
+              <h5>Heads up!</h5>
+              <p>
+                Are you sure you want to shame this player and blast them on the
+                wall? You should really only do this if they no-showed!
+              </p>
+            </div>
+          ),
+          action: () => {
+            try {
+              setLoading(true);
+              setError(null);
+
+              void addShamefulUser(gameId, userId, date);
+
+              openDialog();
+            } catch (error) {
+              const errFull =
+                error instanceof Error
+                  ? error
+                  : new Error("addShamefulUser: Unknown error");
+
+              setError(errFull);
+            } finally {
+              setLoading(false);
+            }
+          },
+        });
+      },
       cancelGame: (gameId, userId, date, options) => {
         const gamePastThreshold =
           Date.now() > Date.parse(date) - CANCELLATION_THRESHOLD_MS;
@@ -107,8 +152,8 @@ export function ActionProvider({ children }: IActionProvider) {
           title: "Cancel game?",
           content:
             options?.bypassThreshold !== true && gamePastThreshold ? (
-              <div className="flex flex-col items-center gap-y-4">
-                <h3>Whoa whoa whoa!</h3>
+              <div className="flex flex-col items-center lg:items-start gap-y-4">
+                <h5>Whoa whoa whoa!</h5>
                 <div>
                   <p>
                     It's past the cancellation threshold of 12 hours. What are
@@ -120,8 +165,8 @@ export function ActionProvider({ children }: IActionProvider) {
                 </div>
               </div>
             ) : (
-              <div className="flex flex-col items-start gap-y-4">
-                <h3>Heads up!</h3>
+              <div className="flex flex-col items-center lg:items-start gap-y-4">
+                <h5>Heads up!</h5>
                 <p>Are you sure you want to cancel and drop your spot?</p>
               </div>
             ),
@@ -217,6 +262,7 @@ export function ActionProvider({ children }: IActionProvider) {
     <ActionContext.Provider
       value={{
         addShamefulUser,
+        addShamefulUserWithDialog,
         cancelGame,
         signupForGame,
         updateUser,

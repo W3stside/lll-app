@@ -40,7 +40,12 @@ const Signups: React.FC<ISignups> = ({
 
   const { games: gamesContext, gamesByDay, setGames } = useGames();
   const { user: userContext, setUser } = useUser();
-  const { loading: actionLoading, cancelGame, signupForGame } = useActions();
+  const {
+    loading: actionLoading,
+    addShamefulUserWithDialog,
+    cancelGame,
+    signupForGame,
+  } = useActions();
 
   const { filteredGames, searchFilter, filters, setFilter, setSearchFilter } =
     useFilterGames({
@@ -357,6 +362,22 @@ const Signups: React.FC<ISignups> = ({
                                                   ? (e) => {
                                                       e.stopPropagation();
                                                       cancelGame(
+                                                        game._id,
+                                                        signee._id,
+                                                        nextGameDate,
+                                                      );
+                                                    }
+                                                  : undefined
+                                              }
+                                              addToShame={
+                                                gameStatus ===
+                                                  GameStatus.PAST &&
+                                                userContext.role ===
+                                                  Role.ADMIN &&
+                                                nextGameDate !== undefined
+                                                  ? (e) => {
+                                                      e.stopPropagation();
+                                                      addShamefulUserWithDialog(
                                                         game._id,
                                                         signee._id,
                                                         nextGameDate,

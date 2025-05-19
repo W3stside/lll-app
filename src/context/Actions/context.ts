@@ -11,6 +11,12 @@ export interface IActionContext {
     userId: ObjectId,
     date: Date | string,
   ) => Promise<void>;
+  addShamefulUserWithDialog: (
+    gameId: ObjectId,
+    userId: ObjectId,
+    date: string,
+    options?: { bypassThreshold?: boolean },
+  ) => void;
   cancelGame: (
     gameId: ObjectId,
     userId: ObjectId,
