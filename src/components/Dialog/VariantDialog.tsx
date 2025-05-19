@@ -7,7 +7,7 @@ import { ConfirmDialog } from "./variations/ConfirmDialog";
 import { DialogVariant, useDialog } from "@/context/Dialog/context";
 
 export function VariantDialog() {
-  const { title, content, variant, action, openDialog } = useDialog();
+  const { title, variant, openDialog, ...restProps } = useDialog();
 
   return useMemo(() => {
     let Variant = undefined;
@@ -28,16 +28,8 @@ export function VariantDialog() {
       <Dialog
         trigger={null}
         title={title}
-        content={
-          <Variant
-            content={content}
-            action={action}
-            cancel={() => {
-              openDialog();
-            }}
-          />
-        }
+        content={<Variant {...restProps} cancel={openDialog} />}
       />
     );
-  }, [action, content, openDialog, title, variant]);
+  }, [openDialog, restProps, title, variant]);
 }
