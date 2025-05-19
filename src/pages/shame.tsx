@@ -1,5 +1,5 @@
 import type { GetServerSideProps } from "next";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useDebounce } from "use-debounce";
 
 import { FilterStuff, FilterType } from "@/components/FilterStuff";
@@ -57,6 +57,10 @@ export default function WallOfShame({ users }: IWallOfShame) {
 
   const { user: currentUser } = useUser();
 
+  const shamefulUsers = useMemo(() => {
+    return users.filter((u) => u.shame.length > 0);
+  }, [users]);
+
   return (
     <>
       <div className="flex flex-col flex-wrap gap-x-4 px-4 items-baseline justify-start">
@@ -97,20 +101,27 @@ export default function WallOfShame({ users }: IWallOfShame) {
       </div>
 
       <div className="flex flex-row flex-wrap items-center justify-center gap-y-2 gap-x-5">
-        {users
+        {shamefulUsers
           .filter((u) => filterUser(u, searchFilter))
           .filter((u2) =>
             currentUser._id !== undefined && filters === GameFilters.MY_GAMES
               ? currentUser._id.toString() === u2._id.toString()
               : true,
           )
-          .filter((user) =>
+          .filter((u3) =>
             dateSearchFilter === ""
               ? true
-              : user.shame.filter((g) =>
+              : u3.shame.filter((g) =>
                   g.date.toString().includes(dateSearchFilter),
                 ).length,
           )
+          .toSorted((a, b) => {
+            const dateA = new Date(a.shame[a.shame.length - 1].date);
+            const dateB = new Date(b.shame[b.shame.length - 1].date);
+            // @ts-expect-error - date maths isn't TS's fav
+            return dateB - dateA;
+          })
+          .toSorted((a, b) => a.shame.length - b.shame.length)
           .flatMap((user) =>
             user.shame.length > 0
               ? [
