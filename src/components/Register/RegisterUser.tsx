@@ -48,26 +48,6 @@ export function RegisterUser({
         handleLogout={handleLogout}
         setPassword={setPassword}
       />
-      {/* 
-      // TODO
-      <button
-        className="w-full lg:w-[350px] text-2xl p-4 justify-center"
-        disabled={
-          loading || !isLogin
-            ? !isValidNewSignup(user, password)
-            : !isValidLogin(user, password)
-        }
-        onClick={
-          isLoggedIn && handleLogout !== undefined
-            ? handleLogout
-            : async (e) => {
-                await handleAction(e, password);
-              }
-        }
-      >
-        {!loading ? label : <Loader />}
-      </button>
-       */}
     </div>
   );
 }

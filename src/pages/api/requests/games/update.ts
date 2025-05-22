@@ -27,8 +27,9 @@ export default async (req: NextApiRequest, res: NextApiResponse) => {
     const body = req.body as IGame & {
       newPlayerId?: ObjectId;
       cancelPlayerId?: ObjectId;
+      isAdminCancel: boolean;
     };
-    const { _id, newPlayerId, cancelPlayerId, ...rest } = body;
+    const { _id, newPlayerId, cancelPlayerId, isAdminCancel, ...rest } = body;
 
     const db = client.db("LLL");
     const collection = db.collection<IGame>(Collection.GAMES);
@@ -60,14 +61,43 @@ export default async (req: NextApiRequest, res: NextApiResponse) => {
         result !== null &&
         previous !== null &&
         cancelPlayerId !== undefined &&
-        previous.players.length > MAX_SIGNUPS_PER_GAME
+        (isAdminCancel || previous.players.length > MAX_SIGNUPS_PER_GAME)
       ) {
         const playerIdx = previous.players.findIndex(
           (pl) => pl === cancelPlayerId,
         );
 
+        // Admin cancelled a guy. Ping him
+        if (isAdminCancel) {
+          const bumpedUser = await db
+            .collection(Collection.USERS)
+            .findOne<IUser>({
+              _id: new ObjectId(cancelPlayerId),
+            });
+
+          if (bumpedUser !== null) {
+            await sendBotNotification({
+              id: v4(),
+              channel: "NOTIFICATION_CHANNEL_WHATSAPP",
+              recipients: [process.env.WHATSAPP_BOT_CHANNEL_ID as string],
+              whatsapp_payload: {
+                text: `
+Hi 👋 ${bumpedUser.first_name} ${bumpedUser.last_name} [@${bumpedUser.phone_number}] 
+
+Sorry but you were bumped from the ladies game ${result.game_id} - remember that ladies get priority in these games.
+
+When: ${result.day} @ ${result.time} 
+Where: ${result.location}
+Address: ${result.address}`,
+                mentions: [bumpedUser.phone_number],
+              },
+            });
+          } else {
+            throw new Error("User not found");
+          }
+        }
         // Player cancelling is in the waitlist
-        if (playerIdx < MAX_SIGNUPS_PER_GAME) {
+        else if (playerIdx < MAX_SIGNUPS_PER_GAME) {
           const newlyConfirmedPlayer = result.players[MAX_SIGNUPS_PER_GAME - 1];
 
           const newConfirmedUser = await db

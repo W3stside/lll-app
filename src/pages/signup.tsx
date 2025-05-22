@@ -20,7 +20,7 @@ import { useFilterGames } from "@/hooks/useFilterGames";
 import { GameStatus, Role } from "@/types";
 import type { IAdmin } from "@/types/admin";
 import type { IGame, IUser } from "@/types/users";
-import { checkPlayerIsUser } from "@/utils/data";
+import { checkPlayerCanCancel } from "@/utils/data";
 import { cn } from "@/utils/tailwind";
 
 export interface ISignups {
@@ -354,9 +354,10 @@ const Signups: React.FC<ISignups> = ({
                                               cancelGame={
                                                 gameStatus !==
                                                   GameStatus.PAST &&
-                                                checkPlayerIsUser(
+                                                checkPlayerCanCancel(
                                                   signee,
                                                   user,
+                                                  game.gender,
                                                 ) &&
                                                 nextGameDate !== undefined
                                                   ? (e) => {
@@ -365,6 +366,21 @@ const Signups: React.FC<ISignups> = ({
                                                         game._id,
                                                         signee._id,
                                                         nextGameDate,
+                                                        // Admin is cancelling a game for someone else (ladies game) - don't add to shame
+                                                        {
+                                                          bypassThreshold:
+                                                            signee._id.toString() !==
+                                                              user._id.toString() &&
+                                                            user.role ===
+                                                              Role.ADMIN,
+                                                          cancelMessage:
+                                                            signee._id.toString() !==
+                                                              user._id.toString() &&
+                                                            user.role ===
+                                                              Role.ADMIN
+                                                              ? "You are admin cancelling for someone else. This should ONLY happen if you're cancelling a male player in favour of a higher priority female player!"
+                                                              : undefined,
+                                                        },
                                                       );
                                                     }
                                                   : undefined
@@ -413,9 +429,10 @@ const Signups: React.FC<ISignups> = ({
                                               cancelGame={
                                                 gameStatus !==
                                                   GameStatus.PAST &&
-                                                checkPlayerIsUser(
+                                                checkPlayerCanCancel(
                                                   signee,
                                                   user,
+                                                  game.gender,
                                                 ) &&
                                                 nextGameDate !== undefined
                                                   ? (e) => {

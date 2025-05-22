@@ -32,11 +32,16 @@ const _dbGameSignup = async (gameId: ObjectId, newPlayerId: ObjectId) => {
   }
 };
 
-const _dbCancelGame = async (gameId: ObjectId, userId: ObjectId) => {
+const _dbCancelGame = async (
+  gameId: ObjectId,
+  userId: ObjectId,
+  isAdminCancel = false,
+) => {
   try {
     await dbRequest("update", Collection.GAMES, {
       _id: gameId,
       cancelPlayerId: userId,
+      isAdminCancel,
     });
 
     const { data, error } = await dbRequest<IGame[]>("get", Collection.GAMES);
@@ -167,7 +172,10 @@ export function ActionProvider({ children }: IActionProvider) {
             ) : (
               <div className="flex flex-col items-center lg:items-start gap-y-4">
                 <h5>Heads up!</h5>
-                <p>Are you sure you want to cancel and drop your spot?</p>
+                <p>
+                  {options?.cancelMessage ??
+                    "Are you sure you want to cancel and drop your spot?"}
+                </p>
               </div>
             ),
           action: async () => {
@@ -175,7 +183,13 @@ export function ActionProvider({ children }: IActionProvider) {
               setLoading(true);
               setError(null);
 
-              const newGames = await _dbCancelGame(gameId, userId);
+              const newGames = await _dbCancelGame(
+                gameId,
+                userId,
+                // Is admin cancel?
+                user._id !== undefined &&
+                  userId.toString() !== user._id.toString(),
+              );
               setGames(newGames);
 
               // Remove the canceled game from the user's registered games
@@ -256,7 +270,7 @@ export function ActionProvider({ children }: IActionProvider) {
         }
       },
     };
-  }, [openDialog, setGames, setUser, user.registered_games]);
+  }, [openDialog, setGames, setUser, user._id, user.registered_games]);
 
   return (
     <ActionContext.Provider
