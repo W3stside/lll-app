@@ -6,6 +6,7 @@ interface IRegisterError {
   validator: {
     VALID: string;
     TOO_SHORT: (property: string) => string;
+    INCORRECT_FORMAT?: string;
   };
   status: string | null;
 }
@@ -21,7 +22,9 @@ export const RegisterError = ({
       {
         "text-transparent px-0 w-0": property === "",
         [GREEN_TW]: status === validator.VALID,
-        [RED_TW]: status === validator.TOO_SHORT(property),
+        [RED_TW]:
+          status === validator.TOO_SHORT(property) ||
+          status === validator.INCORRECT_FORMAT,
       },
     )}
   >

@@ -26,6 +26,7 @@ const _PasswordValidity = {
 } as const;
 
 const _PhoneNumberValidity = {
+  INCORRECT_FORMAT: "( ¬ _¬) remove those 00s",
   TOO_SHORT: (input: string) =>
     `( ¬ _¬) missing ${PHONE_MIN_LENGTH - input.length} numbers`,
   VALID: VALID_MESSAGE,
@@ -54,6 +55,8 @@ function _validatePhoneNumber(phoneNumber?: string): string | null {
     return null;
   } else if (phoneNumber.length < PHONE_MIN_LENGTH) {
     return _PhoneNumberValidity.TOO_SHORT(phoneNumber);
+  } else if (!/^(?!\+|00)\d+$/.test(phoneNumber)) {
+    return _PhoneNumberValidity.INCORRECT_FORMAT;
   }
   return _PhoneNumberValidity.VALID;
 }
@@ -150,14 +153,15 @@ export function RegisterForm({
           )}
           <div className="flex items-center relative">
             <input
-              type="number"
+              type="text"
               required
               autoComplete="tel"
               value={user.phone_number}
               className={INPUT_CLASS}
               onChange={(e) => {
-                const targetAsNumber = Number(e.target.value);
-                if (isNaN(targetAsNumber)) return;
+                if (!/^(?!.*[+\-*/])\d+$/.test(e.target.value)) {
+                  return;
+                }
 
                 setUser((prev) => ({
                   ...prev,
