@@ -1,6 +1,13 @@
 import { sortDaysOfWeek } from "./sort";
 
-import type { GamesByDay, IGame, IUser, IUserSafe } from "@/types/users";
+import { Role } from "@/types";
+import {
+  Gender,
+  type GamesByDay,
+  type IGame,
+  type IUser,
+  type IUserSafe,
+} from "@/types/users";
 
 export function groupUsersById(users: IUser[]) {
   return users.reduce<Record<string, IUser>>(
@@ -25,8 +32,17 @@ export function groupGamesByDay(games: IGame[]) {
   );
 }
 
-export function checkPlayerIsUser(player?: IUserSafe, user?: IUserSafe) {
-  if (player === undefined || user === undefined) return false;
+export function checkPlayerCanCancel(
+  player?: IUserSafe,
+  user?: IUserSafe,
+  gender?: IGame["gender"],
+) {
+  if (player === undefined || user === undefined) {
+    return false;
+  }
 
-  return player._id?.toString() === user._id?.toString();
+  return (
+    player._id?.toString() === user._id?.toString() ||
+    (user.role === Role.ADMIN && gender === Gender.FEMALE)
+  );
 }

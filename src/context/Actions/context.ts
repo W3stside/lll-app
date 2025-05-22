@@ -21,7 +21,7 @@ export interface IActionContext {
     gameId: ObjectId,
     userId: ObjectId,
     date: string,
-    options?: { bypassThreshold?: boolean },
+    options?: { bypassThreshold?: boolean; cancelMessage?: string },
   ) => void;
   signupForGame: (game: IGame | undefined, userId: ObjectId) => Promise<void>;
   updateUser: (user: IUserSafe) => Promise<void>;
