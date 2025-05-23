@@ -27,8 +27,7 @@ const _PasswordValidity = {
 
 const _PhoneNumberValidity = {
   INCORRECT_FORMAT: "( ¬ _¬) remove those 00s",
-  TOO_SHORT: (input: string) =>
-    `( ¬ _¬) missing ${PHONE_MIN_LENGTH - input.length} numbers`,
+  TOO_SHORT: () => `Too short! Number has country code?`,
   VALID: VALID_MESSAGE,
 } as const;
 
@@ -53,10 +52,10 @@ function _validatePassword(password?: string): string | null {
 function _validatePhoneNumber(phoneNumber?: string): string | null {
   if (phoneNumber === undefined) {
     return null;
-  } else if (phoneNumber.length < PHONE_MIN_LENGTH) {
-    return _PhoneNumberValidity.TOO_SHORT(phoneNumber);
   } else if (!/^(?!\+|00)\d+$/.test(phoneNumber)) {
     return _PhoneNumberValidity.INCORRECT_FORMAT;
+  } else if (phoneNumber.length < PHONE_MIN_LENGTH) {
+    return _PhoneNumberValidity.TOO_SHORT();
   }
   return _PhoneNumberValidity.VALID;
 }
@@ -157,9 +156,8 @@ export function RegisterForm({
               required
               autoComplete="tel"
               value={user.phone_number}
-              className={INPUT_CLASS}
               onChange={(e) => {
-                if (!/^(?!.*[+\-*/])\d+$/.test(e.target.value)) {
+                if (!/^(?!.*[+\-*/])\d*$/.test(e.target.value)) {
                   return;
                 }
 
@@ -169,7 +167,9 @@ export function RegisterForm({
                 }));
               }}
               placeholder={
-                isLogin ? "351961666666" : "351961666666 (phone number)"
+                isLogin
+                  ? "phone number (351961616000)"
+                  : "<country><phone_number> (e.g. 351961616000)"
               }
             />
             {!isLogin && (
@@ -177,6 +177,7 @@ export function RegisterForm({
                 status={phoneNumberValidation}
                 property={user.phone_number}
                 validator={_PhoneNumberValidity}
+                className="max-w-[140px]"
               />
             )}
           </div>
@@ -194,7 +195,7 @@ export function RegisterForm({
                 placeholder={
                   isLogin
                     ? "password"
-                    : `password (min. ${PASSWORD_MIN_LENGTH} characters)`
+                    : `Password (min. ${PASSWORD_MIN_LENGTH} characters)`
                 }
               />
               {password !== undefined && !isLogin && (

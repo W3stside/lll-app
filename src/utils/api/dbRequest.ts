@@ -19,21 +19,21 @@ function _crudFromAction(action: Action) {
   }
 }
 
-export async function dbRequest<T>(
+export async function dbRequest<T, R = undefined>(
   action: "create",
   path: RequestPath,
   request?: Partial<T> & { _id?: never },
-): Promise<JSONResponse<T>>;
-export async function dbRequest<T>(
+): Promise<JSONResponse<R extends undefined ? T : R>>;
+export async function dbRequest<T, R = undefined>(
   action: "delete" | "get" | "reset" | "update",
   path: RequestPath,
   request?: Partial<T> & { _id: ObjectId },
-): Promise<JSONResponse<T>>;
-export async function dbRequest<T>(
+): Promise<JSONResponse<R extends undefined ? T : R>>;
+export async function dbRequest<T, R = undefined>(
   action: Action,
   path: RequestPath,
   request?: Partial<T> & { _id?: ObjectId },
-): Promise<JSONResponse<T>> {
+): Promise<JSONResponse<R extends undefined ? T : R>> {
   try {
     const res = await fetch(`/api/requests/${path}/${action}`, {
       method: _crudFromAction(action),
@@ -49,13 +49,16 @@ export async function dbRequest<T>(
     if (!res.ok) {
       console.error("Request response NOT ok. json.error: ", json);
       return {
-        data: undefined as T,
+        data: undefined as R extends undefined ? T : R,
         error:
           json instanceof Error ? json : new Error("Unknown error occurred."),
       };
     }
 
-    return { data: (json.data ?? json) as T, error: null };
+    return {
+      data: (json.data ?? json) as R extends undefined ? T : R,
+      error: null,
+    };
   } catch (e) {
     console.error("An error occurred trying to submit the request:", e);
     throw new Error(e instanceof Error ? e.message : "Unknown error occurred.");

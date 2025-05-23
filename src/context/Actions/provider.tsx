@@ -19,12 +19,23 @@ interface IActionProvider {
 
 const _dbGameSignup = async (gameId: ObjectId, newPlayerId: ObjectId) => {
   try {
-    await dbRequest("update", Collection.GAMES, { _id: gameId, newPlayerId });
-    const { data, error } = await dbRequest<IGame[]>("get", Collection.GAMES);
+    const {
+      data: { games },
+      error,
+    } = await dbRequest<
+      { _id: ObjectId; newPlayerId: ObjectId },
+      {
+        updatedGame: IGame;
+        games: IGame[];
+      }
+    >("update", Collection.GAMES, {
+      _id: gameId,
+      newPlayerId,
+    });
 
     if (error !== null) throw error;
 
-    return data;
+    return games;
   } catch (e) {
     throw new Error(
       e instanceof Error ? e.message : "_dbGameSignup: Unknown error occurred.",
@@ -38,17 +49,25 @@ const _dbCancelGame = async (
   isAdminCancel = false,
 ) => {
   try {
-    await dbRequest("update", Collection.GAMES, {
+    const {
+      data: { games },
+      error,
+    } = await dbRequest<
+      {
+        _id: ObjectId;
+        cancelPlayerId: ObjectId;
+        isAdminCancel: boolean;
+      },
+      { updatedGame: IGame; games: IGame[] }
+    >("update", Collection.GAMES, {
       _id: gameId,
       cancelPlayerId: userId,
       isAdminCancel,
     });
 
-    const { data, error } = await dbRequest<IGame[]>("get", Collection.GAMES);
-
     if (error !== null) throw error;
 
-    return data;
+    return games;
   } catch (error) {
     const errFull =
       error instanceof Error

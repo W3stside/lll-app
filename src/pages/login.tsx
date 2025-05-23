@@ -149,14 +149,13 @@ export default function Login({
       {!loading && isConnected ? (
         <div className="px-2 py-2">
           <h5 className="mb-5">
-            {view !== "login" ? "Register yourself first" : "Login first"} to
-            find games
+            {view !== "login"
+              ? "Register yourself first to find games!"
+              : "Welcome back!"}
           </h5>
           <RegisterUser
             loading={false}
-            title={
-              view === "login" ? "Login to find games" : "Register here to play"
-            }
+            title="Please enter credentials"
             label={view === "login" ? "Login" : "Register"}
             handleAction={view !== "login" ? handleSignup : handleLogin}
             handleLogout={userFromCookies !== null ? handleLogout : undefined}

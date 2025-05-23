@@ -9,16 +9,19 @@ interface IRegisterError {
     INCORRECT_FORMAT?: string;
   };
   status: string | null;
+  className?: string;
 }
 
 export const RegisterError = ({
   property,
   validator,
   status,
+  className,
 }: IRegisterError) => (
   <div
     className={cn(
-      "overflow-hidden transition-all duration-200 h-[35.5px] my-1 mx-0.5 ml-auto max-w-[212px] px-2 py-1 text-[11px] absolute right-0 flex items-center justify-end",
+      "overflow-hidden transition-all duration-200 h-[35.5px] my-1 mx-0.5 ml-auto max-w-[212px] px-2 py-1 text-[10px] absolute right-0 flex items-center justify-end",
+      className,
       {
         "text-transparent px-0 w-0": property === "",
         [GREEN_TW]: status === validator.VALID,
