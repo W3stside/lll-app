@@ -1,8 +1,9 @@
 import type { GetServerSideProps } from "next";
-import Image from "next/image";
+import Image, { type StaticImageData } from "next/image";
+import Link from "next/link";
 import { useEffect, useState } from "react";
 
-import ebaumsWorld from "@/assets/ebaums-world.png";
+import pastelle from "@/assets/pastelle.svg";
 import { FilterStuff } from "@/components/FilterStuff";
 import { PartnerProducts } from "@/components/PartnerProducts";
 import { RegisterToPlay } from "@/components/Register/RegisterToPlay";
@@ -84,11 +85,25 @@ const Signups: React.FC<ISignups> = ({
           <div className="flex flex-col gap-y-1">
             <p>Sign up for the weekly games here. </p>
           </div>
-          <Image
-            src={ebaumsWorld}
-            alt="ebaums world"
-            className="h-full w-35 p-1"
-          />
+          <div className="border-l border-[#f8f8ff40] pr-2 pl-4">
+            <div className="flex justify-start items-center bg-[var(--text-color-secondary)] text-[var(--text-color-main)] px-1 text-xs w-full">
+              sponsored by
+            </div>
+            <div className="flex gap-x-1 items-center justify-end">
+              <Link
+                href="https://pastelle.shop/collection"
+                className="max-w-[150px]"
+                target="_blank"
+                referrerPolicy="no-referrer"
+              >
+                <Image
+                  src={pastelle as StaticImageData}
+                  alt="pastelle-apparel"
+                  className="max-h-full max-w-full"
+                />
+              </Link>
+            </div>
+          </div>
         </div>
       </div>
       {userContext.role === Role.ADMIN || admin.signup_open ? (
@@ -284,7 +299,7 @@ const Signups: React.FC<ISignups> = ({
 
                         <div className="flex flex-col gap-y-2 justify-start w-full">
                           <div className="flex items-center gap-x-2 h-[32.5px]">
-                            <div className="container-header !h-auto !text-2xl p-1 w-full pl-4 !justify-start">
+                            <div className="container-header !h-auto !text-xl sm:!text-2xl p-1 w-full pl-4 !justify-start">
                               {gameStatus !== GameStatus.PAST
                                 ? "Available "
                                 : "Past "}{" "}
@@ -297,7 +312,7 @@ const Signups: React.FC<ISignups> = ({
                                   className="flex items-center justify-center w-min whitespace-nowrap h-full underline"
                                   onClick={shareList}
                                 >
-                                  Share/Copy list
+                                  Share list
                                 </button>
                               )}
                           </div>

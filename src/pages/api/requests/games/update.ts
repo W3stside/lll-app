@@ -32,16 +32,16 @@ export default async (req: NextApiRequest, res: NextApiResponse) => {
     const { _id, newPlayerId, cancelPlayerId, isAdminCancel, ...rest } = body;
 
     const db = client.db("LLL");
-    const collection = db.collection<IGame>(Collection.GAMES);
+    const gamesCollection = db.collection<IGame>(Collection.GAMES);
 
     const gameIdWrapped = new ObjectId(_id);
     let result: WithId<IGame> | null;
     if (newPlayerId !== undefined || cancelPlayerId !== undefined) {
-      const previous = await collection.findOne({
+      const previous = await gamesCollection.findOne({
         _id: gameIdWrapped,
       });
 
-      result = await collection.findOneAndUpdate(
+      result = await gamesCollection.findOneAndUpdate(
         { _id: gameIdWrapped },
         // Adding a player
         newPlayerId !== undefined
@@ -129,7 +129,7 @@ Have fun! 🎉`,
         }
       }
     } else {
-      result = await collection.findOneAndUpdate(
+      result = await gamesCollection.findOneAndUpdate(
         { _id: gameIdWrapped },
         {
           $set: rest,
@@ -141,7 +141,8 @@ Have fun! 🎉`,
     if (result === null) {
       res.status(404).json({ message: "Document not found" });
     } else {
-      res.status(200).json(result);
+      const updatedGames = await gamesCollection.find().toArray();
+      res.status(200).json({ updatedGame: result, games: updatedGames });
     }
   } catch (error) {
     // eslint-disable-next-line no-console
