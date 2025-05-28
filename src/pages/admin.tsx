@@ -178,34 +178,47 @@ export default function Admin({
 
       setAddGameError(null);
 
-      let data: IGame | undefined = undefined;
-      let error = null;
       const { _id, ...gameNoId } = targettedGame;
-      // No _id = create new game
+
+      let response;
+      // Create new game
       if (_id === undefined) {
-        ({ data, error } = await dbRequest<IGame>("create", Collection.GAMES, {
+        response = await dbRequest<
+          Omit<IGame, "_id">,
+          {
+            updatedGame: IGame;
+            games: IGame[];
+          }
+        >("create", Collection.GAMES, {
           ...gameNoId,
           players: [],
-        }));
-      } else {
-        ({ data, error } = await dbRequest<IGame>("update", Collection.GAMES, {
+        });
+      }
+      // Update existing game
+      else {
+        response = await dbRequest<
+          IGame,
+          {
+            updatedGame: IGame;
+            games: IGame[];
+          }
+        >("update", Collection.GAMES, {
           _id,
           ...gameNoId,
-        }));
+        });
       }
+
+      const {
+        data: { games: updatedGames },
+        error,
+      } = response;
 
       if (error !== null) {
         setGeneralError(error);
         throw error;
       }
 
-      setGames((prev) =>
-        _id === undefined
-          ? [...prev, data]
-          : prev
-              .filter(({ _id: gId }) => gId.toString() !== data._id.toString())
-              .concat(data),
-      );
+      setGames(updatedGames);
       setGameInfo(DEFAULT_STATE);
       setAddGameError(null);
       setGeneralError(null);
@@ -215,7 +228,7 @@ export default function Admin({
     } finally {
       setLoading(false);
     }
-  }, [games, targettedGame, setGames]);
+  }, [targettedGame, games, setGames]);
 
   const handleChange = useCallback(
     (key: keyof ErrorUser, value: IGame[keyof ErrorUser]) => {
@@ -378,14 +391,8 @@ export default function Admin({
                         </div>
                       ),
                       action: async () => {
-                        try {
-                          await handleClearAllSignups();
-                        } catch (error) {
-                          // eslint-disable-next-line no-console
-                          console.error(error);
-                        } finally {
-                          openDialog();
-                        }
+                        await handleClearAllSignups();
+                        openDialog();
                       },
                     });
                   }}
@@ -562,14 +569,8 @@ export default function Admin({
                     </div>
                   ),
                   action: async () => {
-                    try {
-                      await handleUpdateGame();
-                    } catch (error) {
-                      // eslint-disable-next-line no-console
-                      console.error(error);
-                    } finally {
-                      openDialog();
-                    }
+                    await handleUpdateGame();
+                    openDialog();
                   },
                 });
               }}

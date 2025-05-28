@@ -20,7 +20,7 @@ import { useWeeklyGamesData } from "@/hooks/signups/useWeeklyGamesData";
 import { useFilterGames } from "@/hooks/useFilterGames";
 import { GameStatus, Role } from "@/types";
 import type { IAdmin } from "@/types/admin";
-import type { IGame, IUser } from "@/types/users";
+import { Gender, type IGame, type IUser } from "@/types/users";
 import { checkPlayerCanCancel } from "@/utils/data";
 import { cn } from "@/utils/tailwind";
 
@@ -362,18 +362,28 @@ const Signups: React.FC<ISignups> = ({
                                         confirmedList.map((playerId) => {
                                           const signee =
                                             usersById[playerId.toString()];
+
+                                          const isAdminCancelling =
+                                            signee._id.toString() !==
+                                              user._id.toString() &&
+                                            user.role === Role.ADMIN;
+
+                                          const canCancel =
+                                            (gameStatus !== GameStatus.PAST &&
+                                              checkPlayerCanCancel(
+                                                signee,
+                                                user,
+                                                game.gender,
+                                              )) ||
+                                            (gameStatus === GameStatus.PAST &&
+                                              userContext.role === Role.ADMIN);
+
                                           return (
                                             <Signees
                                               key={playerId.toString()}
                                               {...signee}
                                               cancelGame={
-                                                gameStatus !==
-                                                  GameStatus.PAST &&
-                                                checkPlayerCanCancel(
-                                                  signee,
-                                                  user,
-                                                  game.gender,
-                                                ) &&
+                                                canCancel &&
                                                 nextGameDate !== undefined
                                                   ? (e) => {
                                                       e.stopPropagation();
@@ -382,18 +392,20 @@ const Signups: React.FC<ISignups> = ({
                                                         signee._id,
                                                         nextGameDate,
                                                         // Admin is cancelling a game for someone else (ladies game) - don't add to shame
+                                                        // Admin cancelling someone from a apst game, add to shame
                                                         {
                                                           bypassThreshold:
-                                                            signee._id.toString() !==
-                                                              user._id.toString() &&
-                                                            user.role ===
-                                                              Role.ADMIN,
+                                                            isAdminCancelling &&
+                                                            gameStatus !==
+                                                              GameStatus.PAST &&
+                                                            game.gender ===
+                                                              Gender.FEMALE,
                                                           cancelMessage:
-                                                            signee._id.toString() !==
-                                                              user._id.toString() &&
-                                                            user.role ===
-                                                              Role.ADMIN
-                                                              ? "You are admin cancelling for someone else. This should ONLY happen if you're cancelling a male player in favour of a higher priority female player!"
+                                                            isAdminCancelling
+                                                              ? gameStatus ===
+                                                                GameStatus.PAST
+                                                                ? "You are admin cancelling someone from a past game. This should ONLY happen if they did not show or otherwise should be sent to the wall of shame!"
+                                                                : "You are admin cancelling for someone else. This should ONLY happen if you're cancelling a male player in favour of a higher priority female player!"
                                                               : undefined,
                                                         },
                                                       );
@@ -437,18 +449,21 @@ const Signups: React.FC<ISignups> = ({
                                         {waitlist.map((playerId) => {
                                           const signee =
                                             usersById[playerId.toString()];
+
+                                          const canCancel =
+                                            gameStatus !== GameStatus.PAST &&
+                                            checkPlayerCanCancel(
+                                              signee,
+                                              user,
+                                              game.gender,
+                                            );
+
                                           return (
                                             <Signees
                                               key={playerId.toString()}
                                               {...signee}
                                               cancelGame={
-                                                gameStatus !==
-                                                  GameStatus.PAST &&
-                                                checkPlayerCanCancel(
-                                                  signee,
-                                                  user,
-                                                  game.gender,
-                                                ) &&
+                                                canCancel &&
                                                 nextGameDate !== undefined
                                                   ? (e) => {
                                                       e.stopPropagation();

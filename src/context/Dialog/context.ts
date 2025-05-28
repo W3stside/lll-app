@@ -10,6 +10,7 @@ export interface IOpenDialog {
   title?: string;
   content?: ReactNode;
   confirmLabel?: string;
+  loading?: boolean;
   action?: (() => Promise<void>) | (() => void);
 }
 

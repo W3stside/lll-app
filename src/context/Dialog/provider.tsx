@@ -24,6 +24,7 @@ export function DialogProvider({ children }: IDialogProvider) {
   const [confirmLabel, setConfirmLabel] = useState<
     IDialogContext["confirmLabel"] | undefined
   >(undefined);
+  const [loading, setLoading] = useState(false);
 
   const openDialog: IDialogContext["openDialog"] = useCallback((props) => {
     setVariant(props?.variant);
@@ -31,11 +32,33 @@ export function DialogProvider({ children }: IDialogProvider) {
     setContent(props?.content);
     setConfirmLabel(props?.confirmLabel);
     setAction(() => props?.action);
+    setLoading(props?.loading ?? false);
   }, []);
+
+  const handleAction = useCallback(async () => {
+    try {
+      setLoading(true);
+      await action?.();
+    } catch (error) {
+      throw error instanceof Error
+        ? error
+        : new Error("Unknown error occured!");
+    } finally {
+      setLoading(false);
+    }
+  }, [action]);
 
   return (
     <DialogContext.Provider
-      value={{ action, title, confirmLabel, content, variant, openDialog }}
+      value={{
+        action: handleAction,
+        title,
+        confirmLabel,
+        content,
+        variant,
+        loading,
+        openDialog,
+      }}
     >
       {children}
     </DialogContext.Provider>
