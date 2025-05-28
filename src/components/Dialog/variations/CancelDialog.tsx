@@ -7,6 +7,7 @@ import warning from "@/assets/warning.png";
 export function CancelDialog({
   content,
   confirmLabel = "Yes, cancel",
+  loading = false,
   action,
   cancel,
 }: IBaseDialogVariationProps) {
@@ -30,8 +31,14 @@ export function CancelDialog({
         {content}
       </div>
       <div className="flex gap-x-6 mt-auto justify-center items-center">
-        <button onClick={action}>{confirmLabel}</button>
-        <button onClick={cancel} className="bg-[var(--background-color-2)]">
+        <button disabled={loading} onClick={action}>
+          {confirmLabel}
+        </button>
+        <button
+          disabled={loading}
+          onClick={cancel}
+          className="bg-[var(--background-color-2)]"
+        >
           Go back
         </button>
       </div>
