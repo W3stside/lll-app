@@ -93,6 +93,7 @@ export function computeGameDate(
   const zoned = new Date(
     new Date(futureDate.toLocaleString("en-US", { timeZone })).toISOString(),
   );
+
   return new Date(
     zoned.getFullYear(),
     zoned.getMonth(),
@@ -106,3 +107,26 @@ export function computeGameDate(
 
 const TIME_24_REGEXP = /^([01]\d|2[0-3]):([0-5]\d)$/;
 export const isValid24hTime = (str: string) => TIME_24_REGEXP.test(str);
+
+// Create a new Intl.DateTimeFormat object for WET (Western European Time)
+const DEFAULT_DATE_OPTIONS: Intl.DateTimeFormatOptions = {
+  timeZone: "Europe/Lisbon",
+  hour12: false,
+  year: "numeric",
+  month: "2-digit",
+  day: "2-digit",
+  hour: "2-digit",
+  minute: "2-digit",
+  second: "2-digit",
+  timeZoneName: "short", // To include the timezone offset like +01:00 or UTC
+};
+
+export const formatDateStr = (
+  dateStr: string,
+  options = DEFAULT_DATE_OPTIONS,
+) => {
+  const dateUTC = new Date(dateStr);
+
+  const formatter = new Intl.DateTimeFormat("en-GB", options);
+  return formatter.format(dateUTC);
+};

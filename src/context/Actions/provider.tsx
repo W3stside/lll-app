@@ -7,6 +7,7 @@ import { useGames } from "../Games/context";
 import { useUser } from "../User/context";
 
 import { CANCELLATION_THRESHOLD_MS } from "@/constants/date";
+import { DEFAULT_ERROR } from "@/constants/error";
 import { Collection } from "@/types";
 import type { IGame, IUser } from "@/types/users";
 import { dbAuth } from "@/utils/api/dbAuth";
@@ -37,9 +38,7 @@ const _dbGameSignup = async (gameId: ObjectId, newPlayerId: ObjectId) => {
 
     return games;
   } catch (e) {
-    throw new Error(
-      e instanceof Error ? e.message : "_dbGameSignup: Unknown error occurred.",
-    );
+    throw e instanceof Error ? e : DEFAULT_ERROR;
   }
 };
 
@@ -69,15 +68,7 @@ const _dbCancelGame = async (
 
     return games;
   } catch (error) {
-    const errFull =
-      error instanceof Error
-        ? error
-        : new Error("_dbCancelGame: Unknown error occurred");
-
-    // eslint-disable-next-line no-console
-    console.error(errFull);
-
-    throw errFull;
+    throw error instanceof Error ? error : DEFAULT_ERROR;
   }
 };
 
@@ -113,18 +104,13 @@ export function ActionProvider({ children }: IActionProvider) {
       try {
         setError(null);
         setLoading(true);
+
         await dbRequest<IUser>("update", Collection.USERS, {
           _id: userId,
-          shame: [{ game_id: gameId, date: new Date(date) }],
+          shame: [{ game_id: gameId, date: new Date(date).toISOString() }],
         });
       } catch (error) {
-        const errFull =
-          error instanceof Error
-            ? error
-            : new Error("addShamefulUser: Unknown error");
-        // eslint-disable-next-line no-console
-        console.error(errFull);
-        setError(errFull);
+        setError(error instanceof Error ? error : DEFAULT_ERROR);
       } finally {
         setLoading(false);
       }
@@ -151,14 +137,11 @@ export function ActionProvider({ children }: IActionProvider) {
               setLoading(true);
               setError(null);
 
-              void addShamefulUser(gameId, userId, date);
+              void _addShamefulUser(gameId, userId, date);
 
               openDialog();
             } catch (error) {
-              const errFull =
-                error instanceof Error
-                  ? error
-                  : new Error("addShamefulUser: Unknown error");
+              const errFull = error instanceof Error ? error : DEFAULT_ERROR;
 
               setError(errFull);
             } finally {
@@ -220,18 +203,12 @@ export function ActionProvider({ children }: IActionProvider) {
               }));
 
               if (options?.bypassThreshold !== true && gamePastThreshold) {
-                void addShamefulUser(gameId, userId, date);
+                void _addShamefulUser(gameId, userId, date);
               }
 
               openDialog();
             } catch (error) {
-              const errFull =
-                error instanceof Error
-                  ? error
-                  : new Error("cancelGame: Unknown error");
-              // eslint-disable-next-line no-console
-              console.error(errFull);
-              setError(errFull);
+              setError(error instanceof Error ? error : DEFAULT_ERROR);
             } finally {
               setLoading(false);
             }
@@ -251,13 +228,7 @@ export function ActionProvider({ children }: IActionProvider) {
 
           setGames(newGames);
         } catch (error) {
-          const errFull =
-            error instanceof Error
-              ? error
-              : new Error("signupForGame: Unknown error");
-          // eslint-disable-next-line no-console
-          console.error(errFull);
-          setError(errFull);
+          setError(error instanceof Error ? error : DEFAULT_ERROR);
         } finally {
           setLoading(false);
         }
@@ -279,11 +250,7 @@ export function ActionProvider({ children }: IActionProvider) {
 
           setUser(_user);
         } catch (err) {
-          const errChecked =
-            err instanceof Error ? err : new Error("updateUser: Unknown error");
-          // eslint-disable-next-line no-console
-          console.error(errChecked);
-          setError(errChecked);
+          setError(err instanceof Error ? err : DEFAULT_ERROR);
         } finally {
           setLoading(false);
         }

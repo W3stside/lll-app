@@ -10,7 +10,7 @@ import { RegisterToPlay } from "@/components/Register/RegisterToPlay";
 import { Signees } from "@/components/Signup";
 import { Games } from "@/components/Signup/Games";
 import { Collapsible, RemainingSpots } from "@/components/ui";
-import { DAYS_IN_WEEK } from "@/constants/date";
+import { DAYS_IN_WEEK_MAP } from "@/constants/date";
 import { MAX_SIGNUPS_PER_GAME } from "@/constants/signups";
 import { useActions } from "@/context/Actions/context";
 import { useGames } from "@/context/Games/context";
@@ -22,6 +22,7 @@ import { GameStatus, Role } from "@/types";
 import type { IAdmin } from "@/types/admin";
 import { Gender, type IGame, type IUser } from "@/types/users";
 import { checkPlayerCanCancel } from "@/utils/data";
+import { computeGameDate } from "@/utils/date";
 import { cn } from "@/utils/tailwind";
 
 export interface ISignups {
@@ -55,15 +56,8 @@ const Signups: React.FC<ISignups> = ({
       gamesByDay,
     });
 
-  const [collapsed, setCollapse] = useState<Record<string, boolean>>(() =>
-    DAYS_IN_WEEK.reduce(
-      (acc, day) => ({
-        ...acc,
-        [day]: true,
-      }),
-      {},
-    ),
-  );
+  const [collapsed, setCollapse] =
+    useState<Record<string, boolean>>(DAYS_IN_WEEK_MAP);
 
   // Sync server-side games with client-side games
   useEffect(() => {
@@ -318,7 +312,11 @@ const Signups: React.FC<ISignups> = ({
                           </div>
                           <div className="flex flex-col gap-y-2">
                             {games.map((game, gIdx) => {
-                              const nextGameDate = gameDate?.toUTCString();
+                              const nextGameDate = computeGameDate(
+                                game.day,
+                                game.time,
+                                "WET",
+                              ).toISOString();
 
                               const confirmedList = game.players.slice(
                                 0,
@@ -338,10 +336,10 @@ const Signups: React.FC<ISignups> = ({
                                   startCollapsed={false}
                                 >
                                   <Games
+                                    {...game}
                                     signupsAmt={confirmedList.length}
                                     waitlistAmt={capacity[gIdx]}
                                     date={nextGameDate}
-                                    {...game}
                                   >
                                     <small>[+] Tap to expand/collapse</small>
                                   </Games>
@@ -369,22 +367,25 @@ const Signups: React.FC<ISignups> = ({
                                             user.role === Role.ADMIN;
 
                                           const canCancel =
-                                            (gameStatus !== GameStatus.PAST &&
-                                              checkPlayerCanCancel(
-                                                signee,
-                                                user,
-                                                game.gender,
-                                              )) ||
-                                            (gameStatus === GameStatus.PAST &&
-                                              userContext.role === Role.ADMIN);
+                                            gameStatus !== GameStatus.PAST &&
+                                            checkPlayerCanCancel(
+                                              signee,
+                                              user,
+                                              game.gender,
+                                            );
+
+                                          const userAlreadyShamed = usersById[
+                                            playerId.toString()
+                                          ].shame.some(
+                                            ({ date }) => date === nextGameDate,
+                                          );
 
                                           return (
                                             <Signees
                                               key={playerId.toString()}
                                               {...signee}
                                               cancelGame={
-                                                canCancel &&
-                                                nextGameDate !== undefined
+                                                canCancel
                                                   ? (e) => {
                                                       e.stopPropagation();
                                                       cancelGame(
@@ -392,20 +393,14 @@ const Signups: React.FC<ISignups> = ({
                                                         signee._id,
                                                         nextGameDate,
                                                         // Admin is cancelling a game for someone else (ladies game) - don't add to shame
-                                                        // Admin cancelling someone from a apst game, add to shame
                                                         {
                                                           bypassThreshold:
                                                             isAdminCancelling &&
-                                                            gameStatus !==
-                                                              GameStatus.PAST &&
                                                             game.gender ===
                                                               Gender.FEMALE,
                                                           cancelMessage:
                                                             isAdminCancelling
-                                                              ? gameStatus ===
-                                                                GameStatus.PAST
-                                                                ? "You are admin cancelling someone from a past game. This should ONLY happen if they did not show or otherwise should be sent to the wall of shame!"
-                                                                : "You are admin cancelling for someone else. This should ONLY happen if you're cancelling a male player in favour of a higher priority female player!"
+                                                              ? "You are admin cancelling for someone else. This should ONLY happen if you're cancelling a male player in favour of a higher priority female player!"
                                                               : undefined,
                                                         },
                                                       );
@@ -413,11 +408,10 @@ const Signups: React.FC<ISignups> = ({
                                                   : undefined
                                               }
                                               addToShame={
+                                                !userAlreadyShamed &&
                                                 gameStatus ===
                                                   GameStatus.PAST &&
-                                                userContext.role ===
-                                                  Role.ADMIN &&
-                                                nextGameDate !== undefined
+                                                userContext.role === Role.ADMIN
                                                   ? (e) => {
                                                       e.stopPropagation();
                                                       addShamefulUserWithDialog(
@@ -463,8 +457,7 @@ const Signups: React.FC<ISignups> = ({
                                               key={playerId.toString()}
                                               {...signee}
                                               cancelGame={
-                                                canCancel &&
-                                                nextGameDate !== undefined
+                                                canCancel
                                                   ? (e) => {
                                                       e.stopPropagation();
                                                       cancelGame(

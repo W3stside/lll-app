@@ -13,7 +13,7 @@ export interface INewSignup extends IBaseUser {
   _id?: ObjectId;
   password: string;
   createdAt: Date;
-  shame: { game_id: ObjectId; date: Date }[];
+  shame: { game_id: ObjectId; date: string }[];
   role?: Role;
 }
 

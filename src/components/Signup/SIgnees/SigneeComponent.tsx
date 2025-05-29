@@ -106,7 +106,7 @@ export function SigneeComponent({
               )}
             </div>
 
-            <div className="flex flex-col items-center justify-end text-right gap-x-2 ml-auto">
+            <div className="flex flex-col flex-1 items-center justify-end text-right gap-x-2 ml-auto">
               <Link
                 href={`${NAVLINKS_MAP.PROFILES}/${_id?.toString()}`}
                 onClick={(e) => {

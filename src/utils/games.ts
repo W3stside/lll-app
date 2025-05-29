@@ -25,7 +25,7 @@ export const computeGameStatus = (
 
   const gameStatus =
     new Date() > lastGameDate ||
-    (todayIdx > getUSDayIndex(gameDate) && new Date() > gameDate)
+    (todayIdx >= getUSDayIndex(gameDate) && new Date() > gameDate)
       ? GameStatus.PAST
       : GameStatus.UPCOMING;
 
