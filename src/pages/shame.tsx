@@ -1,19 +1,25 @@
 import type { GetServerSideProps } from "next";
+import dynamic from "next/dynamic";
 import { useMemo, useState } from "react";
 import { useDebounce } from "use-debounce";
 
 import { FilterStuff, FilterType } from "@/components/FilterStuff";
 import { PartnerProducts } from "@/components/PartnerProducts";
-import { SigneeComponent } from "@/components/Signup/SIgnees/SigneeComponent";
+import { Loader } from "@/components/ui";
 import { useUser } from "@/context/User/context";
 import { withServerSideProps } from "@/hoc/withServerSideProps";
-import { GameFilters } from "@/hooks/useFilterGames";
 import { SEARCH_DEBOUNCE, useSearchFilter } from "@/hooks/useSearchFilter";
 import client from "@/lib/mongodb";
 import { Collection } from "@/types";
 import type { IGame, IUser } from "@/types/users";
-import { filterUser } from "@/utils/filter";
-import { cn } from "@/utils/tailwind";
+
+const ShameList = dynamic(
+  async () =>
+    await import("@/components/Shame/ShameList").then((mod) => ({
+      default: mod.ShameList,
+    })),
+  { ssr: false, loading: () => <Loader /> }, // Disable SSR and provide a loading fallback
+);
 
 export const getServerSideProps: GetServerSideProps = withServerSideProps(
   // TODO: review
@@ -101,69 +107,13 @@ export default function WallOfShame({ users }: IWallOfShame) {
         </div>
       </div>
 
-      <div className="flex flex-row flex-wrap items-start justify-center gap-y-2 gap-x-5">
-        {shamefulUsers
-          .filter((u) => filterUser(u, searchFilter))
-          .filter((u2) =>
-            currentUser._id !== undefined && filters === GameFilters.MY_GAMES
-              ? currentUser._id.toString() === u2._id.toString()
-              : true,
-          )
-          .filter(
-            (u3) =>
-              dateSearchFilter === "" ||
-              u3.shame.filter((g) =>
-                g.date.toString().includes(dateSearchFilter),
-              ).length,
-          )
-          .toSorted((a, b) => {
-            const dateA = new Date(a.shame[a.shame.length - 1].date);
-            const dateB = new Date(b.shame[b.shame.length - 1].date);
-            // @ts-expect-error - date maths isn't TS's fav
-            return dateB - dateA;
-          })
-          .toSorted((a, b) => b.shame.length - a.shame.length)
-          .map((user, i) => (
-            <div
-              key={user._id.toString()}
-              className={cn("w-[350px]", {
-                "bg-[var(--background-window-highlight)] [&>div]:bg-transparent":
-                  i === 0,
-              })}
-            >
-              <SigneeComponent
-                errorMsg={null}
-                loading={false}
-                avatarClassName="text-[8px] md:text-[9px] w-[40px] h-[40px] md:h-[45px] md:w-[45px]"
-                {...user}
-                className="py-[4px] px-[16px]"
-                childrenBelow={
-                  <div className="flex flex-col w-full gap-y-1 mt-2 md:px-2">
-                    <div className="flex items-center justify-between w-full">
-                      Shameful proof{" "}
-                      <div className="text-right ml-auto">
-                        {user.shame.length}x shame
-                      </div>
-                    </div>
-                    {user.shame.map(({ game_id, date }, idx) => {
-                      return (
-                        <div
-                          key={game_id.toString()}
-                          className="flex items-center justify-between w-full"
-                        >
-                          <span className="text-sm text-[var(--text-color-alternate)]">
-                            {idx + 1}. <strong>Late cancel/no-show:</strong>{" "}
-                            {date.toString().slice(0, 16).split("T").join(" ")}
-                          </span>
-                        </div>
-                      );
-                    })}
-                  </div>
-                }
-              ></SigneeComponent>
-            </div>
-          ))}
-      </div>
+      <ShameList
+        shamefulUsers={shamefulUsers}
+        currentUser={currentUser}
+        filters={filters}
+        searchFilter={searchFilter}
+        dateSearchFilter={dateSearchFilter}
+      />
 
       <PartnerProducts />
     </>
