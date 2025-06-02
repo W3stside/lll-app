@@ -2,8 +2,7 @@ import type { ObjectId } from "mongodb";
 import type { NextApiRequest, NextApiResponse } from "next";
 
 import client from "@/lib/mongodb";
-import { Collection } from "@/types";
-import type { Gender, IGame } from "@/types/users";
+import { Collection, type Gender, type IGame } from "@/types";
 
 export default async (req: NextApiRequest, res: NextApiResponse) => {
   try {

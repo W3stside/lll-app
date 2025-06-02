@@ -4,9 +4,7 @@ import type { GetServerSideProps } from "next";
 import { Profile, type IProfile } from "@/components/Profile";
 import { withServerSideProps } from "@/hoc/withServerSideProps";
 import client from "@/lib/mongodb";
-import { Collection } from "@/types";
-import type { IAdmin } from "@/types/admin";
-import type { IGame, IUser } from "@/types/users";
+import { Collection, type IAdmin, type IGame, type IUser } from "@/types";
 
 export const getServerSideProps: GetServerSideProps = withServerSideProps(
   // TODO: review

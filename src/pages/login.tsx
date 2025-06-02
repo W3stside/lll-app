@@ -1,4 +1,3 @@
-/* eslint-disable no-console */
 import type { GetServerSideProps } from "next";
 import { useRouter } from "next/router";
 import { useCallback, useState } from "react";
@@ -44,7 +43,6 @@ export const getServerSideProps: GetServerSideProps = async (context) => {
       },
     };
   } catch (e) {
-    console.error(e);
     return {
       props: { isConnected: true, user: null },
     };

@@ -1,6 +1,6 @@
 import { createContext, useContext } from "react";
 
-import type { GamesByDay, IGame } from "@/types/users";
+import type { GamesByDay, IGame } from "@/types";
 
 interface IGamesContext {
   games: IGame[];

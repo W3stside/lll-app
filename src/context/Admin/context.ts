@@ -1,6 +1,6 @@
 import { createContext, useContext } from "react";
 
-import type { IAdmin } from "@/types/admin";
+import type { IAdmin } from "@/types";
 
 interface IAdminContext {
   admin: IAdmin | undefined;

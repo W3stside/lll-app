@@ -1,4 +1,3 @@
-/* eslint-disable no-console */
 import { ObjectId } from "mongodb";
 import type { NextApiRequest, NextApiResponse } from "next";
 
@@ -26,7 +25,6 @@ export default async (req: NextApiRequest, res: NextApiResponse) => {
       res.status(500).json({ message: "Error deleting record" });
     }
   } catch (error) {
-    console.error(error);
     res.status(500).json({ message: "Error deleting record" });
   }
 };

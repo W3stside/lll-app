@@ -13,3 +13,8 @@ export enum GameStatus {
 export enum Role {
   ADMIN = "admin",
 }
+
+export * from "./games";
+export * from "./users";
+export * from "./admin";
+export * from "./http";

@@ -13,9 +13,13 @@ import { NAVLINKS_MAP, WHATS_APP } from "@/constants/links";
 import { MAX_SIGNUPS_PER_GAME } from "@/constants/signups";
 import { useActions } from "@/context/Actions/context";
 import { useUser } from "@/context/User/context";
-import { GameStatus } from "@/types";
-import type { IAdmin } from "@/types/admin";
-import type { IGame, IUser, IUserSafe } from "@/types/users";
+import {
+  GameStatus,
+  type IAdmin,
+  type IGame,
+  type IUser,
+  type IUserSafe,
+} from "@/types";
 import { groupGamesByDay } from "@/utils/data";
 import { computeGameStatus, getLastGame } from "@/utils/games";
 import { isValidUserUpdate } from "@/utils/signup";

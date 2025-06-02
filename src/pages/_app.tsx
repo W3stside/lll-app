@@ -8,8 +8,7 @@ import { AdminProvider } from "@/context/Admin/provider";
 import { DialogProvider } from "@/context/Dialog/provider";
 import { GamesProvider } from "@/context/Games/provider";
 import { UserProvider } from "@/context/User/provider";
-import type { IAdmin } from "@/types/admin";
-import type { IUserSafe, IGame, IUser } from "@/types/users";
+import type { IUserSafe, IAdmin, IGame, IUser } from "@/types";
 
 export interface IServerSideProps {
   admin: IAdmin;

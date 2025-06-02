@@ -1,5 +1,5 @@
 import { DAYS_IN_WEEK } from "@/constants/date";
-import type { IGame } from "@/types/users";
+import type { IGame } from "@/types";
 
 const ONE_WEEK_DAYS = 7;
 

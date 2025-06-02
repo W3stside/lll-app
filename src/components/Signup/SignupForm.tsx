@@ -1,7 +1,7 @@
 import type { ObjectId } from "mongodb";
 import type { Dispatch, SetStateAction } from "react";
 
-import type { IGame } from "@/types/users";
+import type { IGame } from "@/types";
 import { cn } from "@/utils/tailwind";
 
 export interface ISignupForm {
@@ -39,7 +39,7 @@ export function SignupForm({
           <option value={""}>- Please select a game -</option>
           {games?.map(({ _id, game_id, time, players }) => (
             <option
-              disabled={players.includes(userId)}
+              disabled={players.includes(userId.toString())}
               value={_id.toString()}
               key={_id.toString()}
             >

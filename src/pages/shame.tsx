@@ -10,8 +10,7 @@ import { useUser } from "@/context/User/context";
 import { withServerSideProps } from "@/hoc/withServerSideProps";
 import { SEARCH_DEBOUNCE, useSearchFilter } from "@/hooks/useSearchFilter";
 import client from "@/lib/mongodb";
-import { Collection } from "@/types";
-import type { IGame, IUser } from "@/types/users";
+import { Collection, type IGame, type IUser } from "@/types";
 
 const ShameList = dynamic(
   async () =>

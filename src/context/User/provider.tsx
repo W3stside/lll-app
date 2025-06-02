@@ -2,7 +2,7 @@ import { useState } from "react";
 
 import { type IUserContext, UserContext } from "./context";
 
-import type { IUserSafe } from "@/types/users";
+import type { IUserSafe } from "@/types";
 
 interface IUserProvider {
   children: React.ReactNode;

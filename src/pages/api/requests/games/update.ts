@@ -5,9 +5,10 @@ import { v4 } from "uuid";
 import { MAX_SIGNUPS_PER_GAME } from "@/constants/signups";
 import { sendBotNotification } from "@/lib/bot/sendBotMessage";
 import client from "@/lib/mongodb";
-import { Collection } from "@/types";
-import type { IUser, IGame } from "@/types/users";
+import { Collection, type IUser, type IGame } from "@/types";
+import { sendBumpedMessage, sendQueueChangeMessage } from "@/utils/bot";
 import { groupUsersById } from "@/utils/data";
+import { prepareTourneyGamePlayersList } from "@/utils/games";
 
 if (
   process.env.WHATSAPP_BOT_API_URL === undefined ||
@@ -37,6 +38,7 @@ export default async (req: NextApiRequest, res: NextApiResponse) => {
 
     const gameIdWrapped = new ObjectId(_id);
     let result: WithId<IGame> | null;
+    // Adding or Cancelling a player
     if (newPlayerId !== undefined || cancelPlayerId !== undefined) {
       const previous = await gamesCollection.findOne({
         _id: gameIdWrapped,
@@ -44,17 +46,24 @@ export default async (req: NextApiRequest, res: NextApiResponse) => {
 
       result = await gamesCollection.findOneAndUpdate(
         { _id: gameIdWrapped },
-        // Adding a player
         newPlayerId !== undefined
-          ? {
-              $addToSet: { players: newPlayerId },
-            }
+          ? // Adding a player to standard game
+            { $addToSet: { players: newPlayerId.toString() } }
           : // Cancelling a player
-            {
-              $pull: { players: cancelPlayerId },
-            },
+            { $pull: { players: cancelPlayerId?.toString() } },
         { returnDocument: "after" },
       );
+
+      // Adding a player to tourney game
+      if (result !== null && result.teams !== undefined) {
+        const teamsList = prepareTourneyGamePlayersList(result.players);
+        result = await gamesCollection.findOneAndUpdate(
+          { _id: gameIdWrapped },
+          teamsList,
+          { returnDocument: "after" },
+        );
+      }
+
       // User has cancelled a game
       // Check the list to see if we need to notify because
       // Pre-update list length is greater than MAX_SIGNUPS_PER_GAME (meaning there is a waitlist)
@@ -65,7 +74,7 @@ export default async (req: NextApiRequest, res: NextApiResponse) => {
         (isAdminCancel || previous.players.length > MAX_SIGNUPS_PER_GAME)
       ) {
         const playerIdx = previous.players.findIndex(
-          (pl) => pl === cancelPlayerId,
+          (pl) => pl === cancelPlayerId.toString(),
         );
 
         // Admin cancelled a guy. Ping him
@@ -77,22 +86,7 @@ export default async (req: NextApiRequest, res: NextApiResponse) => {
             });
 
           if (bumpedUser !== null) {
-            await sendBotNotification({
-              id: v4(),
-              channel: "NOTIFICATION_CHANNEL_WHATSAPP",
-              recipients: [process.env.WHATSAPP_BOT_CHANNEL_ID as string],
-              whatsapp_payload: {
-                text: `
-Hi 👋 ${bumpedUser.first_name} ${bumpedUser.last_name} [@${bumpedUser.phone_number}] 
-
-Sorry but you were bumped from the ladies game ${result.game_id} - remember that ladies get priority in these games.
-
-When: ${result.day} @ ${result.time} 
-Where: ${result.location}
-Address: ${result.address}`,
-                mentions: [bumpedUser.phone_number],
-              },
-            });
+            await sendBumpedMessage(bumpedUser, result);
           } else {
             throw new Error("User not found");
           }
@@ -108,28 +102,13 @@ Address: ${result.address}`,
             });
 
           if (newConfirmedUser !== null) {
-            await sendBotNotification({
-              id: v4(),
-              channel: "NOTIFICATION_CHANNEL_WHATSAPP",
-              recipients: [process.env.WHATSAPP_BOT_CHANNEL_ID as string],
-              whatsapp_payload: {
-                text: `
-Hi 👋 ${newConfirmedUser.first_name} ${newConfirmedUser.last_name} [@${newConfirmedUser.phone_number}] 
-
-You are confirmed for game ${result.game_id}!
-
-When: ${result.day} @ ${result.time} 
-Where: ${result.location}
-Address: ${result.address}
-
-Have fun! 🎉`,
-                mentions: [newConfirmedUser.phone_number],
-              },
-            });
+            await sendQueueChangeMessage(newConfirmedUser, result);
           }
         }
       }
-    } else {
+    }
+    // Updating game parameters
+    else {
       result = await gamesCollection.findOneAndUpdate(
         { _id: gameIdWrapped },
         {
@@ -190,8 +169,6 @@ See you next time!`,
       res.status(200).json({ updatedGame: result, games: updatedGames });
     }
   } catch (error) {
-    // eslint-disable-next-line no-console
-    console.error(error);
     res.status(500).json({ message: "Error updating document" });
   }
 };

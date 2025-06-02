@@ -12,9 +12,15 @@ import { DialogVariant, useDialog } from "@/context/Dialog/context";
 import { useGames } from "@/context/Games/context";
 import { withServerSideProps } from "@/hoc/withServerSideProps";
 import client from "@/lib/mongodb";
-import { Collection, Role } from "@/types";
-import type { IAdmin } from "@/types/admin";
-import { Gender, type IGame, type IUser, type PlaySpeed } from "@/types/users";
+import {
+  Collection,
+  Gender,
+  Role,
+  type IAdmin,
+  type IGame,
+  type IUser,
+  type PlaySpeed,
+} from "@/types";
 import { dbRequest } from "@/utils/api/dbRequest";
 import { fetchUsersFromMongodb } from "@/utils/api/mongodb";
 import { isValid24hTime } from "@/utils/date";

@@ -1,7 +1,7 @@
 import type { ObjectId } from "mongodb";
 import { createContext, useContext } from "react";
 
-import type { IGame, IUserSafe } from "@/types/users";
+import type { IGame, IUserSafe } from "@/types";
 
 export interface IActionContext {
   loading: boolean;
