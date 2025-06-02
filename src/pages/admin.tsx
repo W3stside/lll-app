@@ -425,12 +425,18 @@ export default function Admin({
               {sortedGames.map((game) => (
                 <div
                   key={game._id.toString()}
-                  className="flex flex-row gap-x-5 justify-between items-center"
+                  className={cn(
+                    "flex flex-row gap-x-5 justify-between items-center",
+                    {
+                      "bg-[var(--background-window-highlight)]": game.hidden,
+                    },
+                  )}
                 >
                   <div className="flex flex-1 justify-start gap-x-4">
                     <div className="flex flex-col w-auto whitespace-nowrap">
                       <strong>
-                        {game.day} @ {game.time}
+                        {game.day} @ {game.time}{" "}
+                        {game.hidden === true && "(Hidden from users)"}
                       </strong>{" "}
                       {game.location}
                     </div>

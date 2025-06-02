@@ -27,6 +27,7 @@ export function Games({
   signupsAmt,
   waitlistAmt,
   waitlistLabel = "Waitlist only",
+  hidden = false,
   children,
   className,
 }: IGames) {
@@ -36,6 +37,11 @@ export function Games({
       className={cn("flex flex-col container gap-y-4 pl-9 w-full", className)}
     >
       <div className="flex flex-row flex-wrap items-start w-full">
+        {hidden && (
+          <small className="mb-1 px-1 bg-[var(--background-window-highlight)]">
+            HIDDEN GAME! ADMIN VIEW ONLY
+          </small>
+        )}
         <div className="flex gap-x-4 w-full">
           <strong className="flex items-center gap-x-2 text-lg">
             Game {game_id}{" "}
