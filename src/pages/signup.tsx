@@ -311,7 +311,7 @@ const Signups: React.FC<ISignups> = ({
                               )}
                           </div>
                           <div className="flex flex-col gap-y-2">
-                            {games.map((game, gIdx) => {
+                            {games.flatMap((game, gIdx) => {
                               const nextGameDate = computeGameDate(
                                 game.day,
                                 game.time,

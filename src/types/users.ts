@@ -58,6 +58,7 @@ export interface IGame {
   players: ObjectId[];
   gender?: Gender;
   organisers?: ObjectId[];
+  hidden?: boolean;
 }
 
 export type GamesByDay = Partial<Record<IGame["day"], IGame[]>>;
