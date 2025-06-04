@@ -318,7 +318,7 @@ const Signups: React.FC<ISignups> = ({
                               maxSignups={10}
                             />
                           )}
-                          {cancelledGames.length > 0 && (
+                          {!noGames && cancelledGames.length > 0 && (
                             <RemainingSpots
                               title={
                                 <div className={`${RED_TW} px-1`}>
@@ -328,10 +328,12 @@ const Signups: React.FC<ISignups> = ({
                               text={
                                 <div className="text-sm bg-[var(--background-window-highlight)] px-2 py-1 -mr-2">
                                   <span>
-                                    {gamesFullyCapped.length > 1
-                                      ? "games"
-                                      : "game"}
-                                    {" @ "}
+                                    <>
+                                      {gamesFullyCapped.length > 1
+                                        ? "games"
+                                        : "game"}
+                                      {" @ "}
+                                    </>
                                   </span>
                                   <span>
                                     {capacity

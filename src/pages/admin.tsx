@@ -37,7 +37,7 @@ type ConnectionStatus = {
 export const getServerSideProps: GetServerSideProps<ConnectionStatus> =
   // TODO: review
   // @ts-expect-error error in the custom HOC - doesn't break.
-  withServerSideProps(async ({ parentProps: { user } }) => {
+  withServerSideProps(async ({ parentProps: { user, usersById } }) => {
     try {
       const adminUser = await client
         .db("LLL")
@@ -63,6 +63,7 @@ export const getServerSideProps: GetServerSideProps<ConnectionStatus> =
           isConnected: true,
           user: JSON.parse(JSON.stringify(user)) as string,
           users: usersSerialised,
+          usersById: JSON.parse(JSON.stringify(usersById)) as string,
         },
       };
     } catch (e) {
@@ -70,7 +71,9 @@ export const getServerSideProps: GetServerSideProps<ConnectionStatus> =
       console.error(e);
       return {
         props: {
+          user: null,
           users: [],
+          usersById: {},
         },
       };
     }
@@ -112,6 +115,7 @@ const DEFAULT_STATE = {
   gender: undefined,
   speed: undefined,
   day: undefined,
+  cancelled: false,
 } as const;
 
 export default function Admin({
@@ -139,7 +143,9 @@ export default function Admin({
     }
   }, [admin, adminInitial, setAdmin]);
 
-  const [targettedGame, setGameInfo] = useState<Partial<IGame>>(DEFAULT_STATE);
+  const [targettedGame, setGameInfo] = useState<
+    Partial<IGame> & { cancelled: boolean }
+  >(DEFAULT_STATE);
 
   const handleUpdateGame = useCallback(async () => {
     setLoading(true);
@@ -168,7 +174,8 @@ export default function Admin({
             game.location === targettedGame.location &&
             game.address === targettedGame.address &&
             game.gender === targettedGame.gender &&
-            game.speed === targettedGame.speed,
+            game.speed === targettedGame.speed &&
+            game.cancelled === targettedGame.cancelled,
         )
       ) {
         throw new Error(
@@ -551,6 +558,20 @@ export default function Admin({
                 >
                   <option value="">- (optional) Ladies game? -</option>
                   <option value={Gender.FEMALE}>Ladies</option>
+                </select>
+                <select
+                  value={targettedGame.cancelled ? "cancelled" : "confirmed"}
+                  name="status"
+                  defaultValue={""}
+                  onChange={(e) => {
+                    setGameInfo((prev) => ({
+                      ...prev,
+                      cancelled: e.target.value === "cancelled",
+                    }));
+                  }}
+                >
+                  <option value="">Confirmed</option>
+                  <option value="cancelled">Cancelled</option>
                 </select>
               </div>
             </div>
