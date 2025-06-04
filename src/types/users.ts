@@ -58,6 +58,7 @@ export interface IGame {
   players: ObjectId[];
   gender?: Gender;
   organisers?: ObjectId[];
+  cancelled?: boolean;
   hidden?: boolean;
 }
 

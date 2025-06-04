@@ -61,6 +61,7 @@ interface IRemainingSpots {
   text?: ReactNode;
   signedUp: number | null;
   maxSignups: number;
+  cancelled?: boolean;
   disabled?: boolean;
 }
 
@@ -70,6 +71,7 @@ export const RemainingSpots = ({
   text = null,
   signedUp,
   maxSignups,
+  cancelled = false,
   disabled = false,
 }: IRemainingSpots) => {
   return (
@@ -98,8 +100,12 @@ export const RemainingSpots = ({
       >
         {text !== null ? (
           <div>{text}</div>
-        ) : signedUp === null || disabled ? (
-          "PAST"
+        ) : signedUp === null || cancelled || disabled ? (
+          cancelled ? (
+            "CANCELLED"
+          ) : (
+            "PAST"
+          )
         ) : (
           <>
             {Math.max(maxSignups - signedUp, 0)} / {maxSignups}

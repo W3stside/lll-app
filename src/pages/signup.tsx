@@ -10,6 +10,7 @@ import { RegisterToPlay } from "@/components/Register/RegisterToPlay";
 import { Signees } from "@/components/Signup";
 import { Games } from "@/components/Signup/Games";
 import { Collapsible, RemainingSpots } from "@/components/ui";
+import { RED_TW } from "@/constants/colours";
 import { DAYS_IN_WEEK_MAP } from "@/constants/date";
 import { MAX_SIGNUPS_PER_GAME } from "@/constants/signups";
 import { useActions } from "@/context/Actions/context";
@@ -158,30 +159,55 @@ const Signups: React.FC<ISignups> = ({
                       );
                     }
 
+                    const {
+                      available: availableGames,
+                      cancelled: cancelledGames,
+                    } = games.reduce<{
+                      available: IGame[];
+                      cancelled: IGame[];
+                    }>(
+                      (acc, g) => {
+                        if (g.cancelled === true) {
+                          return {
+                            ...acc,
+                            cancelled: [...acc.cancelled, g],
+                          };
+                        }
+                        return {
+                          ...acc,
+                          available: [...acc.available, g],
+                        };
+                      },
+                      { available: [], cancelled: [] },
+                    );
+
+                    const allCancelled = availableGames.length === 0;
+                    const noGames =
+                      gameStatus === GameStatus.PAST || allCancelled;
+
                     return (
                       <Collapsible
                         key={day}
                         className="relative flex flex-col items-center justify-start md:px-5 gap-y-8 mb-30 w-full hover:bg-[var(--background-color-2)]"
                         collapsedClassName={cn("container mb-0", {
                           "!bg-[var(--background-error-alt)]":
-                            gameStatus === GameStatus.PAST &&
-                            userContext.role === Role.ADMIN,
+                            noGames && userContext.role === Role.ADMIN,
                         })}
                         collapsedHeight={
-                          gameStatus !== GameStatus.PAST &&
-                          gamesFullyCapped.length > 0
-                            ? 128
-                            : gameStatus === GameStatus.PAST
+                          !noGames && gamesFullyCapped.length > 0
+                            ? cancelledGames.length > 0
+                              ? 158
+                              : 128
+                            : noGames
                               ? userContext.role !== Role.ADMIN
-                                ? 49
+                                ? allCancelled
+                                  ? 85
+                                  : 49
                                 : 85
                               : 103
                         }
                         customState={collapsed[day]}
-                        disabled={
-                          userContext.role !== Role.ADMIN &&
-                          gameStatus === GameStatus.PAST
-                        }
+                        disabled={userContext.role !== Role.ADMIN && noGames}
                       >
                         <div
                           className={cn(
@@ -189,12 +215,11 @@ const Signups: React.FC<ISignups> = ({
                             {
                               "p-2 mt-0 !border-0 -container !bg-revert":
                                 collapsed[day],
-                              "px-0 py-[2px]": gameStatus === GameStatus.PAST,
+                              "px-0 py-[2px]": noGames,
                             },
                           )}
                           onClick={
-                            userContext.role !== Role.ADMIN &&
-                            gameStatus === GameStatus.PAST
+                            userContext.role !== Role.ADMIN && noGames
                               ? undefined
                               : () => {
                                   setCollapse((prev) => ({
@@ -207,7 +232,7 @@ const Signups: React.FC<ISignups> = ({
                           <div className="flex items-center justify-start gap-4 gap-x-2">
                             <h2
                               className={cn("font-thinner text-md font-serif", {
-                                "-mt-2": gameStatus === GameStatus.PAST,
+                                "-mt-2": noGames,
                                 "mb-[-4px]": !collapsed[day],
                               })}
                             >
@@ -231,7 +256,7 @@ const Signups: React.FC<ISignups> = ({
                                   className={cn(
                                     "flex flex-col items-start gap-x-5",
                                     {
-                                      "-mt-2": gameStatus === GameStatus.PAST,
+                                      "-mt-2": noGames,
                                     },
                                   )}
                                 >
@@ -246,49 +271,83 @@ const Signups: React.FC<ISignups> = ({
                           </div>
                           <RemainingSpots
                             title={
-                              gameStatus === GameStatus.PAST &&
-                              userContext.role === Role.ADMIN
+                              noGames && userContext.role === Role.ADMIN
                                 ? null
                                 : "Spots remaining:"
                             }
-                            disabled={gameStatus === GameStatus.PAST}
+                            cancelled={allCancelled}
+                            disabled={noGames}
                             signedUp={maxSignups - openSpots}
                             maxSignups={maxSignups}
                             text={
-                              gameStatus === GameStatus.PAST &&
-                              userContext.role === Role.ADMIN ? (
+                              noGames && userContext.role === Role.ADMIN ? (
                                 <small className="text-xs monospace not-italic normal-case bg-[var(--background-error)] p-[2px_4px] mt-[-2px] mb-[3px]">
-                                  <strong>Game ended</strong> - tap for admin
-                                  details
+                                  <strong>
+                                    {gameStatus === GameStatus.PAST
+                                      ? "Game ended"
+                                      : "Games cancelled!"}
+                                  </strong>{" "}
+                                  - tap for admin details
                                 </small>
                               ) : undefined
                             }
                           />
-                          {gameStatus !== GameStatus.PAST &&
-                            gamesFullyCapped.length > 0 && (
-                              <RemainingSpots
-                                title="Waitlist:"
-                                text={
-                                  <div className="text-sm bg-[var(--background-window-highlight)] px-2 py-1 -mr-2">
-                                    <span>
-                                      {gamesFullyCapped.length > 1
-                                        ? "games"
-                                        : "game"}
-                                      {" @ "}
-                                    </span>
-                                    <span>
-                                      {capacity
-                                        .flatMap((gc, idx) =>
-                                          gc <= 0 ? [games[idx].time] : [],
-                                        )
-                                        .join(", ")}
-                                    </span>
-                                  </div>
-                                }
-                                signedUp={Math.min(signedUp - maxSignups, 10)}
-                                maxSignups={10}
-                              />
-                            )}
+                          {!noGames && gamesFullyCapped.length > 0 && (
+                            <RemainingSpots
+                              title="Waitlist:"
+                              text={
+                                <div className="text-sm bg-[var(--background-window-highlight)] px-2 py-1 -mr-2">
+                                  <span>
+                                    {gamesFullyCapped.length > 1
+                                      ? "games"
+                                      : "game"}
+                                    {" @ "}
+                                  </span>
+                                  <span>
+                                    {capacity
+                                      .flatMap((gc, idx) =>
+                                        gc <= 0
+                                          ? [availableGames[idx].time]
+                                          : [],
+                                      )
+                                      .join(", ")}
+                                  </span>
+                                </div>
+                              }
+                              signedUp={Math.min(signedUp - maxSignups, 10)}
+                              maxSignups={10}
+                            />
+                          )}
+                          {cancelledGames.length > 0 && (
+                            <RemainingSpots
+                              title={
+                                <div className={`${RED_TW} px-1`}>
+                                  Cancelled:
+                                </div>
+                              }
+                              text={
+                                <div className="text-sm bg-[var(--background-window-highlight)] px-2 py-1 -mr-2">
+                                  <span>
+                                    {gamesFullyCapped.length > 1
+                                      ? "games"
+                                      : "game"}
+                                    {" @ "}
+                                  </span>
+                                  <span>
+                                    {capacity
+                                      .flatMap((gc, idx) =>
+                                        gc <= 0
+                                          ? [cancelledGames[idx].time]
+                                          : [],
+                                      )
+                                      .join(", ")}
+                                  </span>
+                                </div>
+                              }
+                              signedUp={Math.min(signedUp - maxSignups, 10)}
+                              maxSignups={10}
+                            />
+                          )}
                         </div>
 
                         <div className="flex flex-col gap-y-2 justify-start w-full">
@@ -325,15 +384,28 @@ const Signups: React.FC<ISignups> = ({
                               const waitlist =
                                 game.players.slice(MAX_SIGNUPS_PER_GAME);
 
+                              const gameCancelled = game.cancelled === true;
+
                               return (
                                 <Collapsible
                                   key={game._id.toString()}
-                                  className="flex flex-col gap-y-2 w-full mb-10 transition-[height] duration-300 ease-in-out"
+                                  className={cn(
+                                    "flex flex-col gap-y-2 w-full mb-10 transition-[height] duration-300 ease-in-out",
+                                    {
+                                      "pointer-events-none !cursor-none":
+                                        gameCancelled,
+                                    },
+                                  )}
                                   collapsedClassName="mb-0"
                                   collapsedHeight={
-                                    capacity[gIdx] <= 0 ? 182 : 160
+                                    gameCancelled
+                                      ? 140
+                                      : capacity[gIdx] <= 0
+                                        ? 182
+                                        : 160
                                   }
-                                  startCollapsed={false}
+                                  startCollapsed={gameCancelled}
+                                  disabled={gameCancelled}
                                 >
                                   <Games
                                     {...game}
@@ -341,141 +413,154 @@ const Signups: React.FC<ISignups> = ({
                                     waitlistAmt={capacity[gIdx]}
                                     date={nextGameDate}
                                   >
-                                    <small>[+] Tap to expand/collapse</small>
+                                    {!gameCancelled && (
+                                      <small>[+] Tap to expand/collapse</small>
+                                    )}
                                   </Games>
-                                  <Collapsible
-                                    collapsedHeight={36}
-                                    className="flex flex-col gap-y-2 justify-start ml-auto w-[90%] sm:w-[350px] border-4 border-red p-2 container"
-                                  >
-                                    <div className="container-header">
-                                      <small className="ml-2 mr-auto">
-                                        [open/close]
-                                      </small>{" "}
-                                      Signed-up players
-                                    </div>
-                                    <div className="flex flex-col items-center gap-y-2">
-                                      {confirmedList.length === 0 ? (
-                                        <p>No players yet. Sign up!</p>
-                                      ) : (
-                                        confirmedList.map((playerId) => {
-                                          const signee =
-                                            usersById[playerId.toString()];
+                                  {(!gameCancelled ||
+                                    userContext.role === Role.ADMIN) && (
+                                    <>
+                                      <Collapsible
+                                        collapsedHeight={36}
+                                        className="flex flex-col gap-y-2 justify-start ml-auto w-[90%] sm:w-[350px] border-4 border-red p-2 container"
+                                      >
+                                        <div className="container-header">
+                                          <small className="ml-2 mr-auto">
+                                            [open/close]
+                                          </small>{" "}
+                                          Signed-up players
+                                        </div>
+                                        <div className="flex flex-col items-center gap-y-2">
+                                          {confirmedList.length === 0 ? (
+                                            <p>No players yet. Sign up!</p>
+                                          ) : (
+                                            confirmedList.map((playerId) => {
+                                              const signee =
+                                                usersById[playerId.toString()];
 
-                                          const isAdminCancelling =
-                                            signee._id.toString() !==
-                                              user._id.toString() &&
-                                            user.role === Role.ADMIN;
+                                              const isAdminCancelling =
+                                                signee._id.toString() !==
+                                                  user._id.toString() &&
+                                                user.role === Role.ADMIN;
 
-                                          const canCancel =
-                                            gameStatus !== GameStatus.PAST &&
-                                            checkPlayerCanCancel(
-                                              signee,
-                                              user,
-                                              game.gender,
-                                            );
-
-                                          const userAlreadyShamed = usersById[
-                                            playerId.toString()
-                                          ].shame.some(
-                                            ({ date }) => date === nextGameDate,
-                                          );
-
-                                          return (
-                                            <Signees
-                                              key={playerId.toString()}
-                                              {...signee}
-                                              cancelGame={
-                                                canCancel
-                                                  ? (e) => {
-                                                      e.stopPropagation();
-                                                      cancelGame(
-                                                        game._id,
-                                                        signee._id,
-                                                        nextGameDate,
-                                                        // Admin is cancelling a game for someone else (ladies game) - don't add to shame
-                                                        {
-                                                          bypassThreshold:
-                                                            isAdminCancelling &&
-                                                            game.gender ===
-                                                              Gender.FEMALE,
-                                                          cancelMessage:
-                                                            isAdminCancelling
-                                                              ? "You are admin cancelling for someone else. This should ONLY happen if you're cancelling a male player in favour of a higher priority female player!"
-                                                              : undefined,
-                                                        },
-                                                      );
-                                                    }
-                                                  : undefined
-                                              }
-                                              addToShame={
-                                                !userAlreadyShamed &&
-                                                gameStatus ===
+                                              const canCancel =
+                                                gameStatus !==
                                                   GameStatus.PAST &&
-                                                userContext.role === Role.ADMIN
-                                                  ? (e) => {
-                                                      e.stopPropagation();
-                                                      addShamefulUserWithDialog(
-                                                        game._id,
-                                                        signee._id,
-                                                        nextGameDate,
-                                                      );
-                                                    }
-                                                  : undefined
-                                              }
-                                            />
-                                          );
-                                        })
+                                                checkPlayerCanCancel(
+                                                  signee,
+                                                  user,
+                                                  game.gender,
+                                                );
+
+                                              const userAlreadyShamed =
+                                                usersById[
+                                                  playerId.toString()
+                                                ].shame.some(
+                                                  ({ date }) =>
+                                                    date === nextGameDate,
+                                                );
+
+                                              return (
+                                                <Signees
+                                                  key={playerId.toString()}
+                                                  {...signee}
+                                                  cancelGame={
+                                                    canCancel
+                                                      ? (e) => {
+                                                          e.stopPropagation();
+                                                          cancelGame(
+                                                            game._id,
+                                                            signee._id,
+                                                            nextGameDate,
+                                                            // Admin is cancelling a game for someone else (ladies game) - don't add to shame
+                                                            {
+                                                              bypassThreshold:
+                                                                isAdminCancelling &&
+                                                                game.gender ===
+                                                                  Gender.FEMALE,
+                                                              cancelMessage:
+                                                                isAdminCancelling
+                                                                  ? "You are admin cancelling for someone else. This should ONLY happen if you're cancelling a male player in favour of a higher priority female player!"
+                                                                  : undefined,
+                                                            },
+                                                          );
+                                                        }
+                                                      : undefined
+                                                  }
+                                                  addToShame={
+                                                    !userAlreadyShamed &&
+                                                    gameStatus ===
+                                                      GameStatus.PAST &&
+                                                    userContext.role ===
+                                                      Role.ADMIN
+                                                      ? (e) => {
+                                                          e.stopPropagation();
+                                                          addShamefulUserWithDialog(
+                                                            game._id,
+                                                            signee._id,
+                                                            nextGameDate,
+                                                          );
+                                                        }
+                                                      : undefined
+                                                  }
+                                                />
+                                              );
+                                            })
+                                          )}
+                                        </div>
+                                      </Collapsible>
+                                      {waitlist.length > 0 && (
+                                        <Collapsible
+                                          collapsedHeight={36}
+                                          className="flex flex-col gap-y-2 justify-start ml-auto w-[90%] sm:w-[350px] border-4 border-red p-2 container"
+                                        >
+                                          <div className="container-header !bg-orange-500">
+                                            <small className="ml-2 mr-auto">
+                                              [open/close]
+                                            </small>{" "}
+                                            Waitlist players
+                                          </div>
+                                          <div className="flex flex-col items-center gap-y-2">
+                                            {waitlist.map((playerId) => {
+                                              const signee =
+                                                usersById[playerId.toString()];
+
+                                              const canCancel =
+                                                gameStatus !==
+                                                  GameStatus.PAST &&
+                                                checkPlayerCanCancel(
+                                                  signee,
+                                                  user,
+                                                  game.gender,
+                                                );
+
+                                              return (
+                                                <Signees
+                                                  key={playerId.toString()}
+                                                  {...signee}
+                                                  cancelGame={
+                                                    canCancel
+                                                      ? (e) => {
+                                                          e.stopPropagation();
+                                                          cancelGame(
+                                                            game._id,
+                                                            signee._id,
+                                                            nextGameDate,
+                                                            {
+                                                              bypassThreshold:
+                                                                true,
+                                                            },
+                                                          );
+                                                        }
+                                                      : undefined
+                                                  }
+                                                />
+                                              );
+                                            })}
+                                          </div>
+                                        </Collapsible>
                                       )}
-                                    </div>
-                                  </Collapsible>
-                                  {waitlist.length > 0 && (
-                                    <Collapsible
-                                      collapsedHeight={36}
-                                      className="flex flex-col gap-y-2 justify-start ml-auto w-[90%] sm:w-[350px] border-4 border-red p-2 container"
-                                    >
-                                      <div className="container-header !bg-orange-500">
-                                        <small className="ml-2 mr-auto">
-                                          [open/close]
-                                        </small>{" "}
-                                        Waitlist players
-                                      </div>
-                                      <div className="flex flex-col items-center gap-y-2">
-                                        {waitlist.map((playerId) => {
-                                          const signee =
-                                            usersById[playerId.toString()];
-
-                                          const canCancel =
-                                            gameStatus !== GameStatus.PAST &&
-                                            checkPlayerCanCancel(
-                                              signee,
-                                              user,
-                                              game.gender,
-                                            );
-
-                                          return (
-                                            <Signees
-                                              key={playerId.toString()}
-                                              {...signee}
-                                              cancelGame={
-                                                canCancel
-                                                  ? (e) => {
-                                                      e.stopPropagation();
-                                                      cancelGame(
-                                                        game._id,
-                                                        signee._id,
-                                                        nextGameDate,
-                                                        {
-                                                          bypassThreshold: true,
-                                                        },
-                                                      );
-                                                    }
-                                                  : undefined
-                                              }
-                                            />
-                                          );
-                                        })}
-                                      </div>
-                                    </Collapsible>
+                                    </>
                                   )}
                                 </Collapsible>
                               );
@@ -483,10 +568,10 @@ const Signups: React.FC<ISignups> = ({
                           </div>
                         </div>
 
-                        {gameStatus !== GameStatus.PAST && (
+                        {!noGames && (
                           <RegisterToPlay
                             label="Sign up"
-                            games={games}
+                            games={games.filter((g) => g.cancelled !== true)}
                             loading={actionLoading}
                             userId={user._id}
                             gameId={selectedGameId}
