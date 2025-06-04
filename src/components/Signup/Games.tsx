@@ -1,6 +1,6 @@
 import { RemainingSpots } from "../ui";
 
-import { ORANGE_TW } from "@/constants/colours";
+import { ORANGE_TW, RED_TW } from "@/constants/colours";
 import { MAX_SIGNUPS_PER_GAME } from "@/constants/signups";
 import { Gender, type IGame } from "@/types/users";
 import { cn } from "@/utils/tailwind";
@@ -27,6 +27,7 @@ export function Games({
   signupsAmt,
   waitlistAmt,
   waitlistLabel = "Waitlist only",
+  cancelled = false,
   hidden = false,
   children,
   className,
@@ -34,7 +35,13 @@ export function Games({
   return (
     <div
       key={game_id}
-      className={cn("flex flex-col container gap-y-4 pl-9 w-full", className)}
+      className={cn(
+        "flex flex-col container gap-y-4 pl-9 w-full",
+        {
+          "!bg-transparent": cancelled,
+        },
+        className,
+      )}
     >
       <div className="flex flex-row flex-wrap items-start w-full">
         {hidden && (
@@ -82,23 +89,19 @@ export function Games({
             {speed}
           </strong>
         </div>
-        <RemainingSpots
-          title="Spots remaining:"
-          signedUp={signupsAmt}
-          maxSignups={MAX_SIGNUPS_PER_GAME}
-          className="pl-0 text-md [&>div]:!px-2.5 [&>div]:!py-0.5"
-        />
-        {waitlistAmt !== null && waitlistAmt <= 0 && (
-          <div className={`px-2 p-1 ${ORANGE_TW}`}>{waitlistLabel}</div>
-        )}
-        {/* {waitlistAmt < 0 && (
+        {!cancelled && (
           <RemainingSpots
-            title="Waitlist remaining:"
-            signedUp={-waitlistAmt}
-            maxSignups={MAX_WAITLIST_PER_GAME}
-            className="mt-0.5 pl-0 text-md [&>div]:!px-2.5 [&>div]:!py-0.5"
+            title="Spots remaining:"
+            signedUp={signupsAmt}
+            maxSignups={MAX_SIGNUPS_PER_GAME}
+            className="pl-0 text-md [&>div]:!px-2.5 [&>div]:!py-0.5"
           />
-        )} */}
+        )}
+        {(cancelled || (waitlistAmt !== null && waitlistAmt <= 0)) && (
+          <div className={`px-2 p-1 ${cancelled ? RED_TW : ORANGE_TW}`}>
+            {cancelled ? "CANCELLED" : waitlistLabel}
+          </div>
+        )}
       </div>
       <div>{children}</div>
     </div>

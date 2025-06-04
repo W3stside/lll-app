@@ -7,6 +7,7 @@ import { sendBotNotification } from "@/lib/bot/sendBotMessage";
 import client from "@/lib/mongodb";
 import { Collection } from "@/types";
 import type { IUser, IGame } from "@/types/users";
+import { groupUsersById } from "@/utils/data";
 
 if (
   process.env.WHATSAPP_BOT_API_URL === undefined ||
@@ -142,6 +143,50 @@ Have fun! 🎉`,
       res.status(404).json({ message: "Document not found" });
     } else {
       const updatedGames = await gamesCollection.find().toArray();
+
+      if (result.cancelled === true) {
+        const users = await db
+          .collection<IUser>(Collection.USERS)
+          .find()
+          .toArray();
+
+        const usersById = groupUsersById(users);
+
+        const userData = Object.fromEntries(
+          result.players
+            .slice(0, MAX_SIGNUPS_PER_GAME)
+            .map((p) => [
+              usersById[p.toString()].first_name,
+              usersById[p.toString()].phone_number,
+            ]),
+        );
+
+        await sendBotNotification({
+          id: v4(),
+          channel: "NOTIFICATION_CHANNEL_WHATSAPP",
+          recipients: [process.env.WHATSAPP_BOT_CHANNEL_ID as string],
+          whatsapp_payload: {
+            text: `
+Hi 👋
+${Object.entries(userData)
+  .map(
+    ([name, phone]) => `
+${name} [@${phone}]`,
+  )
+  .join("\r\n")}
+      
+Unfortunately, the game scheduled for ${result.day} at ${result.time} has been cancelled Please reach out to an admin in the group for more info.
+
+When: ${result.day} @ ${result.time} 
+Where: ${result.location}
+Address: ${result.address}
+
+See you next time!`,
+            mentions: Object.values(userData),
+          },
+        });
+      }
+
       res.status(200).json({ updatedGame: result, games: updatedGames });
     }
   } catch (error) {

@@ -66,7 +66,9 @@ export function useWeeklyGamesData(
           g.players.some((p) => p.toString() === user._id.toString()),
         );
 
-        const { total: signedUp, capacity } = games.reduce<{
+        const adjustedGames = games.filter((g) => g.cancelled !== true);
+
+        const { total: signedUp, capacity } = adjustedGames.reduce<{
           total: number;
           capacity: number[];
         }>(
@@ -84,7 +86,7 @@ export function useWeeklyGamesData(
           (acc, cap) => Math.max(0, cap) + acc,
           0,
         );
-        const maxSignups = MAX_SIGNUPS_PER_GAME * games.length;
+        const maxSignups = MAX_SIGNUPS_PER_GAME * adjustedGames.length;
 
         const shareList = async () => {
           const text = games
