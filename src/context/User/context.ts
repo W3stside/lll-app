@@ -1,6 +1,6 @@
 import { createContext, useContext } from "react";
 
-import type { IUserSafe } from "@/types/users";
+import type { IUserSafe } from "@/types";
 
 export interface IUserContext {
   user: IUserSafe & { registered_games?: string[] };

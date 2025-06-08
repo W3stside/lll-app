@@ -2,11 +2,9 @@ import { useMemo } from "react";
 
 import { MAX_SIGNUPS_PER_GAME } from "@/constants/signups";
 import { useGames } from "@/context/Games/context";
-import { GameStatus } from "@/types";
-import { Gender, type IGame, type IUser } from "@/types/users";
-import { copyToClipboard } from "@/utils/copy";
+import { type IGame, type IUser, GameStatus } from "@/types";
 import { groupGamesByDay } from "@/utils/data";
-import { computeGameStatus, getLastGame } from "@/utils/games";
+import { computeGameStatus, getLastGame, shareGameList } from "@/utils/games";
 
 type GameData = {
   day: IGame["day"];
@@ -42,111 +40,82 @@ export function useWeeklyGamesData(
   usersById: Record<string, IUser>,
 ) {
   const { games: gamesContext, gamesByDay } = useGames();
-  const lastGameOfWeek = getLastGame(gamesByDay, gamesContext);
 
-  const filteredGamesByDay = useMemo(
-    () => Object.entries(groupGamesByDay(filteredGames)),
-    [filteredGames],
-  );
+  return useMemo(() => {
+    const lastGameOfWeek = getLastGame(gamesByDay, gamesContext);
+    const filteredGamesByDay = Object.entries(groupGamesByDay(filteredGames));
 
-  return useMemo(
-    () =>
-      filteredGamesByDay.flatMap<GameData>(([day, games]) => {
-        if (games.length === 0) {
-          return [DEFAULT_GAME_DATA];
-        }
+    return filteredGamesByDay.flatMap<GameData>(([day, unadjustedGames]) => {
+      if (unadjustedGames.length === 0) {
+        return [DEFAULT_GAME_DATA];
+      }
 
-        const { gameStatus, gameDate } = computeGameStatus(
-          games,
-          day as IGame["day"],
-          lastGameOfWeek,
-        );
+      const { gameStatus, gameDate } = computeGameStatus(
+        unadjustedGames,
+        day as IGame["day"],
+        lastGameOfWeek,
+      );
 
-        const userFullyBooked = games.every((g) =>
-          g.players.some((p) => p.toString() === user._id.toString()),
-        );
+      const userFullyBooked = unadjustedGames.every((g) =>
+        g.players.some((p) => p.toString() === user._id.toString()),
+      );
 
-        const adjustedGames = games.filter((g) => g.cancelled !== true);
+      const games = unadjustedGames.filter((g) => g.cancelled !== true);
 
-        const { total: signedUp, capacity } = adjustedGames.reduce<{
-          total: number;
-          capacity: number[];
-        }>(
-          (acc, { players = [] }) => ({
-            total: acc.total + players.length,
-            capacity: [...acc.capacity, MAX_SIGNUPS_PER_GAME - players.length],
-          }),
-          { total: 0, capacity: [] },
-        );
-        const gamesFullyCapped = capacity.flatMap((gc) =>
-          gc <= 0 ? [gc] : [],
-        );
+      const { total: signedUp, capacity } = games.reduce<{
+        total: number;
+        capacity: number[];
+      }>(
+        (acc, { players = [], teams }) => {
+          const tourneyPlayers =
+            teams !== undefined
+              ? Object.values(teams).flatMap((t) => [...t.players])
+              : [];
 
-        const openSpots = capacity.reduce(
-          (acc, cap) => Math.max(0, cap) + acc,
-          0,
-        );
-        const maxSignups = MAX_SIGNUPS_PER_GAME * adjustedGames.length;
+          return {
+            total: acc.total + (tourneyPlayers.length || players.length),
+            capacity: [
+              ...acc.capacity,
+              tourneyPlayers.length > 0
+                ? MAX_SIGNUPS_PER_GAME * 2 - tourneyPlayers.length
+                : MAX_SIGNUPS_PER_GAME - players.length,
+            ],
+          };
+        },
+        { total: 0, capacity: [] },
+      );
 
-        const shareList = async () => {
-          const text = games
-            .map(({ day: d, gender, time, address, location, players }) => {
-              const playersMapped = players.map((p) => ({
-                name: `${usersById[p.toString()].first_name} ${
-                  usersById[p.toString()].last_name
-                }`,
-                phone: usersById[p.toString()].phone_number,
-              }));
+      const gamesFullyCapped = capacity.flatMap((gc) => (gc <= 0 ? [gc] : []));
 
-              return `
-GAME: ${d} @ ${time}${gender !== undefined ? ` <${gender === Gender.FEMALE ? "ladies" : "mixed"}>` : ""}
-WHERE: ${location} - ${address}
-OPEN SPOTS: ${openSpots}
+      const openSpots = capacity.reduce(
+        (acc, cap) => Math.max(0, cap) + acc,
+        0,
+      );
+      const maxSignups = MAX_SIGNUPS_PER_GAME * games.length;
 
-CONFIRMED PLAYERS: ${playersMapped
-                .slice(0, MAX_SIGNUPS_PER_GAME)
-                .map(
-                  (p) => `
-${p.name} (${p.phone})`,
-                )
-                .join("")}
-
-WAITLIST: ${playersMapped
-                .slice(MAX_SIGNUPS_PER_GAME)
-                .map(
-                  (p) => `
-${p.name} (${p.phone})`,
-                )
-                .join("")}
-
-=====================
-                `;
-            })
-            .join("\n");
-
-          void copyToClipboard(text);
-          await navigator.share({
-            title: `${day} ${gameDate?.toUTCString() ?? ""} games`,
-            text,
-          });
-        };
-
-        return [
-          {
-            day: day as IGame["day"],
-            gameStatus,
-            gameDate,
-            games,
-            signedUp,
-            capacity,
-            gamesFullyCapped,
-            openSpots,
-            maxSignups,
-            userFullyBooked,
-            shareList,
+      return [
+        {
+          day: day as IGame["day"],
+          gameStatus,
+          gameDate,
+          games: unadjustedGames,
+          signedUp,
+          capacity,
+          gamesFullyCapped,
+          openSpots,
+          maxSignups,
+          userFullyBooked,
+          shareList: async () => {
+            await shareGameList({
+              games,
+              usersById,
+              openSpots,
+              day: day as IGame["day"],
+              gameDate,
+            });
           },
-        ];
-      }),
-    [filteredGamesByDay, lastGameOfWeek, user._id, usersById],
-  );
+        },
+      ];
+    });
+  }, [filteredGames, gamesByDay, gamesContext, user._id, usersById]);
 }

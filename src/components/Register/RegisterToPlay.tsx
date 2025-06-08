@@ -44,7 +44,7 @@ export function RegisterToPlay({
       ) : (
         <SignupForm
           userId={userId}
-          games={games ?? null}
+          games={games}
           gameId={gameId}
           disabled={disabled}
           setGameId={setGameId}

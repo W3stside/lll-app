@@ -2,7 +2,7 @@ import { useState } from "react";
 
 import { AdminContext } from "./context";
 
-import type { IAdmin } from "@/types/admin";
+import type { IAdmin } from "@/types";
 
 interface IAdminProvider {
   children: React.ReactNode;

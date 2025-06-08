@@ -1,4 +1,4 @@
-import type { IGame, IUser } from "@/types/users";
+import type { IGame, IUser } from "@/types";
 
 export function filterUser(user: IUser, searchFilter: string) {
   if (searchFilter === "") return true;

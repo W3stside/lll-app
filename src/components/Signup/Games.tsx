@@ -2,7 +2,7 @@ import { RemainingSpots } from "../ui";
 
 import { ORANGE_TW, RED_TW } from "@/constants/colours";
 import { MAX_SIGNUPS_PER_GAME } from "@/constants/signups";
-import { Gender, type IGame } from "@/types/users";
+import { Gender, type IGame } from "@/types";
 import { cn } from "@/utils/tailwind";
 
 const MAX_ADDRESS_LENGTH = 22;
@@ -24,6 +24,7 @@ export function Games({
   mapUrl,
   speed,
   gender,
+  teams,
   signupsAmt,
   waitlistAmt,
   waitlistLabel = "Waitlist only",
@@ -51,7 +52,7 @@ export function Games({
         )}
         <div className="flex gap-x-4 w-full">
           <strong className="flex items-center gap-x-2 text-lg">
-            Game {game_id}{" "}
+            {teams !== undefined ? "Tournament" : "Game"} {game_id}{" "}
             {gender === Gender.FEMALE && (
               <span className=" text-black text-[11px] bg-red-100 px-2 h-[20px] leading-[1.9]">
                 Ladies
@@ -93,7 +94,11 @@ export function Games({
           <RemainingSpots
             title="Spots remaining:"
             signedUp={signupsAmt}
-            maxSignups={MAX_SIGNUPS_PER_GAME}
+            maxSignups={
+              teams !== undefined
+                ? MAX_SIGNUPS_PER_GAME * 2
+                : MAX_SIGNUPS_PER_GAME
+            }
             className="pl-0 text-md [&>div]:!px-2.5 [&>div]:!py-0.5"
           />
         )}

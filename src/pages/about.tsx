@@ -8,7 +8,7 @@ import {
   WHATS_APP_GROUP_URL,
 } from "@/constants/links";
 import client from "@/lib/mongodb";
-import type { IGame } from "@/types/users";
+import type { IGame } from "@/types";
 import { fetchGamesFromMongodb } from "@/utils/api/mongodb";
 import { sortDaysOfWeek } from "@/utils/sort";
 

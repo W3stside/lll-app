@@ -1,8 +1,17 @@
+import { randomInt } from "crypto";
+
+import { copyToClipboard } from "./copy";
 import { computeGameDate, getUSDayIndex } from "./date";
 
 import { DAYS_IN_WEEK_REVERSED } from "@/constants/date";
-import { GameStatus } from "@/types";
-import type { GamesByDay, IGame } from "@/types/users";
+import { MAX_SIGNUPS_PER_GAME } from "@/constants/signups";
+import {
+  GameStatus,
+  Gender,
+  type GamesByDay,
+  type IGame,
+  type IUser,
+} from "@/types";
 
 export const computeGameStatus = (
   games: IGame[],
@@ -41,4 +50,103 @@ export const getLastGame = (gamesByDay: GamesByDay, games: IGame[]) => {
     }
   }
   return undefined; // Default return value if no game is found
+};
+
+interface IShareGameList {
+  games: IGame[];
+  usersById: Record<string, IUser>;
+  openSpots?: number;
+  day?: IGame["day"];
+  gameDate?: Date;
+}
+
+export const shareGameList = async ({
+  games,
+  usersById,
+  openSpots = 0,
+  day,
+  gameDate,
+}: IShareGameList) => {
+  if (typeof globalThis.window === "undefined") return;
+
+  const text = games
+    .map(({ day: d, gender, time, address, location, players }) => {
+      const playersMapped = players.map((p) => ({
+        name: `${usersById[p.toString()].first_name} ${
+          usersById[p.toString()].last_name
+        }`,
+        phone: usersById[p.toString()].phone_number,
+      }));
+
+      return `
+GAME: ${d} @ ${time}${gender !== undefined ? ` <${gender === Gender.FEMALE ? "ladies" : "mixed"}>` : ""}
+WHERE: ${location} - ${address}
+OPEN SPOTS: ${openSpots}
+
+CONFIRMED PLAYERS: ${playersMapped
+        .slice(0, MAX_SIGNUPS_PER_GAME)
+        .map(
+          (p) => `
+${p.name} (${p.phone})`,
+        )
+        .join("")}
+
+WAITLIST: ${playersMapped
+        .slice(MAX_SIGNUPS_PER_GAME)
+        .map(
+          (p) => `
+${p.name} (${p.phone})`,
+        )
+        .join("")}
+
+=====================
+                `;
+    })
+    .join("\n");
+
+  void copyToClipboard(text);
+  await navigator.share({
+    title: `${day} ${gameDate?.toUTCString() ?? ""} games`,
+    text,
+  });
+};
+
+const RANDOM_TOURNEY_SET = {
+  "0": new Set<string>(),
+  "1": new Set<string>(),
+  "2": new Set<string>(),
+  "3": new Set<string>(),
+} as const;
+
+export const getRandomAvailableTourneyIndex = (
+  player: string,
+  teams?: { players: string[] }[],
+) => {
+  const current = teams
+    ? (Object.fromEntries(
+        teams.map(({ players }, idx) => [idx, new Set(players)]),
+      ) as typeof RANDOM_TOURNEY_SET)
+    : RANDOM_TOURNEY_SET;
+
+  const flatCurrent = new Set(
+    Object.values(current).flatMap((set) => [...set]),
+  );
+
+  // Get list of available bucket keys (still under max)
+  const availableKeys = Object.values(current).filter(
+    (set) => set.size < MAX_SIGNUPS_PER_GAME && !flatCurrent.has(player),
+  );
+
+  // Stop early if all are full
+  if (availableKeys.length === 0) return undefined;
+
+  // Return a random available key
+  return randomInt(0, availableKeys.length);
+};
+
+export const findPlayerInTourney = (
+  playerId: string,
+  teams: { players: string[] }[],
+): number | undefined => {
+  return teams.findIndex((team) => team.players.includes(playerId));
 };

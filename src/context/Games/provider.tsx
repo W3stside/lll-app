@@ -2,7 +2,7 @@ import { useMemo, useState } from "react";
 
 import { GamesContext } from "./context";
 
-import type { IGame } from "@/types/users";
+import type { IGame } from "@/types";
 import { groupGamesByDay } from "@/utils/data";
 
 interface IGamesProvider {

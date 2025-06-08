@@ -1,8 +1,7 @@
 import type { NextApiRequest, NextApiResponse } from "next";
 
 import client from "@/lib/mongodb";
-import { Collection } from "@/types";
-import type { IGame } from "@/types/users";
+import { Collection, type IGame } from "@/types";
 
 export default async (req: NextApiRequest, res: NextApiResponse) => {
   if (req.method !== "PATCH" && req.method !== "PUT") {
@@ -30,7 +29,7 @@ export default async (req: NextApiRequest, res: NextApiResponse) => {
         update: {
           $addToSet: {
             players: {
-              $each: organisers,
+              $each: organisers.map((org) => org.toString()),
             },
           },
         },

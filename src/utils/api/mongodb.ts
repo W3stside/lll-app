@@ -1,8 +1,6 @@
 import type { MongoClient, WithId } from "mongodb";
 
-import { Collection } from "@/types";
-import type { IAdmin } from "@/types/admin";
-import type { IGame, IUser } from "@/types/users";
+import { Collection, type IAdmin, type IGame, type IUser } from "@/types";
 
 export async function fetchGamesFromMongodb(
   client: MongoClient,
@@ -50,7 +48,20 @@ type CollectionToDocument = {
   [Collection.ADMIN]: IAdmin[];
   [Collection.ME]: IUser;
 };
-
+/* TODO: remove
+const MOCK_TOURNEY_GAME: IGame = {
+  _id: "mock-game-id" as unknown as ObjectId,
+  game_id: 8,
+  day: "Sunday",
+  time: "23:30",
+  speed: "faster",
+  location: "Mock Location",
+  address: "123 Mock St",
+  mapUrl: "https://example.com/mock-map",
+  players: [],
+  teams: [{ players: [] }, { players: [] }, { players: [] }, { players: [] }],
+};
+ */
 export function fetchRequiredCollectionsFromMongoDb(
   client: MongoClient,
   { serialised }: { serialised: true },
@@ -67,7 +78,7 @@ export function fetchRequiredCollectionsFromMongoDb(
     await client.connect();
 
     const db = client.db("LLL");
-    const collectionsResults = (await Promise.all(
+    const collections = (await Promise.all(
       [Collection.GAMES, Collection.USERS].map(
         async (c) =>
           await db
@@ -78,9 +89,9 @@ export function fetchRequiredCollectionsFromMongoDb(
     )) as [WithId<IGame>[], WithId<IUser>[]];
 
     return serialised
-      ? (collectionsResults.map(
+      ? (collections.map(
           (unserialised) => JSON.parse(JSON.stringify(unserialised)) as string,
         ) as [string, string])
-      : collectionsResults;
+      : collections;
   };
 }

@@ -1,13 +1,13 @@
 import { sortDaysOfWeek } from "./sort";
 
-import { Role } from "@/types";
 import {
   Gender,
+  Role,
   type GamesByDay,
   type IGame,
   type IUser,
   type IUserSafe,
-} from "@/types/users";
+} from "@/types";
 
 export function groupUsersById(users: IUser[]) {
   return users.reduce<Record<string, IUser>>(

@@ -8,8 +8,7 @@ import { useUser } from "../User/context";
 
 import { CANCELLATION_THRESHOLD_MS } from "@/constants/date";
 import { DEFAULT_ERROR } from "@/constants/error";
-import { Collection } from "@/types";
-import type { IGame, IUser } from "@/types/users";
+import { Collection, type IGame, type IUser } from "@/types";
 import { dbAuth } from "@/utils/api/dbAuth";
 import { dbRequest } from "@/utils/api/dbRequest";
 import { isValidUserUpdate } from "@/utils/signup";

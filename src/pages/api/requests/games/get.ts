@@ -1,4 +1,3 @@
-/* eslint-disable no-console */
 import type { Request, Response } from "express";
 
 import clientPromise from "@/lib/mongodb";
@@ -12,7 +11,6 @@ export default async (_: Request, res: Response) => {
 
     res.status(201).json(signups);
   } catch (e) {
-    console.error(e);
     res.status(500).json({ message: "Error getting games" });
   }
 };

@@ -4,8 +4,7 @@ import { useMemo } from "react";
 import { useSearchFilter } from "./useSearchFilter";
 
 import { MAX_SIGNUPS_PER_GAME } from "@/constants/signups";
-import { GameStatus } from "@/types";
-import type { GamesByDay, IUser } from "@/types/users";
+import { GameStatus, type GamesByDay, type IUser } from "@/types";
 import { filterUser } from "@/utils/filter";
 import { computeGameStatus, getLastGame } from "@/utils/games";
 
