@@ -66,8 +66,10 @@ export function PlayersList({
                             // Admin is cancelling a game for someone else (ladies game) - don't add to shame
                             {
                               bypassThreshold:
-                                isAdminCancelling &&
-                                game.gender === Gender.FEMALE,
+                                // TODO: remove
+                                game.hidden === true ||
+                                (isAdminCancelling &&
+                                  game.gender === Gender.FEMALE),
                               cancelMessage: isAdminCancelling
                                 ? "You are admin cancelling for someone else. This should ONLY happen if you're cancelling a male player in favour of a higher priority female player!"
                                 : undefined,

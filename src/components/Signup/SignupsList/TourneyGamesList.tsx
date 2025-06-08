@@ -1,10 +1,9 @@
 import { useMemo } from "react";
 
 import { PlayersList } from "./PlayersList";
+import { StyledGamesList } from "./StyledGamesList";
 import type { IPlayersList } from "./types";
-import { Games } from "../Games";
 
-import { Collapsible } from "@/components/ui";
 import { MAX_SIGNUPS_PER_GAME } from "@/constants/signups";
 import { Role } from "@/types";
 import { cn } from "@/utils/tailwind";
@@ -42,27 +41,14 @@ export function TourneyPlayersList({
   }
 
   return (
-    <Collapsible
-      key={game._id.toString()}
-      className={cn(
-        "flex flex-col gap-y-2 w-full mb-10 transition-[height] duration-300 ease-in-out",
-        {
-          "pointer-events-none !cursor-none": gameCancelled,
-        },
-      )}
-      collapsedClassName="mb-0"
-      collapsedHeight={gameCancelled ? 140 : capacity[index] <= 0 ? 182 : 160}
-      startCollapsed={gameCancelled}
-      disabled={gameCancelled}
+    <StyledGamesList
+      game={game}
+      gameCancelled={gameCancelled}
+      capacity={capacity}
+      index={index}
+      confirmedList={confirmedList}
+      nextGameDate={nextGameDate}
     >
-      <Games
-        {...game}
-        signupsAmt={confirmedList.length}
-        waitlistAmt={capacity[index]}
-        date={nextGameDate}
-      >
-        {!gameCancelled && <small>[+] Tap to expand/collapse</small>}
-      </Games>
       <div className="flex flex-col gap-y-8">
         {game.teams.map(({ players }, teamIndex) => (
           <div
@@ -92,6 +78,6 @@ export function TourneyPlayersList({
           </div>
         ))}
       </div>
-    </Collapsible>
+    </StyledGamesList>
   );
 }

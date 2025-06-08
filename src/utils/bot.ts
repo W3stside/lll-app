@@ -25,7 +25,11 @@ export const sendBumpedMessage = async (user: IUserSafe, game: IGame) =>
     },
   });
 
-export const sendQueueChangeMessage = async (user: IUserSafe, game: IGame) =>
+export const sendQueueChangeMessage = async (
+  user: IUserSafe,
+  cancelledUser: IUserSafe,
+  game: IGame,
+) =>
   await sendBotNotification({
     id: v4(),
     channel: "NOTIFICATION_CHANNEL_WHATSAPP",
@@ -40,7 +44,38 @@ When: ${game.day} @ ${game.time}
 Where: ${game.location}
 Address: ${game.address}
 
+Player who cancelled: ${cancelledUser.first_name} ${cancelledUser.last_name} [@${cancelledUser.phone_number}]
+
 Have fun! 🎉`,
-      mentions: [user.phone_number],
+      mentions: [user.phone_number, cancelledUser.phone_number],
+    },
+  });
+
+export const sendGameCancelledMessage = async (
+  userData: Record<string, string>,
+  result: IGame,
+) =>
+  await sendBotNotification({
+    id: v4(),
+    channel: "NOTIFICATION_CHANNEL_WHATSAPP",
+    recipients: [process.env.WHATSAPP_BOT_CHANNEL_ID as string],
+    whatsapp_payload: {
+      text: `
+Hi 👋
+${Object.entries(userData)
+  .map(
+    ([name, phone]) => `
+${name} [@${phone}]`,
+  )
+  .join("\r\n")}
+      
+Unfortunately, the game scheduled for ${result.day} at ${result.time} has been cancelled Please reach out to an admin in the group for more info.
+
+When: ${result.day} @ ${result.time} 
+Where: ${result.location}
+Address: ${result.address}
+
+See you next time!`,
+      mentions: Object.values(userData),
     },
   });

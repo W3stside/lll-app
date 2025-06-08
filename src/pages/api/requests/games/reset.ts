@@ -29,7 +29,7 @@ export default async (req: NextApiRequest, res: NextApiResponse) => {
         update: {
           $addToSet: {
             players: {
-              $each: organisers,
+              $each: organisers.map((org) => org.toString()),
             },
           },
         },

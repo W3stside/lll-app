@@ -111,43 +111,42 @@ ${p.name} (${p.phone})`,
   });
 };
 
-export const randomiseTourneyTeams = (list: string[]) =>
-  list.reduce(
-    (acc, id) => {
-      // Get list of available bucket keys (still under max)
-      const availableKeys = Object.entries(acc).filter(
-        ([, set]) => set.size < MAX_SIGNUPS_PER_GAME,
-      );
+const RANDOM_TOURNEY_SET = {
+  "0": new Set<string>(),
+  "1": new Set<string>(),
+  "2": new Set<string>(),
+  "3": new Set<string>(),
+} as const;
 
-      // Stop early if all are full
-      if (availableKeys.length === 0) return acc;
+export const getRandomAvailableTourneyIndex = (
+  player: string,
+  teams?: { players: string[] }[],
+) => {
+  const current = teams
+    ? (Object.fromEntries(
+        teams.map(({ players }, idx) => [idx, new Set(players)]),
+      ) as typeof RANDOM_TOURNEY_SET)
+    : RANDOM_TOURNEY_SET;
 
-      // Pick a random available key
-      const randomIndex = randomInt(0, availableKeys.length);
-      const [chosenKey] = availableKeys[randomIndex];
-      const newSet = new Set(acc[chosenKey as keyof typeof acc]).add(id);
-
-      return {
-        ...acc,
-        [chosenKey]: newSet,
-      };
-    },
-    {
-      "1": new Set<string>(),
-      "2": new Set<string>(),
-      "3": new Set<string>(),
-      "4": new Set<string>(),
-    },
+  const flatCurrent = new Set(
+    Object.values(current).flatMap((set) => [...set]),
   );
 
-export function prepareTourneyGamePlayersList(playersList: string[]) {
-  const result = randomiseTourneyTeams(playersList);
-  return {
-    $addToSet: Object.fromEntries(
-      Object.entries(result).map(([teamId, players]) => [
-        `teams.${teamId}.players`,
-        { $each: [...players] },
-      ]),
-    ),
-  };
-}
+  // Get list of available bucket keys (still under max)
+  const availableKeys = Object.values(current).filter(
+    (set) => set.size < MAX_SIGNUPS_PER_GAME && !flatCurrent.has(player),
+  );
+
+  // Stop early if all are full
+  if (availableKeys.length === 0) return undefined;
+
+  // Return a random available key
+  return randomInt(0, availableKeys.length);
+};
+
+export const findPlayerInTourney = (
+  playerId: string,
+  teams: { players: string[] }[],
+): number | undefined => {
+  return teams.findIndex((team) => team.players.includes(playerId));
+};
