@@ -14,6 +14,7 @@ import { withServerSideProps } from "@/hoc/withServerSideProps";
 import client from "@/lib/mongodb";
 import {
   Collection,
+  GameType,
   Gender,
   Role,
   type IAdmin,
@@ -35,6 +36,12 @@ const ERRORS_MAP = {
   address: "Invalid! Must be at least 5 characters",
   mapUrl: "Invalid! Must be a Google Maps URL",
 };
+const EMPTY_TEAMS = [
+  { players: [] },
+  { players: [] },
+  { players: [] },
+  { players: [] },
+] as const satisfies IGame["teams"];
 
 type ConnectionStatus = {
   isConnected: boolean;
@@ -122,6 +129,7 @@ const DEFAULT_STATE = {
   speed: undefined,
   day: undefined,
   cancelled: false,
+  type: GameType.STANDARD,
 } as const;
 
 export default function Admin({
@@ -181,7 +189,8 @@ export default function Admin({
             game.address === targettedGame.address &&
             game.gender === targettedGame.gender &&
             game.speed === targettedGame.speed &&
-            game.cancelled === targettedGame.cancelled,
+            game.cancelled === targettedGame.cancelled &&
+            game.type === targettedGame.type,
         )
       ) {
         throw new Error(
@@ -191,7 +200,12 @@ export default function Admin({
 
       setAddGameError(null);
 
-      const { _id, ...gameNoId } = targettedGame;
+      const {
+        _id,
+        type,
+        teams = type === GameType.TOURNAMENT ? EMPTY_TEAMS : undefined,
+        ...gameNoId
+      } = targettedGame;
 
       let response;
       // Create new game
@@ -205,6 +219,7 @@ export default function Admin({
         >("create", Collection.GAMES, {
           ...gameNoId,
           players: [],
+          teams,
         });
       }
       // Update existing game
@@ -503,6 +518,23 @@ export default function Admin({
                     </option>
                   ))}
                 </select>
+                <select
+                  value={targettedGame.type}
+                  name="type-of-game"
+                  defaultValue="Standard"
+                  onChange={(e) => {
+                    setGameInfo((prev) => ({
+                      ...prev,
+                      type: e.target.value as GameType,
+                    }));
+                  }}
+                >
+                  {Object.values(GameType).map((type) => (
+                    <option key={type} value={type}>
+                      {type}
+                    </option>
+                  ))}
+                </select>
                 <input
                   value={targettedGame.time}
                   onChange={(e) => {
@@ -576,8 +608,22 @@ export default function Admin({
                     }));
                   }}
                 >
-                  <option value="">Confirmed</option>
-                  <option value="cancelled">Cancelled</option>
+                  <option value="">Status: Confirmed</option>
+                  <option value="cancelled">Status: Cancelled</option>
+                </select>
+                <select
+                  value={targettedGame.hidden === true ? "hidden" : "visible"}
+                  name="hidden"
+                  defaultValue="visible"
+                  onChange={(e) => {
+                    setGameInfo((prev) => ({
+                      ...prev,
+                      hidden: e.target.value === "hidden",
+                    }));
+                  }}
+                >
+                  <option value="visible"> View: Visible</option>
+                  <option value="hidden">View: Hidden</option>
                 </select>
               </div>
             </div>
