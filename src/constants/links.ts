@@ -25,8 +25,9 @@ export const NAVLINKS_MAP = {
 
 export const ADMIN_PATH = "/admin";
 
+export const INSTAGRAM_URL = "https://www.instagram.com/lisbons_lowest_league/";
 export const RULEBOOK_URL =
-  "https://drive.google.com/file/d/1NFRmuEgL-mPpbCyVqeUZFI8m_TPbShLq/view";
+  "https://drive.google.com/file/d/1NFRmuEgL-mPpbCyVqeUZFl8m_TPbShLq/view?usp=sharing";
 
 export const BUY_ME_A_COFFEE = "https://ko-fi.com/w3stside";
 export const SUPABASE_BASE_AVATAR_URI =

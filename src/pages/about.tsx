@@ -3,6 +3,7 @@ import Link from "next/link";
 
 import { PartnerProducts } from "@/components/PartnerProducts";
 import {
+  INSTAGRAM_URL,
   NAVLINKS_MAP,
   RULEBOOK_URL,
   WHATS_APP_GROUP_URL,
@@ -128,7 +129,10 @@ export default function About({ isConnected, gamesByDay }: IAbout) {
             </Link>
           </div>
           <div>
-            <strong>Insta:</strong> lowest_league_in_lisbon
+            <strong>Insta:</strong>{" "}
+            <Link href={INSTAGRAM_URL} target="_blank" rel="noreferrer">
+              lowest_league_in_lisbon
+            </Link>
           </div>
         </div>
       </div>

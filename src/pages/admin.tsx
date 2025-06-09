@@ -3,6 +3,7 @@ import type { GetServerSideProps } from "next";
 import { useCallback, useEffect, useMemo, useState } from "react";
 
 import { PartnerProducts } from "@/components/PartnerProducts";
+import { SigneeComponent } from "@/components/Signup/SIgnees/SigneeComponent";
 import { Collapsible, Loader } from "@/components/ui";
 import { RED_TW } from "@/constants/colours";
 import { DAYS_IN_WEEK } from "@/constants/date";
@@ -10,6 +11,7 @@ import { NAVLINKS_MAP } from "@/constants/links";
 import { useAdmin } from "@/context/Admin/context";
 import { DialogVariant, useDialog } from "@/context/Dialog/context";
 import { useGames } from "@/context/Games/context";
+import { useUser } from "@/context/User/context";
 import { withServerSideProps } from "@/hoc/withServerSideProps";
 import client from "@/lib/mongodb";
 import {
@@ -24,7 +26,7 @@ import {
 } from "@/types";
 import { dbRequest } from "@/utils/api/dbRequest";
 import { fetchUsersFromMongodb } from "@/utils/api/mongodb";
-import { isValid24hTime } from "@/utils/date";
+import { computeGameDate, formatDateStr, isValid24hTime } from "@/utils/date";
 import { sortDaysOfWeek } from "@/utils/sort";
 import { cn } from "@/utils/tailwind";
 
@@ -50,7 +52,7 @@ type ConnectionStatus = {
 export const getServerSideProps: GetServerSideProps<ConnectionStatus> =
   // TODO: review
   // @ts-expect-error error in the custom HOC - doesn't break.
-  withServerSideProps(async ({ parentProps: { user, usersById } }) => {
+  withServerSideProps(async ({ parentProps: { games, user, usersById } }) => {
     try {
       const adminUser = await client
         .db("LLL")
@@ -74,16 +76,16 @@ export const getServerSideProps: GetServerSideProps<ConnectionStatus> =
       return {
         props: {
           isConnected: true,
+          games,
           user: JSON.parse(JSON.stringify(user)) as string,
           users: usersSerialised,
           usersById: JSON.parse(JSON.stringify(usersById)) as string,
         },
       };
     } catch (e) {
-      // eslint-disable-next-line no-console
-      console.error(e);
       return {
         props: {
+          games: [],
           user: null,
           users: [],
           usersById: {},
@@ -113,6 +115,8 @@ function AdminError({ errors, errorKey }: IAdminError) {
 interface IAdminPage {
   isConnected: boolean;
   user: IUser;
+  users: IUser[];
+  usersById: Record<string, IUser>;
   games: IGame[];
   admin: IAdmin | null;
 }
@@ -136,6 +140,8 @@ export default function Admin({
   isConnected,
   admin: adminInitial,
   user,
+  users: usersInitial,
+  games: gamesInitial,
 }: IAdminPage) {
   const [loading, setLoading] = useState(false);
   const [generalError, setGeneralError] = useState<Error | null>(null);
@@ -146,20 +152,77 @@ export default function Admin({
     | null
   >(null);
 
-  const { games, setGames } = useGames();
+  const { games, gamesByDay, setGames } = useGames();
   const { admin, setAdmin } = useAdmin();
   const { openDialog } = useDialog();
+  const { users, usersById, setUsers } = useUser();
 
-  // Sync server-side games with client-side games
+  // Sync server-side shit with client-side shit
   useEffect(() => {
+    if (gamesInitial.length !== games.length) {
+      setGames(gamesInitial);
+    }
     if (adminInitial !== null && admin === undefined) {
       setAdmin(adminInitial);
     }
-  }, [admin, adminInitial, setAdmin]);
+    if (usersInitial.length !== users.length) {
+      setUsers(usersInitial);
+    }
+  }, [
+    admin,
+    adminInitial,
+    games.length,
+    gamesInitial,
+    setAdmin,
+    setGames,
+    setUsers,
+    users.length,
+    usersInitial,
+  ]);
 
   const [targettedGame, setGameInfo] = useState<
     Partial<IGame> & { cancelled: boolean }
   >(DEFAULT_STATE);
+
+  const handlePayment = useCallback(
+    async (
+      userId: ObjectId,
+      { _id, time, day }: Pick<IGame, "_id" | "day" | "time">,
+      dateStr: string,
+      recordPayment = false,
+    ) => {
+      setLoading(true);
+      setGeneralError(null);
+
+      try {
+        const { error } = await dbRequest<IUser & { recordPayment?: boolean }>(
+          "update",
+          Collection.USERS,
+          {
+            _id: userId,
+            missedPayments: [{ _id, date: dateStr, time, day }],
+            recordPayment,
+          },
+        );
+
+        if (error !== null) throw error;
+
+        const { data: usersUpdated } = await dbRequest<IUser[]>(
+          "get",
+          Collection.USERS,
+        );
+
+        setUsers(usersUpdated);
+      } catch (error) {
+        const e = error instanceof Error ? error : new Error("Unknown error!");
+        setGeneralError(e);
+        throw e;
+      } finally {
+        setLoading(false);
+      }
+    },
+    [setUsers],
+  );
 
   const handleUpdateGame = useCallback(async () => {
     setLoading(true);
@@ -354,6 +417,10 @@ export default function Admin({
   }, [admin, setGames]);
 
   const sortedGames = useMemo(() => sortDaysOfWeek(games), [games]);
+  const usersWhomOweMoney = useMemo(
+    () => users.filter((usr) => (usr.missedPayments?.length ?? 0) > 0),
+    [users],
+  );
 
   if (!isConnected) return <h1>Connecting to db...</h1>;
 
@@ -433,19 +500,26 @@ export default function Admin({
             </div>
           </div>
         )}
-
-        <div className="flex flex-col gap-y-1 text-black container">
+        {/* Manage games */}
+        <Collapsible
+          className="flex flex-col gap-y-1 text-black container"
+          collapsedHeight={43}
+          startCollapsed
+        >
           <div className="container-header !h-auto -mt-2 -mx-1.5 py-2 !text-xl md:!text-2xl">
+            <small className="px-2 py-1 text-xs mr-auto">
+              [+/-] expand/minimise
+            </small>
             Manage games
           </div>
           <Collapsible
             className="container my-2 flex flex-col gap-y-2 justify-start"
-            collapsedHeight={32}
+            collapsedHeight={70}
             startCollapsed={false}
           >
             <div className="container-header !h-auto -mt-2 -mx-1.5 !items-center">
-              <small className="px-2 py-1 text-xs mr-2">
-                tap to open/close
+              <small className="px-2 py-1 text-xs mr-auto">
+                [+/-] expand/minimise
               </small>
               Current games
             </div>
@@ -684,7 +758,163 @@ export default function Admin({
               {generalError.message}
             </span>
           )}
-        </div>
+        </Collapsible>
+
+        {/* Manage players */}
+        <Collapsible
+          className="flex flex-col gap-y-1 text-black container"
+          collapsedHeight={43}
+          startCollapsed
+        >
+          <div className="container-header !h-auto -mt-2 -mx-1.5 py-2 !text-xl md:!text-2xl">
+            <small className="px-2 py-1 text-xs mr-auto">
+              [+/-] expand/minimise
+            </small>
+            Manage players
+          </div>
+          <div className="flex flex-col gap-y-6 pt-3">
+            {Object.entries(gamesByDay).map(([day, gamesForDay]) => (
+              <Collapsible
+                key={day}
+                className="flex flex-col gap-y-3 sm:gap-y-2 [&>div.container-header]:bg-[var(--background-window-highlight)] [&>div.container-header]:text-black"
+                collapsedClassName="[&>div.container-header]:!bg-black [&>div.container-header]:!text-white"
+                collapsedHeight={32}
+                startCollapsed
+              >
+                <div className="container-header !py-5">
+                  <small className="px-2 py-1 text-xs mr-auto">
+                    [+/-] expand/minimise
+                  </small>{" "}
+                  <h5>{day}</h5>
+                </div>
+                {gamesForDay.map((g) => {
+                  const gameDateStr = formatDateStr(
+                    computeGameDate(
+                      day as IGame["day"],
+                      g.time,
+                      "WET",
+                    ).toISOString(),
+                  );
+
+                  return (
+                    <Collapsible
+                      key={g._id.toString()}
+                      className="flex flex-col container gap-y-2 pt-3"
+                      collapsedHeight={35}
+                    >
+                      <div className="container-header">
+                        Game {g.game_id} - {gameDateStr}
+                      </div>
+                      {g.players.map((u) => {
+                        const hasMissingPayment =
+                          usersById[u].missedPayments?.some(
+                            (info) => info.date === gameDateStr,
+                          ) ?? false;
+
+                        return (
+                          <SigneeComponent
+                            key={u}
+                            className="[&>div]:flex-row [&>div>div>div:nth-child(2)]:text-left [&>div>div>div:nth-child(2)>div]:justify-start"
+                            errorMsg={null}
+                            loading={loading}
+                            {...usersById[u]}
+                          >
+                            {usersById[u].role !== Role.ADMIN && (
+                              <button
+                                className={cn("whitespace-nowrap", {
+                                  "bg-[var(--background-error-alt)]":
+                                    !hasMissingPayment,
+                                })}
+                                disabled={loading}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  void handlePayment(
+                                    usersById[u]._id,
+                                    g,
+                                    gameDateStr,
+                                    hasMissingPayment,
+                                  );
+                                }}
+                              >
+                                {!hasMissingPayment ? "Not paid" : "Paid"}
+                              </button>
+                            )}
+                          </SigneeComponent>
+                        );
+                      })}
+                    </Collapsible>
+                  );
+                })}
+              </Collapsible>
+            ))}
+          </div>
+        </Collapsible>
+
+        {/* Players whom owe money */}
+        <Collapsible
+          className="flex flex-col gap-y-1 text-black container"
+          collapsedHeight={43}
+          startCollapsed
+        >
+          <div className="container-header !h-auto -mt-2 -mx-1.5 py-2 !text-xl md:!text-2xl">
+            <small className="px-2 py-1 text-xs mr-auto">
+              [+/-] expand/minimise
+            </small>
+            Missed payments
+          </div>
+          <div className="flex flex-col gap-y-2 pt-3">
+            {usersWhomOweMoney.length === 0 ? (
+              <p className="pl-4">No missed payments! :)</p>
+            ) : (
+              usersWhomOweMoney.map(({ _id, missedPayments, ...restUser }) => (
+                <SigneeComponent
+                  key={_id?.toString()}
+                  _id={_id}
+                  {...restUser}
+                  loading={loading}
+                  errorMsg={null}
+                  childrenBelow={
+                    <div className="mt-3 pl-2 flex flex-col gap-y-2">
+                      {(missedPayments ?? []).map(
+                        ({ date, ...unpaidGame }, idx) => (
+                          <div key={date} className="flex flex-col gap-y-1">
+                            <div className="flex flex-wrap gap-x-2 items-center justify-between">
+                              <span>
+                                {idx + 1}: {unpaidGame.day}:{" "}
+                                <strong className="inline sm:hidden">
+                                  {date.slice(0, 20)}
+                                </strong>
+                                <strong className="hidden sm:inline">
+                                  {date}
+                                </strong>{" "}
+                              </span>
+                              {_id !== undefined && (
+                                <button
+                                  disabled={loading}
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    void handlePayment(
+                                      _id,
+                                      unpaidGame,
+                                      date,
+                                      true,
+                                    );
+                                  }}
+                                >
+                                  Record payment
+                                </button>
+                              )}
+                            </div>
+                          </div>
+                        ),
+                      )}
+                    </div>
+                  }
+                />
+              ))
+            )}
+          </div>
+        </Collapsible>
       </div>
       <PartnerProducts />
     </>

@@ -1,6 +1,6 @@
 import type { ObjectId } from "mongodb";
 
-import type { Role } from ".";
+import type { IGame, Role } from ".";
 
 export interface IBaseUser {
   first_name: string;
@@ -14,6 +14,7 @@ export interface INewSignup extends IBaseUser {
   password: string;
   createdAt: Date;
   shame: { game_id: ObjectId; date: string }[];
+  missedPayments?: (Pick<IGame, "_id" | "day" | "time"> & { date: string })[];
   role?: Role;
 }
 

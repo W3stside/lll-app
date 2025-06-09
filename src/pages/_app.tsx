@@ -23,7 +23,10 @@ export default function App({
   pageProps,
 }: AppProps<IServerSideProps>) {
   return (
-    <UserProvider initialState={pageProps.user}>
+    <UserProvider
+      initialState={pageProps.user}
+      initialStateUsers={pageProps.users}
+    >
       <DialogProvider>
         <GamesProvider initialState={pageProps.games}>
           <ActionProvider>
