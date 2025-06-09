@@ -13,10 +13,12 @@ export default async (req: NextApiRequest, res: NextApiResponse) => {
   }
 
   try {
-    const body = req.body as IUser;
+    const body = req.body as IUser & { recordPayment?: boolean };
     const {
       _id,
-      shame: [shameOne],
+      shame: [shameOne] = [undefined],
+      missedPayments: [missedPayment] = [undefined],
+      recordPayment = false,
       ...rest
     } = body;
 
@@ -27,7 +29,23 @@ export default async (req: NextApiRequest, res: NextApiResponse) => {
       { _id: new ObjectId(_id) },
       {
         $set: rest,
-        $addToSet: { shame: shameOne },
+        ...(!recordPayment
+          ? {
+              $addToSet: {
+                ...(shameOne !== undefined ? { shame: shameOne } : undefined),
+                ...(missedPayment !== undefined
+                  ? { missedPayments: missedPayment }
+                  : undefined),
+              },
+            }
+          : {
+              $pull: {
+                missedPayments: {
+                  _id: missedPayment?._id,
+                  date: missedPayment?.date,
+                },
+              },
+            }),
       },
     );
 
