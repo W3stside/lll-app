@@ -356,37 +356,41 @@ export default function Admin({
     [setGames],
   );
 
-  const handleToggleSignupsAvailable = useCallback(async () => {
-    if (admin === undefined) return;
-    try {
-      setLoading(true);
-      setGeneralError(null);
+  const handleToggleSignupsAvailable = useCallback(
+    async (ev: React.MouseEvent<HTMLButtonElement>) => {
+      ev.stopPropagation();
+      if (admin === undefined) return;
+      try {
+        setLoading(true);
+        setGeneralError(null);
 
-      const { data, error } = await dbRequest<IAdmin>(
-        "update",
-        Collection.ADMIN,
-        {
-          _id: admin._id,
-          signup_open: !admin.signup_open,
-        },
-      );
+        const { data, error } = await dbRequest<IAdmin>(
+          "update",
+          Collection.ADMIN,
+          {
+            _id: admin._id,
+            signup_open: !admin.signup_open,
+          },
+        );
 
-      if (error !== null) {
-        setGeneralError(error);
-        throw error;
+        if (error !== null) {
+          setGeneralError(error);
+          throw error;
+        }
+
+        setAdmin(data);
+      } catch (error) {
+        const e =
+          error instanceof Error
+            ? error
+            : new Error("handleToggleSignupsAvailable: Unknown error");
+        setGeneralError(e);
+      } finally {
+        setLoading(false);
       }
-
-      setAdmin(data);
-    } catch (error) {
-      const e =
-        error instanceof Error
-          ? error
-          : new Error("handleToggleSignupsAvailable: Unknown error");
-      setGeneralError(e);
-    } finally {
-      setLoading(false);
-    }
-  }, [admin, setAdmin]);
+    },
+    [admin, setAdmin],
+  );
 
   const handleClearAllSignups = useCallback(async () => {
     if (admin === undefined) return;
@@ -471,7 +475,8 @@ export default function Admin({
                   <strong>Clear all game signups:</strong>{" "}
                 </div>
                 <button
-                  onClick={() => {
+                  onClick={(e) => {
+                    e.stopPropagation();
                     openDialog({
                       variant: DialogVariant.CONFIRM,
                       title: "Careful!",
@@ -503,7 +508,7 @@ export default function Admin({
         {/* Manage games */}
         <Collapsible
           className="flex flex-col gap-y-1 text-black container"
-          collapsedHeight={43}
+          collapsedHeight={47}
           startCollapsed
         >
           <div className="container-header !h-auto -mt-2 -mx-1.5 py-2 !text-xl md:!text-2xl">
@@ -511,6 +516,12 @@ export default function Admin({
               [+/-] expand/minimise
             </small>
             Manage games
+          </div>
+          <div className="container text-xs">
+            Manage games here. Clicking "edit" on a game will populate the form
+            below with the game information, allowing you to edit it. To create
+            a new new game either fill in the form when it's empty or click
+            "reset" to reset the form and fill it in from scratch.
           </div>
           <Collapsible
             className="container my-2 flex flex-col gap-y-2 justify-start"
@@ -521,7 +532,7 @@ export default function Admin({
               <small className="px-2 py-1 text-xs mr-auto">
                 [+/-] expand/minimise
               </small>
-              Current games
+              Games list
             </div>
             <div className="flex flex-col gap-y-6 sm:gap-y-2 text-xs pt-3 px-3">
               {sortedGames.map((game) => (
@@ -571,10 +582,13 @@ export default function Admin({
           {!loading ? (
             <div className="container my-2 flex flex-col gap-y-2 justify-start">
               <div className="container-header !h-auto -mt-2 -mx-1.5 !items-center">
-                Edit game
+                Edit/Create game
               </div>
               <div className="flex flex-col">
                 <select
+                  onClick={(e) => {
+                    e.stopPropagation();
+                  }}
                   value={targettedGame.day}
                   name="day-of-the-week"
                   defaultValue={""}
@@ -593,6 +607,9 @@ export default function Admin({
                   ))}
                 </select>
                 <select
+                  onClick={(e) => {
+                    e.stopPropagation();
+                  }}
                   value={targettedGame.type}
                   name="type-of-game"
                   defaultValue="Standard"
@@ -610,6 +627,9 @@ export default function Admin({
                   ))}
                 </select>
                 <input
+                  onClick={(e) => {
+                    e.stopPropagation();
+                  }}
                   value={targettedGame.time}
                   onChange={(e) => {
                     handleChange("time", e.target.value);
@@ -618,6 +638,9 @@ export default function Admin({
                 />
                 <AdminError errors={addGameError} errorKey="time" />
                 <input
+                  onClick={(e) => {
+                    e.stopPropagation();
+                  }}
                   value={targettedGame.location}
                   onChange={(e) => {
                     handleChange("location", e.target.value);
@@ -626,6 +649,9 @@ export default function Admin({
                 />
                 <AdminError errors={addGameError} errorKey="location" />
                 <input
+                  onClick={(e) => {
+                    e.stopPropagation();
+                  }}
                   value={targettedGame.address}
                   onChange={(e) => {
                     handleChange("address", e.target.value);
@@ -634,6 +660,9 @@ export default function Admin({
                 />
                 <AdminError errors={addGameError} errorKey="address" />
                 <input
+                  onClick={(e) => {
+                    e.stopPropagation();
+                  }}
                   value={targettedGame.mapUrl}
                   onChange={(e) => {
                     handleChange("mapUrl", e.target.value);
@@ -642,6 +671,9 @@ export default function Admin({
                 />
                 <AdminError errors={addGameError} errorKey="mapUrl" />
                 <select
+                  onClick={(e) => {
+                    e.stopPropagation();
+                  }}
                   value={targettedGame.speed}
                   name="game-speed"
                   defaultValue={""}
@@ -658,6 +690,9 @@ export default function Admin({
                   <option value="slower">Slower</option>
                 </select>
                 <select
+                  onClick={(e) => {
+                    e.stopPropagation();
+                  }}
                   value={targettedGame.gender}
                   name="gender"
                   defaultValue={""}
@@ -672,6 +707,9 @@ export default function Admin({
                   <option value={Gender.FEMALE}>Ladies</option>
                 </select>
                 <select
+                  onClick={(e) => {
+                    e.stopPropagation();
+                  }}
                   value={targettedGame.cancelled ? "cancelled" : "confirmed"}
                   name="status"
                   defaultValue={""}
@@ -686,6 +724,9 @@ export default function Admin({
                   <option value="cancelled">Status: Cancelled</option>
                 </select>
                 <select
+                  onClick={(e) => {
+                    e.stopPropagation();
+                  }}
                   value={targettedGame.hidden === true ? "hidden" : "visible"}
                   name="hidden"
                   defaultValue="visible"
@@ -707,7 +748,8 @@ export default function Admin({
 
           <div className="flex gap-x-2 items-center justify-between h-full mt-2">
             <button
-              onClick={() => {
+              onClick={(e) => {
+                e.stopPropagation();
                 openDialog({
                   variant: DialogVariant.CONFIRM,
                   title: "Careful!",
@@ -744,7 +786,8 @@ export default function Admin({
             </button>
             <button
               className="bg-[var(--background-color-2)]"
-              onClick={() => {
+              onClick={(e) => {
+                e.stopPropagation();
                 setGameInfo(DEFAULT_STATE);
                 setAddGameError(null);
                 setGeneralError(null);
@@ -763,7 +806,7 @@ export default function Admin({
         {/* Manage players */}
         <Collapsible
           className="flex flex-col gap-y-1 text-black container"
-          collapsedHeight={43}
+          collapsedHeight={47}
           startCollapsed
         >
           <div className="container-header !h-auto -mt-2 -mx-1.5 py-2 !text-xl md:!text-2xl">
@@ -771,6 +814,11 @@ export default function Admin({
               [+/-] expand/minimise
             </small>
             Manage players
+          </div>
+          <div className="container text-xs">
+            Manage player game payments here. Clicking "Not paid" will record
+            that player as having missed payment for that game. A full list can
+            be seen below in "Payment tracking".
           </div>
           <div className="flex flex-col gap-y-6 pt-3">
             {Object.entries(gamesByDay).map(([day, gamesForDay]) => (
@@ -853,14 +901,18 @@ export default function Admin({
         {/* Players whom owe money */}
         <Collapsible
           className="flex flex-col gap-y-1 text-black container"
-          collapsedHeight={43}
+          collapsedHeight={47}
           startCollapsed
         >
           <div className="container-header !h-auto -mt-2 -mx-1.5 py-2 !text-xl md:!text-2xl">
             <small className="px-2 py-1 text-xs mr-auto">
               [+/-] expand/minimise
             </small>
-            Missed payments
+            Payment tracking
+          </div>
+          <div className="container text-xs">
+            Here is a list of all players with missing payments. Payments can be
+            recorded by clicking "Record payment" on each players card.
           </div>
           <div className="flex flex-col gap-y-2 pt-3">
             {usersWhomOweMoney.length === 0 ? (
