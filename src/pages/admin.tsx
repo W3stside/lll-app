@@ -27,6 +27,7 @@ import {
 import { dbRequest } from "@/utils/api/dbRequest";
 import { fetchUsersFromMongodb } from "@/utils/api/mongodb";
 import { computeGameDate, formatDateStr, isValid24hTime } from "@/utils/date";
+import { sharePaymentsMissingList } from "@/utils/games";
 import { sortDaysOfWeek } from "@/utils/sort";
 import { cn } from "@/utils/tailwind";
 
@@ -910,10 +911,22 @@ export default function Admin({
             </small>
             Payment tracking
           </div>
-          <div className="container text-xs">
-            Here is a list of all players with missing payments. Payments can be
-            recorded by clicking "Record payment" on each players card.
+          <div className="container text-xs gap-x-4">
+            <div className="flex-3">
+              Here is a list of all players with missing payments. Payments can
+              be recorded by clicking "Record payment" on each players card.
+            </div>
+            <button
+              className="flex-0.5 bg-[var(--background-color-2)]"
+              onClick={async (e) => {
+                e.stopPropagation();
+                await sharePaymentsMissingList(usersWhomOweMoney);
+              }}
+            >
+              Share list
+            </button>
           </div>
+
           <div className="flex flex-col gap-y-2 pt-3">
             {usersWhomOweMoney.length === 0 ? (
               <p className="pl-4">No missed payments! :)</p>

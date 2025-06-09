@@ -8,6 +8,7 @@ import { MAX_SIGNUPS_PER_GAME } from "@/constants/signups";
 import {
   GameStatus,
   Gender,
+  type IUserSafe,
   type GamesByDay,
   type IGame,
   type IUser,
@@ -107,6 +108,35 @@ ${p.name} (${p.phone})`,
   void copyToClipboard(text);
   await navigator.share({
     title: `${day} ${gameDate?.toUTCString() ?? ""} games`,
+    text,
+  });
+};
+
+export const sharePaymentsMissingList = async (users: IUserSafe[]) => {
+  if (typeof globalThis.window === "undefined") return;
+
+  const text = `
+Hi guys - we're missing payments from those in the list below. Please pay one of the game organisers as soon as possible, thanks!
+
+-- PAYMENTS PENDING --
+${users
+  .map(
+    ({ first_name, last_name, phone_number, missedPayments }) => `
+${first_name} ${last_name} (@${phone_number})
+    PAYMENTS OWED: ${missedPayments
+      ?.map(
+        ({ date, day }, idx) => `
+      ${idx + 1}: ${day}: ${date}      
+`,
+      )
+      .join("")}
+`,
+  )
+  .join("")}`;
+
+  void copyToClipboard(text);
+  await navigator.share({
+    title: "Payments Pending",
     text,
   });
 };
