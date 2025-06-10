@@ -852,6 +852,9 @@ export default function Admin({
                       collapsedHeight={35}
                     >
                       <div className="container-header">
+                        <small className="px-2 py-1 text-xs mr-auto">
+                          [+/-]
+                        </small>
                         Game {g.game_id} - {gameDateStr}
                       </div>
                       {g.players.map((u) => {
@@ -885,7 +888,25 @@ export default function Admin({
                                   );
                                 }}
                               >
-                                {!hasMissingPayment ? "Not paid" : "Paid"}
+                                {!hasMissingPayment ? (
+                                  <>
+                                    <span className="hidden sm:inline">
+                                      Mark as unpaid
+                                    </span>
+                                    <span className="inline sm:hidden">
+                                      Not paid
+                                    </span>
+                                  </>
+                                ) : (
+                                  <>
+                                    <span className="hidden sm:inline">
+                                      Mark as paid
+                                    </span>
+                                    <span className="inline sm:hidden">
+                                      Has paid
+                                    </span>
+                                  </>
+                                )}
                               </button>
                             )}
                           </SigneeComponent>
@@ -917,7 +938,7 @@ export default function Admin({
               be recorded by clicking "Record payment" on each players card.
             </div>
             <button
-              className="flex-0.5 bg-[var(--background-color-2)]"
+              className="flex-0.5 bg-[var(--background-color-2)] justify-center items-center font-bold"
               onClick={async (e) => {
                 e.stopPropagation();
                 await sharePaymentsMissingList(usersWhomOweMoney);
