@@ -3,6 +3,7 @@ export enum Collection {
   GAMES = "games",
   ADMIN = "admin",
   ME = "me",
+  TOKENS = "tokens",
 }
 
 export enum GameStatus {
