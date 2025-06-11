@@ -41,10 +41,13 @@ export default async (req: NextApiRequest, res: NextApiResponse) => {
     const db = client.db("LLL");
     const gamesCollection = db.collection<IGame>(Collection.GAMES);
 
+    const isAddOrRemovePlayer =
+      newPlayerId !== undefined || cancelPlayerId !== undefined;
+
     const gameIdWrapped = new ObjectId(_id);
     let result: WithId<IGame> | null;
     // Adding or Cancelling a player
-    if (newPlayerId !== undefined || cancelPlayerId !== undefined) {
+    if (isAddOrRemovePlayer) {
       const previous = await gamesCollection.findOne({
         _id: gameIdWrapped,
       });
@@ -60,10 +63,7 @@ export default async (req: NextApiRequest, res: NextApiResponse) => {
       );
 
       // Adding/removing a player to/from tourney game
-      if (
-        result?.teams !== undefined &&
-        (newPlayerId !== undefined || cancelPlayerId !== undefined)
-      ) {
+      if (result?.teams !== undefined) {
         const teamId =
           // Adding a new player, get random team index
           newPlayerId !== undefined
@@ -134,16 +134,20 @@ export default async (req: NextApiRequest, res: NextApiResponse) => {
         }
         // Player cancelling is in the waitlist
         else if (playerIdx < MAX_SIGNUPS_PER_GAME) {
-          const newlyConfirmedPlayer = result.players[MAX_SIGNUPS_PER_GAME - 1];
+          const newlyConfirmedPlayer = result.players.at(
+            MAX_SIGNUPS_PER_GAME - 1,
+          );
 
           const [newConfirmedUser, cancelledUser] = await db
             .collection(Collection.USERS)
-            .find<IUser>([
-              {
-                _id: new ObjectId(newlyConfirmedPlayer),
+            .find<IUser>({
+              _id: {
+                $in: [
+                  new ObjectId(newlyConfirmedPlayer),
+                  new ObjectId(cancelPlayerId),
+                ],
               },
-              { _id: new ObjectId(cancelPlayerId) },
-            ])
+            })
             .toArray();
 
           await sendQueueChangeMessage(newConfirmedUser, cancelledUser, result);
