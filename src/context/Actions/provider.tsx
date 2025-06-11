@@ -47,10 +47,7 @@ const _dbCancelGame = async (
   isAdminCancel = false,
 ) => {
   try {
-    const {
-      data: { games },
-      error,
-    } = await dbRequest<
+    const { data: { games } = {}, error } = await dbRequest<
       {
         _id: ObjectId;
         cancelPlayerId: ObjectId;
@@ -63,7 +60,13 @@ const _dbCancelGame = async (
       isAdminCancel,
     });
 
-    if (error !== null) throw error;
+    if (games === undefined || error !== null) {
+      throw error instanceof Error
+        ? error
+        : new Error(
+            "No games returned from game cancellation. Try again later.",
+          );
+    }
 
     return games;
   } catch (error) {
@@ -191,6 +194,7 @@ export function ActionProvider({ children }: IActionProvider) {
                 user._id !== undefined &&
                   userId.toString() !== user._id.toString(),
               );
+
               setGames(newGames);
 
               // Remove the canceled game from the user's registered games
@@ -204,11 +208,10 @@ export function ActionProvider({ children }: IActionProvider) {
               if (options?.bypassThreshold !== true && gamePastThreshold) {
                 void _addShamefulUser(gameId, userId, date);
               }
-
-              openDialog();
             } catch (error) {
               setError(error instanceof Error ? error : DEFAULT_ERROR);
             } finally {
+              openDialog();
               setLoading(false);
             }
           },

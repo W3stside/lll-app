@@ -1,67 +1,66 @@
-if (
-  process.env.WHATSAPP_BOT_API_URL === undefined ||
-  process.env.WHATSAPP_BOT_API_CLIENT_ID === undefined ||
-  process.env.WHATSAPP_BOT_API_CLIENT_SECRET === undefined
-) {
-  throw new Error("Missing WhatsApp Bot API environment variables");
-}
+import { ObjectId } from "mongodb";
 
-interface TokenResponse {
+import client from "../mongodb";
+
+import { Collection } from "@/types";
+
+const BOT_DB_ID = "6849632ec3f345d34cfee31e";
+
+interface ITokenDocument {
+  _id: ObjectId;
   access_token: string;
-  expires_at: string;
-  token_type: "Bearer";
+  expires_at: Date;
 }
 
-let cachedToken: TokenResponse | null = null;
-let tokenLock: Promise<void> | null = null;
-
-export async function getAccessToken() {
+export async function getAccessToken(): Promise<string> {
   const now = new Date();
+  const tokenId = new ObjectId(BOT_DB_ID);
 
-  if (cachedToken !== null && new Date(cachedToken.expires_at) > now) {
-    return cachedToken.access_token;
+  const tokens = client.db("LLL").collection<ITokenDocument>(Collection.TOKENS);
+  const existingToken = await tokens.findOne(
+    { _id: tokenId },
+    { projection: { access_token: 1, expires_at: 1 } },
+  );
+
+  // Existing token exists, return that
+  if (existingToken && existingToken.expires_at > now) {
+    return existingToken.access_token;
   }
-  if (tokenLock) {
-    await tokenLock;
-    if (cachedToken !== null && new Date(cachedToken.expires_at) > now) {
-      return cachedToken.access_token;
-    }
+
+  const res = await fetch(`${process.env.WHATSAPP_BOT_API_URL}/oauth2/token`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Accept: "application/json",
+    },
+    body: JSON.stringify({
+      grant_type: "client_credentials",
+      client_id: process.env.WHATSAPP_BOT_API_CLIENT_ID,
+      client_secret: process.env.WHATSAPP_BOT_API_CLIENT_SECRET,
+    }),
+  });
+
+  if (!res.ok) {
+    throw new Error("Failed to authenticate with WhatsApp Bot API");
   }
 
-  // eslint-disable-next-line require-atomic-updates
-  tokenLock = (async () => {
-    const res = await fetch(
-      `${process.env.WHATSAPP_BOT_API_URL}/oauth2/token`,
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Accept: "application/json",
-        },
-        body: JSON.stringify({
-          grant_type: "client_credentials",
-          client_id: process.env.WHATSAPP_BOT_API_CLIENT_ID,
-          client_secret: process.env.WHATSAPP_BOT_API_CLIENT_SECRET,
-        }),
-      },
-    );
+  const data = (await res.json()) as {
+    access_token: string;
+    expires_at: string;
+    token_type: "Bearer";
+  };
 
-    if (!res.ok) {
-      throw new Error("Failed to authenticate");
-    }
+  const newToken: ITokenDocument = {
+    _id: tokenId,
+    access_token: data.access_token,
+    expires_at: new Date(data.expires_at),
+  };
 
-    const data = (await res.json()) as TokenResponse;
+  await tokens.updateOne(
+    { _id: newToken._id },
+    { $set: newToken },
+    { upsert: true },
+  );
 
-    cachedToken = {
-      access_token: data.access_token,
-      expires_at: data.expires_at,
-      token_type: "Bearer",
-    };
-  })();
-
-  await tokenLock;
-  // eslint-disable-next-line require-atomic-updates
-  tokenLock = null;
-
-  return (cachedToken as TokenResponse).access_token;
+  return newToken.access_token;
 }
