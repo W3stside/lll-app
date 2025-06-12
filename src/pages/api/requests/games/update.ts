@@ -138,16 +138,30 @@ export default async (req: NextApiRequest, res: NextApiResponse) => {
             MAX_SIGNUPS_PER_GAME - 1,
           );
 
+          const ids = [
+            new ObjectId(newlyConfirmedPlayer),
+            new ObjectId(cancelPlayerId),
+          ];
+
           const [newConfirmedUser, cancelledUser] = await db
             .collection(Collection.USERS)
-            .find<IUser>({
-              _id: {
-                $in: [
-                  new ObjectId(newlyConfirmedPlayer),
-                  new ObjectId(cancelPlayerId),
-                ],
+            .aggregate<IUser>([
+              {
+                $match: {
+                  _id: { $in: ids },
+                },
               },
-            })
+              {
+                $addFields: {
+                  sortOrder: {
+                    $indexOfArray: [ids, "$_id"],
+                  },
+                },
+              },
+              {
+                $sort: { sortOrder: 1 },
+              },
+            ])
             .toArray();
 
           await sendQueueChangeMessage(newConfirmedUser, cancelledUser, result);
