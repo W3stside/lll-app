@@ -1,13 +1,16 @@
 import { ObjectId } from "mongodb";
 import type { GetServerSideProps } from "next";
+import Image from "next/image";
 import { useCallback, useEffect, useMemo, useState } from "react";
 
+import errorIcon from "@/assets/error.png";
 import { PartnerProducts } from "@/components/PartnerProducts";
 import { SigneeComponent } from "@/components/Signup/SIgnees/SigneeComponent";
 import { Collapsible, Loader } from "@/components/ui";
 import { RED_TW } from "@/constants/colours";
 import { DAYS_IN_WEEK } from "@/constants/date";
 import { NAVLINKS_MAP } from "@/constants/links";
+import { MAX_SIGNUPS_PER_GAME } from "@/constants/signups";
 import { useAdmin } from "@/context/Admin/context";
 import { DialogVariant, useDialog } from "@/context/Dialog/context";
 import { useGames } from "@/context/Games/context";
@@ -45,6 +48,23 @@ const EMPTY_TEAMS = [
   { players: [] },
   { players: [] },
 ] as const satisfies IGame["teams"];
+const LOCAL_STORAGE_PAYMENTS_KEY = "LLL-payments-confirmed";
+
+function _getPaymentConfirmation() {
+  if (typeof window !== "undefined") {
+    return JSON.parse(
+      localStorage.getItem(LOCAL_STORAGE_PAYMENTS_KEY) ?? "{}",
+    ) as Record<string, string[]>;
+  }
+
+  return {};
+}
+
+function _setPaymentConfirmation(data: Partial<Record<string, string[]>>) {
+  if (typeof window !== "undefined") {
+    localStorage.setItem(LOCAL_STORAGE_PAYMENTS_KEY, JSON.stringify(data));
+  }
+}
 
 type ConnectionStatus = {
   isConnected: boolean;
@@ -427,6 +447,18 @@ export default function Admin({
     [users],
   );
 
+  const [paymentsConfirmed, setPaymentsConfirmed] = useState<
+    Partial<Record<string, string[]>>
+  >({});
+
+  useEffect(() => {
+    setPaymentsConfirmed(_getPaymentConfirmation());
+  }, []);
+
+  useEffect(() => {
+    _setPaymentConfirmation(paymentsConfirmed);
+  }, [paymentsConfirmed]);
+
   if (!isConnected) return <h1>Connecting to db...</h1>;
 
   return (
@@ -509,7 +541,7 @@ export default function Admin({
         {/* Manage games */}
         <Collapsible
           className="flex flex-col gap-y-1 text-black container"
-          collapsedHeight={47}
+          collapsedHeight={43}
           startCollapsed
         >
           <div className="container-header !h-auto -mt-2 -mx-1.5 py-2 !text-xl md:!text-2xl">
@@ -807,7 +839,7 @@ export default function Admin({
         {/* Manage players */}
         <Collapsible
           className="flex flex-col gap-y-1 text-black container"
-          collapsedHeight={47}
+          collapsedHeight={43}
           startCollapsed
         >
           <div className="container-header !h-auto -mt-2 -mx-1.5 py-2 !text-xl md:!text-2xl">
@@ -857,11 +889,13 @@ export default function Admin({
                         </small>
                         Game {g.game_id} - {gameDateStr}
                       </div>
-                      {g.players.map((u) => {
+                      {g.players.slice(0, MAX_SIGNUPS_PER_GAME).map((u) => {
                         const hasMissingPayment =
                           usersById[u].missedPayments?.some(
                             (info) => info.date === gameDateStr,
                           ) ?? false;
+                        const userPaid =
+                          paymentsConfirmed[gameDateStr]?.includes(u) === true;
 
                         return (
                           <SigneeComponent
@@ -871,13 +905,55 @@ export default function Admin({
                             loading={loading}
                             {...usersById[u]}
                           >
-                            {usersById[u].role !== Role.ADMIN && (
+                            <div className="flex flex-col gap-y-1 items-center min-w-[130px]">
                               <button
-                                className={cn("whitespace-nowrap", {
-                                  "bg-[var(--background-error-alt)]":
-                                    !hasMissingPayment,
-                                })}
-                                disabled={loading}
+                                className={cn(
+                                  "flex-1 justify-center whitespace-nowrap min-w-full",
+                                  {
+                                    "bg-[var(--background-2)]":
+                                      !hasMissingPayment,
+                                  },
+                                )}
+                                disabled={
+                                  (!hasMissingPayment && userPaid) || loading
+                                }
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setPaymentsConfirmed((prev) => ({
+                                    ...prev,
+                                    [gameDateStr]: [
+                                      ...(prev[gameDateStr] ?? []),
+                                      u,
+                                    ],
+                                  }));
+
+                                  if (hasMissingPayment) {
+                                    void handlePayment(
+                                      usersById[u]._id,
+                                      g,
+                                      gameDateStr,
+                                      true,
+                                    );
+                                  }
+                                }}
+                              >
+                                <div className="flex gap-x-1 items-center">
+                                  {!hasMissingPayment && userPaid ? (
+                                    <span>💵 Has paid!</span>
+                                  ) : (
+                                    <span>✅ Mark paid</span>
+                                  )}
+                                </div>
+                              </button>
+                              <button
+                                className={cn(
+                                  "flex-1 justify-center whitespace-nowrap min-w-full",
+                                  {
+                                    "bg-[var(--background-error-alt)]":
+                                      !hasMissingPayment,
+                                  },
+                                )}
+                                disabled={hasMissingPayment || loading}
                                 onClick={(e) => {
                                   e.stopPropagation();
                                   void handlePayment(
@@ -886,29 +962,30 @@ export default function Admin({
                                     gameDateStr,
                                     hasMissingPayment,
                                   );
+                                  if (userPaid) {
+                                    setPaymentsConfirmed((prev) => ({
+                                      ...prev,
+                                      [gameDateStr]: prev[gameDateStr]?.filter(
+                                        (id) => id !== u,
+                                      ),
+                                    }));
+                                  }
                                 }}
                               >
-                                {!hasMissingPayment ? (
-                                  <>
-                                    <span className="hidden sm:inline">
-                                      Mark as unpaid
-                                    </span>
-                                    <span className="inline sm:hidden">
-                                      Not paid
-                                    </span>
-                                  </>
-                                ) : (
-                                  <>
-                                    <span className="hidden sm:inline">
-                                      Mark as paid
-                                    </span>
-                                    <span className="inline sm:hidden">
-                                      Has paid
-                                    </span>
-                                  </>
-                                )}
+                                <div className="flex gap-x-2.5 items-center justify-center w-full">
+                                  <Image
+                                    src={errorIcon}
+                                    alt="error"
+                                    className="size-5"
+                                  />
+                                  <span>
+                                    {hasMissingPayment
+                                      ? "No payment"
+                                      : "Mark unpaid"}
+                                  </span>
+                                </div>
                               </button>
-                            )}
+                            </div>
                           </SigneeComponent>
                         );
                       })}
@@ -923,7 +1000,7 @@ export default function Admin({
         {/* Players whom owe money */}
         <Collapsible
           className="flex flex-col gap-y-1 text-black container"
-          collapsedHeight={47}
+          collapsedHeight={43}
           startCollapsed
         >
           <div className="container-header !h-auto -mt-2 -mx-1.5 py-2 !text-xl md:!text-2xl">
