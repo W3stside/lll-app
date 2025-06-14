@@ -1,4 +1,3 @@
-// Hoc/withServerSideProps.ts
 import { ObjectId } from "mongodb";
 import type {
   GetServerSideProps,
@@ -6,6 +5,8 @@ import type {
   GetServerSidePropsResult,
 } from "next";
 
+import { BANNED_USERS_SET } from "@/constants/blacklist";
+import { NAVLINKS_MAP } from "@/constants/links";
 import { getUserFromServerSideRequest } from "@/lib/authUtils";
 import client from "@/lib/mongodb";
 import type { IServerSideProps } from "@/pages/_app";
@@ -53,6 +54,18 @@ export function withServerSideProps<P extends object>(
           },
           { projection: { password: 0 } },
         );
+
+      if (
+        fullUser?.phone_number !== undefined &&
+        BANNED_USERS_SET.has(fullUser.phone_number)
+      ) {
+        return {
+          redirect: {
+            destination: NAVLINKS_MAP.BANNED,
+            permanent: false,
+          },
+        };
+      }
 
       const [admin] = await client
         .db("LLL")

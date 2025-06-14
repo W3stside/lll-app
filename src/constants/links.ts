@@ -21,6 +21,7 @@ export const NAVLINKS_MAP = {
   LOGIN: "/login",
   PROFILES: "/profiles",
   NOT_FOUND: "/404",
+  BANNED: "/shadow-realm",
 } as const;
 
 export const ADMIN_PATH = "/admin";

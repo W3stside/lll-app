@@ -69,7 +69,7 @@ export function ShameList({
                   {user.shame.map(({ game_id, date }, idx) => {
                     return (
                       <div
-                        key={game_id.toString()}
+                        key={`${game_id.toString()}_${date}`}
                         className="flex items-center justify-between w-full"
                       >
                         <span className="text-sm text-[var(--text-color-alternate)]">
