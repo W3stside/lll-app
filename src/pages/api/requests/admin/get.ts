@@ -8,7 +8,7 @@ export default async (_: NextApiRequest, res: NextApiResponse) => {
   try {
     const client = clientPromise;
     const db = client.db("LLL");
-    const admin = await db.collection(Collection.ADMIN).find({}).toArray();
+    const admin = await db.collection(Collection.ADMIN).find().toArray();
 
     res.status(201).json(admin);
   } catch (e) {

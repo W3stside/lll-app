@@ -7,7 +7,7 @@ export default async (_: Request, res: Response) => {
   try {
     const client = clientPromise;
     const db = client.db("LLL");
-    const signups = await db.collection(Collection.GAMES).find({}).toArray();
+    const signups = await db.collection(Collection.GAMES).find().toArray();
 
     res.status(201).json(signups);
   } catch (e) {

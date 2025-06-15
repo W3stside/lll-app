@@ -17,7 +17,7 @@ export async function fetchGamesFromMongodb(
   await client.connect();
 
   const db = client.db("LLL");
-  const games = await db.collection<IGame>(Collection.GAMES).find({}).toArray();
+  const games = await db.collection<IGame>(Collection.GAMES).find().toArray();
 
   return serialised ? (JSON.parse(JSON.stringify(games)) as string) : games;
 }
@@ -37,7 +37,7 @@ export async function fetchUsersFromMongodb(
   await client.connect();
 
   const db = client.db("LLL");
-  const users = await db.collection<IUser>(Collection.USERS).find({}).toArray();
+  const users = await db.collection<IUser>(Collection.USERS).find().toArray();
 
   return serialised ? (JSON.parse(JSON.stringify(users)) as string) : users;
 }
