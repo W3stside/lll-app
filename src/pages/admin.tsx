@@ -540,8 +540,8 @@ export default function Admin({
         )}
         {/* Manage games */}
         <Collapsible
-          className="flex flex-col gap-y-1 text-black container"
-          collapsedHeight={43}
+          className="flex flex-col gap-y-1 text-black container !border-0"
+          collapsedHeight={39}
           startCollapsed
         >
           <div className="container-header !h-auto -mt-2 -mx-1.5 py-2 !text-xl md:!text-2xl">
@@ -567,7 +567,7 @@ export default function Admin({
               </small>
               Games list
             </div>
-            <div className="flex flex-col gap-y-6 sm:gap-y-2 text-xs pt-3 px-3">
+            <div className="flex flex-col w-full gap-y-2 sm:gap-y-2 text-xs pt-3 px-1.5">
               {sortedGames.map((game) => (
                 <div
                   key={game._id.toString()}
@@ -578,7 +578,7 @@ export default function Admin({
                     },
                   )}
                 >
-                  <div className="flex flex-1 justify-start gap-x-4">
+                  <div className="flex flex-[1_1_70%] justify-start gap-x-4">
                     <div className="flex flex-col w-auto whitespace-nowrap">
                       <strong>
                         {game.day} @ {game.time}{" "}
@@ -595,6 +595,7 @@ export default function Admin({
                     </a>
                   </div>
                   <button
+                    className="flex-[0_1_auto]"
                     onClick={(e) => {
                       e.stopPropagation();
                       setGameInfo((prev) => ({ ...prev, ...game }));
@@ -614,7 +615,7 @@ export default function Admin({
           </Collapsible>
           {!loading ? (
             <div className="container my-2 flex flex-col gap-y-2 justify-start">
-              <div className="container-header !h-auto -mt-2 -mx-1.5 !items-center">
+              <div className="container-header !h-auto -mt-2 mx-[2px] !items-center">
                 Edit/Create game
               </div>
               <div className="flex flex-col">
@@ -836,28 +837,28 @@ export default function Admin({
           )}
         </Collapsible>
 
-        {/* Manage players */}
+        {/* Track payment per game */}
         <Collapsible
-          className="flex flex-col gap-y-1 text-black container"
-          collapsedHeight={43}
+          className="flex flex-col gap-y-1 text-black container !px-[1px] !border-0"
+          collapsedHeight={39}
           startCollapsed
         >
-          <div className="container-header !h-auto -mt-2 -mx-1.5 py-2 !text-xl md:!text-2xl">
+          <div className="container-header !h-auto -mt-2 mx-[2px] py-2 !text-xl md:!text-2xl">
             <small className="px-2 py-1 text-xs mr-auto">
               [+/-] expand/minimise
             </small>
-            Manage players
+            Track payment per game
           </div>
           <div className="container text-xs">
             Manage player game payments here. Clicking "Not paid" will record
             that player as having missed payment for that game. A full list can
             be seen below in "Payment tracking".
           </div>
-          <div className="flex flex-col gap-y-6 pt-3">
+          <div className="flex flex-col gap-y-4 pt-3">
             {Object.entries(gamesByDay).map(([day, gamesForDay]) => (
               <Collapsible
                 key={day}
-                className="flex flex-col gap-y-3 sm:gap-y-2 [&>div.container-header]:bg-[var(--background-window-highlight)] [&>div.container-header]:text-black"
+                className="flex flex-col gap-y-3 sm:gap-y-2 [&>div.container-header]:bg-[var(--background-window-highlight)] [&>div.container-header]:text-black px-0"
                 collapsedClassName="[&>div.container-header]:!bg-black [&>div.container-header]:!text-white"
                 collapsedHeight={32}
                 startCollapsed
@@ -880,18 +881,22 @@ export default function Admin({
                   return (
                     <Collapsible
                       key={g._id.toString()}
-                      className="flex flex-col container gap-y-2 pt-3"
-                      collapsedHeight={35}
+                      className="flex flex-col gap-y-2 pt-3 mb-30"
+                      collapsedClassName="mb-8 -mt-4"
+                      collapsedHeight={45}
                     >
-                      <div className="container-header">
+                      <div className="container-header !min-h-10">
                         <small className="px-2 py-1 text-xs mr-auto">
                           [+/-]
                         </small>
                         Game {g.game_id} - {gameDateStr}
                       </div>
-                      {g.players.slice(0, MAX_SIGNUPS_PER_GAME).map((u) => {
+                      {g.players.slice(0, MAX_SIGNUPS_PER_GAME).flatMap((u) => {
+                        const specificUser = usersById[u];
+                        if (specificUser === undefined) return [];
+
                         const hasMissingPayment =
-                          usersById[u].missedPayments?.some(
+                          specificUser.missedPayments?.some(
                             (info) => info.date === gameDateStr,
                           ) ?? false;
                         const userPaid =
@@ -900,54 +905,53 @@ export default function Admin({
                         return (
                           <SigneeComponent
                             key={u}
-                            className="[&>div]:flex-row [&>div>div>div:nth-child(2)]:text-left [&>div>div>div:nth-child(2)>div]:justify-start"
+                            className="justify-center min-h-[88px] [&>div]:flex-row [&>div>div>div:nth-child(2)]:text-left [&>div>div>div:nth-child(2)>div]:justify-start"
+                            hideAvatar
                             errorMsg={null}
                             loading={loading}
-                            {...usersById[u]}
+                            {...specificUser}
                           >
-                            <div className="flex flex-col gap-y-1 items-center min-w-[130px]">
-                              <button
-                                className={cn(
-                                  "flex-1 justify-center whitespace-nowrap min-w-full",
-                                  {
-                                    "bg-[var(--background-2)]":
-                                      !hasMissingPayment,
-                                  },
-                                )}
-                                disabled={
-                                  (!hasMissingPayment && userPaid) || loading
-                                }
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  setPaymentsConfirmed((prev) => ({
-                                    ...prev,
-                                    [gameDateStr]: [
-                                      ...(prev[gameDateStr] ?? []),
-                                      u,
-                                    ],
-                                  }));
-
-                                  if (hasMissingPayment) {
-                                    void handlePayment(
-                                      usersById[u]._id,
-                                      g,
-                                      gameDateStr,
-                                      true,
-                                    );
-                                  }
-                                }}
-                              >
-                                <div className="flex gap-x-1 items-center">
-                                  {!hasMissingPayment && userPaid ? (
-                                    <span>💵 Has paid!</span>
-                                  ) : (
-                                    <span>✅ Mark paid</span>
+                            <div className="flex flex-row-reverse gap-x-2 items-center min-w-[130px]">
+                              {(hasMissingPayment || !userPaid) && (
+                                <button
+                                  className={cn(
+                                    "flex-1 justify-center whitespace-nowrap h-[60px]",
+                                    {
+                                      "bg-[var(--background-2)]":
+                                        !hasMissingPayment,
+                                    },
                                   )}
-                                </div>
-                              </button>
+                                  disabled={
+                                    (!hasMissingPayment && userPaid) || loading
+                                  }
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    setPaymentsConfirmed((prev) => ({
+                                      ...prev,
+                                      [gameDateStr]: [
+                                        ...(prev[gameDateStr] ?? []),
+                                        u,
+                                      ],
+                                    }));
+
+                                    if (hasMissingPayment) {
+                                      void handlePayment(
+                                        specificUser._id,
+                                        g,
+                                        gameDateStr,
+                                        true,
+                                      );
+                                    }
+                                  }}
+                                >
+                                  <div className="flex gap-x-1 items-center">
+                                    <span className="text-3xl">✅</span>
+                                  </div>
+                                </button>
+                              )}
                               <button
                                 className={cn(
-                                  "flex-1 justify-center whitespace-nowrap min-w-full",
+                                  "flex-1 justify-center whitespace-nowrap h-[60px]",
                                   {
                                     "bg-[var(--background-error-alt)]":
                                       !hasMissingPayment,
@@ -957,7 +961,7 @@ export default function Admin({
                                 onClick={(e) => {
                                   e.stopPropagation();
                                   void handlePayment(
-                                    usersById[u]._id,
+                                    specificUser._id,
                                     g,
                                     gameDateStr,
                                     hasMissingPayment,
@@ -976,19 +980,15 @@ export default function Admin({
                                   <Image
                                     src={errorIcon}
                                     alt="error"
-                                    className="size-5"
+                                    className="size-8"
                                   />
-                                  <span>
-                                    {hasMissingPayment
-                                      ? "No payment"
-                                      : "Mark unpaid"}
-                                  </span>
                                 </div>
                               </button>
                             </div>
                           </SigneeComponent>
                         );
                       })}
+                      <small className="mt-2 mx-auto">- End game data -</small>
                     </Collapsible>
                   );
                 })}
@@ -999,15 +999,15 @@ export default function Admin({
 
         {/* Players whom owe money */}
         <Collapsible
-          className="flex flex-col gap-y-1 text-black container"
-          collapsedHeight={43}
+          className="flex flex-col gap-y-1 text-black container !px-0 !border-0"
+          collapsedHeight={39}
           startCollapsed
         >
-          <div className="container-header !h-auto -mt-2 -mx-1.5 py-2 !text-xl md:!text-2xl">
+          <div className="container-header !h-auto -mt-2 mx-[2px] py-2 !text-xl md:!text-2xl">
             <small className="px-2 py-1 text-xs mr-auto">
               [+/-] expand/minimise
             </small>
-            Payment tracking
+            Players in debt
           </div>
           <div className="container text-xs gap-x-4">
             <div className="flex-3">
@@ -1033,6 +1033,7 @@ export default function Admin({
                 <SigneeComponent
                   key={_id?.toString()}
                   _id={_id}
+                  hideAvatar
                   {...restUser}
                   loading={loading}
                   errorMsg={null}

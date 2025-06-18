@@ -3,7 +3,7 @@ import type { NextApiRequest, NextApiResponse } from "next";
 
 import { MAX_SIGNUPS_PER_GAME } from "@/constants/signups";
 import client from "@/lib/mongodb";
-import { Collection, type IUser, type IGame } from "@/types";
+import { type IAdmin, Collection, type IUser, type IGame } from "@/types";
 import {
   sendBumpedMessage,
   sendGameCancelledMessage,
@@ -127,7 +127,14 @@ export default async (req: NextApiRequest, res: NextApiResponse) => {
             });
 
           if (bumpedUser !== null) {
-            await sendBumpedMessage(bumpedUser, result);
+            const [adminInfo] = await db
+              .collection<IAdmin>(Collection.ADMIN)
+              .find()
+              .toArray();
+
+            if (adminInfo.signup_open) {
+              await sendBumpedMessage(bumpedUser, result);
+            }
           } else {
             throw new Error("User not found");
           }

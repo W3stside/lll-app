@@ -13,7 +13,7 @@ export default async (req: NextApiRequest, res: NextApiResponse) => {
     const db = client.db("LLL");
     const collection = db.collection<IGame>(Collection.GAMES);
 
-    const games = await collection.find({}).toArray();
+    const games = await collection.find().toArray();
     const result = await collection.updateMany(
       { _id: { $in: games.map(({ _id }) => _id) } },
       {
@@ -37,7 +37,7 @@ export default async (req: NextApiRequest, res: NextApiResponse) => {
     }));
 
     const bulkResults = await collection.bulkWrite(gamesBulkUpdates);
-    const newGames = await collection.find({}).toArray();
+    const newGames = await collection.find().toArray();
 
     if (bulkResults.matchedCount === 0) {
       res.status(404).json({ message: "Document not found" });

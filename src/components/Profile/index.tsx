@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { useRouter } from "next/router";
 import { useMemo, useRef } from "react";
 
 import { Avatar } from "../Avatar";
@@ -15,6 +16,7 @@ import { useActions } from "@/context/Actions/context";
 import { useUser } from "@/context/User/context";
 import {
   GameStatus,
+  Role,
   type IAdmin,
   type IGame,
   type IUser,
@@ -59,6 +61,8 @@ export function Profile({
 
   const isOwner = profileUser._id === currentUser._id;
 
+  const router = useRouter();
+
   const userGames = useMemo(() => {
     const gbd = groupGamesByDay(userGamesServer);
 
@@ -101,7 +105,9 @@ export function Profile({
                   className="flex items-center justify-center h-full w-[50px] bg-[var(--background-error)]"
                   onClick={(e) => {
                     e.stopPropagation();
-                    cancelGame(game._id, profileUser._id, "");
+                    cancelGame(game._id, profileUser._id, "", {
+                      callback: router.reload,
+                    });
                   }}
                 >
                   X
@@ -117,6 +123,7 @@ export function Profile({
     isOwner,
     profileUser._id,
     profileUser.first_name,
+    router.reload,
     userGamesServer,
   ]);
 
@@ -131,6 +138,11 @@ export function Profile({
           <h4 className="mr-auto px-2 py-1">
             {isOwner ? "My profile" : `${profileUser.first_name}'s profile`}
           </h4>{" "}
+          {profileUser.role === Role.ADMIN && (
+            <div className="bg-[var(--background-color)] font-bold mx-2 !flex items-center px-1.5 text-[ghostwhite]">
+              Admin
+            </div>
+          )}{" "}
           X
         </div>
         <div className="flex gap-x-4 items-start h-auto">

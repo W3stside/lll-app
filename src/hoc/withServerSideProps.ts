@@ -70,7 +70,7 @@ export function withServerSideProps<P extends object>(
       const [admin] = await client
         .db("LLL")
         .collection<IAdmin>(Collection.ADMIN)
-        .find({})
+        .find()
         .toArray();
 
       const [games, users] = await fetchRequiredCollectionsFromMongoDb(client, {

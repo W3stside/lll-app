@@ -6,6 +6,7 @@ import { PlaceholderAvatar } from "@/components/Uploader/PlaceholderAvatar";
 import { Loader } from "@/components/ui";
 import { RED_TW } from "@/constants/colours";
 import { NAVLINKS_MAP, WHATS_APP } from "@/constants/links";
+import { Role } from "@/types";
 import type { IUserSafe } from "@/types/users";
 import { cn } from "@/utils/tailwind";
 import { formatPhoneNumber } from "@/utils/user";
@@ -27,6 +28,7 @@ export function SigneeComponent({
   first_name,
   last_name,
   phone_number,
+  role,
   avatarUrl = null,
   avatarClassName = "text-[8px] md:text-[10px] h-[40px] w-[40px] md:h-[55px] md:w-[55px]",
   hideAvatar = false,
@@ -44,7 +46,12 @@ export function SigneeComponent({
         "container flex-col items-start justify-start gap-y-1 h-auto elevation-2",
       )}
     >
-      <div className="container-header w-[calc(100%+12px)] !bg-[var(--background-container-header-alt)] -mt-2 -ml-2">
+      <div className="container-header w-[calc(100%+12px)] !bg-[var(--background-container-header-alt)] !h-[27px] -mt-2 -ml-2">
+        {role === Role.ADMIN && (
+          <div className="bg-[var(--background-color)] font-bold mx-2 !flex items-center px-1.5 text-[ghostwhite]">
+            Admin
+          </div>
+        )}
         <span className="cursor-pointer" onClick={handleCancel}>
           {handleCancel !== undefined ? "x" : "-"}
         </span>
@@ -116,7 +123,7 @@ export function SigneeComponent({
               >
                 <div className="font-bold w-full self-end">
                   {first_name} {last_name}
-                </div>{" "}
+                </div>
               </Link>
               <div className="flex w-full text-sm text-[var(--text-color-alternate)] justify-end text-right">
                 <a
