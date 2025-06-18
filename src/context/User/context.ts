@@ -5,7 +5,7 @@ import type { IUser, IUserSafe } from "@/types";
 export interface IUserContext {
   user: IUserSafe & { registered_games?: string[] };
   users: (IUserSafe & { registered_games?: string[] })[];
-  usersById: Record<string, IUser>;
+  usersById: Partial<Record<string, IUser>>;
   setUser: React.Dispatch<
     React.SetStateAction<IUserSafe & { registered_games?: string[] }>
   >;

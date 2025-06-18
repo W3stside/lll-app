@@ -208,6 +208,9 @@ export function ActionProvider({ children }: IActionProvider) {
               if (options?.bypassThreshold !== true && gamePastThreshold) {
                 void _addShamefulUser(gameId, userId, date);
               }
+
+              // Call optional callback if exists
+              options?.callback?.();
             } catch (error) {
               setError(error instanceof Error ? error : DEFAULT_ERROR);
             } finally {
