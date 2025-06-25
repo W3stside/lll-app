@@ -1,7 +1,7 @@
 import { v4 } from "uuid";
 
 import { sendBotNotification } from "@/lib/bot/sendBotMessage";
-import type { IGame, IUserSafe } from "@/types";
+import { Gender, type IGame, type IUserSafe } from "@/types";
 
 if (process.env.WHATSAPP_BOT_CHANNEL_ID === undefined) {
   throw new Error("Missing WhatsApp Bot Channel ID");
@@ -16,7 +16,7 @@ export const sendBumpedMessage = async (user: IUserSafe, game: IGame) =>
       text: `
     Hi 👋 ${user.first_name} ${user.last_name} [@${user.phone_number}] 
     
-    Sorry but you were bumped from the ladies game ${game.game_id} - remember that ladies get priority in these games.
+    Sorry but you were bumped from game ${game.game_id} - ${game.gender === Gender.FEMALE ? "remember that ladies get priority in these games." : "contact one of the admins if you feel this was done in error."}.
     
     When: ${game.day} @ ${game.time} 
     Where: ${game.location}

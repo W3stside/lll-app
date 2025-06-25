@@ -1,7 +1,6 @@
 import { sortDaysOfWeek } from "./sort";
 
 import {
-  Gender,
   Role,
   type GamesByDay,
   type IGame,
@@ -32,17 +31,12 @@ export function groupGamesByDay(games: IGame[]) {
   );
 }
 
-export function checkPlayerCanCancel(
-  player?: IUserSafe,
-  user?: IUserSafe,
-  gender?: IGame["gender"],
-) {
+export function checkPlayerCanCancel(player?: IUserSafe, user?: IUserSafe) {
   if (player === undefined || user === undefined) {
     return false;
   }
 
   return (
-    player._id?.toString() === user._id?.toString() ||
-    (user.role === Role.ADMIN && gender === Gender.FEMALE)
+    player._id?.toString() === user._id?.toString() || user.role === Role.ADMIN
   );
 }
