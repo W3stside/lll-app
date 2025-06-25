@@ -4,7 +4,7 @@ import type { IPlayersList } from "./types";
 
 import { useActions } from "@/context/Actions/context";
 import { useUser } from "@/context/User/context";
-import { Role, GameStatus, Gender } from "@/types";
+import { Role, GameStatus } from "@/types";
 import { checkPlayerCanCancel } from "@/utils/data";
 
 export function PlayersList({
@@ -45,7 +45,7 @@ export function PlayersList({
 
               const canCancel =
                 gameStatus !== GameStatus.PAST &&
-                checkPlayerCanCancel(signee, user, game.gender);
+                checkPlayerCanCancel(signee, user);
 
               const userAlreadyShamed = usersById[
                 playerId.toString()
@@ -63,15 +63,13 @@ export function PlayersList({
                             game._id,
                             signee._id,
                             nextGameDate,
-                            // Admin is cancelling a game for someone else (ladies game) - don't add to shame
+                            // Admin is cancelling a game for someone else - don't add to shame
                             {
                               bypassThreshold:
                                 // TODO: remove
-                                game.hidden === true ||
-                                (isAdminCancelling &&
-                                  game.gender === Gender.FEMALE),
+                                game.hidden === true || isAdminCancelling,
                               cancelMessage: isAdminCancelling
-                                ? "You are admin cancelling for someone else. This should ONLY happen if you're cancelling a male player in favour of a higher priority female player!"
+                                ? "You are admin cancelling for someone else. Please be sure to double check the player's info before proceeding."
                                 : undefined,
                             },
                           );
@@ -113,7 +111,7 @@ export function PlayersList({
 
               const canCancel =
                 gameStatus !== GameStatus.PAST &&
-                checkPlayerCanCancel(signee, user, game.gender);
+                checkPlayerCanCancel(signee, user);
 
               return (
                 <Signees
