@@ -16,3 +16,4 @@ export const DAYS_IN_WEEK_MAP = DAYS_IN_WEEK.reduce(
   }),
   {},
 );
+export const KIT_TARGET_RELEASE_DATE = new Date("2025-07-07T08:30:00Z");
