@@ -40,6 +40,8 @@ export function SigneeComponent({
   handleCancel,
   handleAddToShame,
 }: ISigneeComponent) {
+  const formattedNumber = formatPhoneNumber(phone_number);
+
   return (
     <div
       className={cn(
@@ -127,7 +129,7 @@ export function SigneeComponent({
               </Link>
               <div className="flex w-full text-sm text-[var(--text-color-alternate)] justify-end text-right">
                 <a
-                  href={`${WHATS_APP}/${formatPhoneNumber(phone_number)}`}
+                  href={`${WHATS_APP}/${formattedNumber}`}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="underline"
@@ -135,7 +137,7 @@ export function SigneeComponent({
                     e.stopPropagation();
                   }}
                 >
-                  {formatPhoneNumber(phone_number)}
+                  {formattedNumber?.slice(0, 6)}***{formattedNumber?.slice(-3)}
                 </a>
               </div>
             </div>
