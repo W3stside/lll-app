@@ -11,6 +11,9 @@ const Navbar = dynamic(
   { ssr: false, loading: () => <Loader /> },
 );
 
+const KIT_DATE = new Date(KIT_TARGET_RELEASE_DATE);
+const NOW = new Date();
+
 const CountdownComponent = dynamic(
   async () =>
     await import("./Countdown").then((mod) => ({
@@ -29,7 +32,7 @@ export function Layout({ children, usersById }: ILayout) {
     <>
       <Navbar usersById={usersById} />
       <CountdownComponent target={KIT_TARGET_RELEASE_DATE}>
-        LLL kits <b>available soon!</b>
+        LLL kits <b>{KIT_DATE > NOW ? "available soon!" : "available!!"}</b>
       </CountdownComponent>
       <div className="flex flex-col gap-y-8 items-center justify-start pb-10 px-2.5 h-auto">
         {children}
