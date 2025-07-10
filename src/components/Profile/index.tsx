@@ -169,7 +169,8 @@ export function Profile({
             >
               {profileUser.phone_number.startsWith("00")
                 ? profileUser.phone_number.slice(2)
-                : profileUser.phone_number}
+                : profileUser.phone_number.slice(0, 6)}
+              ***{profileUser.phone_number.slice(-3)}
             </a>
           </div>
         </div>
