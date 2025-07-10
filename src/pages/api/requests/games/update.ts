@@ -1,3 +1,4 @@
+/* eslint-disable no-console */
 import { type WithId, ObjectId } from "mongodb";
 import type { NextApiRequest, NextApiResponse } from "next";
 
@@ -120,6 +121,31 @@ export default async (req: NextApiRequest, res: NextApiResponse) => {
 
         // Admin cancelled a guy. Ping him
         if (isAdminCancel) {
+          // Reinsert player at the top of the waitlist queue
+          if (previous.players.length > MAX_SIGNUPS_PER_GAME) {
+            const pushResult = await gamesCollection.updateOne(
+              { _id: gameIdWrapped },
+              {
+                $push: {
+                  players: {
+                    $each: [cancelPlayerId.toString()],
+                    $position: MAX_SIGNUPS_PER_GAME,
+                  },
+                },
+              },
+            );
+
+            if (pushResult.modifiedCount === 0) {
+              console.error(
+                `Failed to reinsert ID "${cancelPlayerId.toString()}" at position ${MAX_SIGNUPS_PER_GAME} for document "${gameIdWrapped.toHexString()}".`,
+              );
+              // Handle error appropriately
+            } else {
+              console.log(
+                `Successfully moved ID "${cancelPlayerId.toString()}" in array "players" for document "${gameIdWrapped.toHexString()}" to position ${MAX_SIGNUPS_PER_GAME}.`,
+              );
+            }
+          }
           const bumpedUser = await db
             .collection(Collection.USERS)
             .findOne<IUser>({
