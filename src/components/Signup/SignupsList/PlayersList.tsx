@@ -64,10 +64,9 @@ export function PlayersList({
                 gameStatus !== GameStatus.PAST &&
                 checkPlayerCanCancel(signee, user);
 
-              const userAlreadyShamed =
-                usersById[playerId.toString()]?.shame.some(
-                  ({ date }) => date === nextGameDate,
-                ) ?? false;
+              const userAlreadyShamed = signee.shame.some(
+                ({ date }) => date === nextGameDate,
+              );
 
               return (
                 <Signees
