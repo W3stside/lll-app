@@ -43,11 +43,7 @@ export function SigneeComponent({
   const formattedNumber = formatPhoneNumber(phone_number);
 
   return (
-    <div
-      className={cn(
-        "container flex-col items-start justify-start gap-y-1 h-auto elevation-2",
-      )}
-    >
+    <div className="container flex-col items-start justify-start gap-y-1 h-auto elevation-2">
       <div className="container-header w-[calc(100%+12px)] !bg-[var(--background-container-header-alt)] !h-[27px] -mt-2 -ml-2">
         {role === Role.ADMIN && (
           <div className="bg-[var(--background-color)] font-bold mx-2 !flex items-center px-1.5 text-[ghostwhite]">
