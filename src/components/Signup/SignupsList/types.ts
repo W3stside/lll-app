@@ -9,7 +9,7 @@ export interface IPlayersList {
   index: number;
   nextGameDate: string;
   user: IUser;
-  usersById: Record<string, IUser>;
+  usersById: Partial<Record<string, IUser>>;
   confirmedList: (ObjectId | string)[];
   waitlist: (ObjectId | string)[];
 }

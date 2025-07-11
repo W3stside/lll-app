@@ -36,8 +36,25 @@ export function PlayersList({
           {confirmedList.length === 0 ? (
             <p>No players yet. Sign up!</p>
           ) : (
-            confirmedList.map((playerId) => {
+            confirmedList.flatMap((playerId) => {
               const signee = usersById[playerId.toString()];
+
+              if (signee === undefined) {
+                return (
+                  <div
+                    key={playerId.toString()}
+                    className="container !bg-[var(--background-error-alt)] flex-col items-start justify-start gap-y-1 h-auto elevation-2"
+                  >
+                    <div className="container-header w-[calc(100%+12px)] !bg-[var(--background-container-header-alt)] !h-[27px] -mt-2 -ml-1.5">
+                      X
+                    </div>
+                    <div className="ml-auto mr-1">
+                      Account was deleted{" "}
+                      <span className="text-xl mb-2 mr-2">ಠ_ಠ</span>{" "}
+                    </div>
+                  </div>
+                );
+              }
 
               const isAdminCancelling =
                 signee._id.toString() !== user._id.toString() &&
@@ -47,9 +64,10 @@ export function PlayersList({
                 gameStatus !== GameStatus.PAST &&
                 checkPlayerCanCancel(signee, user);
 
-              const userAlreadyShamed = usersById[
-                playerId.toString()
-              ].shame.some(({ date }) => date === nextGameDate);
+              const userAlreadyShamed =
+                usersById[playerId.toString()]?.shame.some(
+                  ({ date }) => date === nextGameDate,
+                ) ?? false;
 
               return (
                 <Signees
@@ -106,8 +124,10 @@ export function PlayersList({
             players
           </div>
           <div className="flex flex-col items-center gap-y-2">
-            {waitlist.map((playerId) => {
+            {waitlist.flatMap((playerId) => {
               const signee = usersById[playerId.toString()];
+
+              if (signee === undefined) return [];
 
               const canCancel =
                 gameStatus !== GameStatus.PAST &&
