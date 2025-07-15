@@ -60,7 +60,9 @@ export function useWeeklyGamesData(
         g.players.some((p) => p.toString() === user._id.toString()),
       );
 
-      const games = unadjustedGames.filter((g) => g.cancelled !== true);
+      const games = unadjustedGames.filter(
+        (g) => g.cancelled !== true && g.hidden !== true,
+      );
 
       const { total: signedUp, capacity } = games.reduce<{
         total: number;

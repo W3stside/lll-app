@@ -35,7 +35,7 @@ export function StyledGamesList({
         },
       )}
       collapsedClassName="mb-0"
-      collapsedHeight={gameCancelled ? 140 : capacity[index] <= 0 ? 182 : 160}
+      collapsedHeight={gameCancelled ? 146 : capacity[index] <= 0 ? 182 : 160}
       startCollapsed={gameCancelled}
       disabled={gameCancelled}
     >

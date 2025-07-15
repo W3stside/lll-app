@@ -12,7 +12,7 @@ export function StandardPlayersList({
   index,
   ...rest
 }: Omit<IPlayersList, "confirmedList" | "waitlist">) {
-  const gameCancelled = game.cancelled === true;
+  const gameCancelled = game.cancelled === true || game.hidden === true;
   const confirmedList = game.players.slice(0, MAX_SIGNUPS_PER_GAME);
   const waitlist = game.players.slice(MAX_SIGNUPS_PER_GAME);
 

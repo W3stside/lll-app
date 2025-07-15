@@ -39,7 +39,7 @@ export function Games({
       className={cn(
         "flex flex-col container gap-y-4 pl-9 w-full",
         {
-          "!bg-transparent": cancelled,
+          "!bg-transparent": cancelled || hidden,
         },
         className,
       )}
@@ -90,7 +90,7 @@ export function Games({
             {speed}
           </strong>
         </div>
-        {!cancelled && (
+        {!hidden && !cancelled && (
           <RemainingSpots
             title="Spots remaining:"
             signedUp={signupsAmt}
@@ -102,13 +102,15 @@ export function Games({
             className="pl-0 text-md [&>div]:!px-2.5 [&>div]:!py-0.5"
           />
         )}
-        {(cancelled || (waitlistAmt !== null && waitlistAmt <= 0)) && (
+        {(hidden ||
+          cancelled ||
+          (waitlistAmt !== null && waitlistAmt <= 0)) && (
           <div className={`px-2 p-1 ${cancelled ? RED_TW : ORANGE_TW}`}>
-            {cancelled ? "CANCELLED" : waitlistLabel}
+            {cancelled ? "CANCELLED" : hidden ? "HIDDEN" : waitlistLabel}
           </div>
         )}
       </div>
-      <div>{children}</div>
+      {!hidden && <div>{children}</div>}
     </div>
   );
 }

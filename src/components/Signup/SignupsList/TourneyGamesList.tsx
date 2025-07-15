@@ -4,11 +4,13 @@ import { PlayersList } from "./PlayersList";
 import { StyledGamesList } from "./StyledGamesList";
 import type { IPlayersList } from "./types";
 
-import { MAX_SIGNUPS_PER_GAME } from "@/constants/signups";
+import {
+  MAX_SIGNUPS_PER_GAME,
+  MAX_SIGNUPS_PER_TOURNEY,
+} from "@/constants/signups";
 import { Role } from "@/types";
 import { cn } from "@/utils/tailwind";
 
-const TOURNEY_MAX_SIGNUPS = MAX_SIGNUPS_PER_GAME * 2;
 const TEAMS_INFO = [
   { label: "Team 1", className: "bg-red-500", colour: "Red" },
   { label: "Team 2", className: "bg-blue-500", colour: "Blue" },
@@ -25,13 +27,16 @@ export function TourneyPlayersList({
   ...rest
 }: Omit<IPlayersList, "confirmedList" | "waitlist">) {
   const gameCancelled = game.cancelled === true;
-  const confirmedList = useMemo(() => {
+  const { confirmedList, waitlist } = useMemo(() => {
     const flatTourneyPlayers = Object.values(game.teams ?? {}).flatMap((t) => [
       ...t.players,
     ]);
 
-    return flatTourneyPlayers.slice(0, TOURNEY_MAX_SIGNUPS);
-  }, [game.teams]);
+    return {
+      confirmedList: flatTourneyPlayers.slice(0, MAX_SIGNUPS_PER_TOURNEY),
+      waitlist: game.players.slice(MAX_SIGNUPS_PER_TOURNEY * 4),
+    };
+  }, [game.players, game.teams]);
 
   if (
     game.teams === undefined ||
@@ -72,11 +77,21 @@ export function TourneyPlayersList({
               game={game}
               gameStatus={gameStatus}
               confirmedList={players.slice(0, MAX_SIGNUPS_PER_GAME)}
-              waitlist={players.slice(MAX_SIGNUPS_PER_GAME)}
+              waitlist={[]}
               nextGameDate={nextGameDate}
             />
           </div>
         ))}
+        {waitlist.length > 0 && (
+          <PlayersList
+            {...rest}
+            game={game}
+            gameStatus={gameStatus}
+            confirmedList={[]}
+            waitlist={waitlist}
+            nextGameDate={nextGameDate}
+          />
+        )}
       </div>
     </StyledGamesList>
   );
