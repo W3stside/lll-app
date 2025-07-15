@@ -1,4 +1,5 @@
 export const MAX_SIGNUPS_PER_GAME = 16;
+export const MAX_SIGNUPS_PER_TOURNEY = 8;
 export const PASSWORD_MIN_LENGTH = 6;
 export const NAME_MIN_LENGTH = 2;
 export const PHONE_MIN_LENGTH = 10;
