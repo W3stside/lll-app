@@ -26,7 +26,7 @@ export function TourneyPlayersList({
   nextGameDate,
   ...rest
 }: Omit<IPlayersList, "confirmedList" | "waitlist">) {
-  const gameCancelled = game.cancelled === true;
+  const gameCancelled = game.cancelled === true || game.hidden === true;
   const { confirmedList, waitlist } = useMemo(() => {
     const flatTourneyPlayers = Object.values(game.teams ?? {}).flatMap((t) => [
       ...t.players,

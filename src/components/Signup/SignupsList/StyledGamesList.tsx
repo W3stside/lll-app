@@ -44,6 +44,7 @@ export function StyledGamesList({
         signupsAmt={confirmedList.length}
         waitlistAmt={capacity[index]}
         date={nextGameDate}
+        cancelled={gameCancelled}
       >
         {!gameCancelled && <small>[+] Tap to expand/collapse</small>}
       </Games>
