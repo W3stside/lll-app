@@ -2,7 +2,7 @@ import { RemainingSpots } from "../ui";
 
 import { ORANGE_TW, RED_TW } from "@/constants/colours";
 import { MAX_SIGNUPS_PER_GAME } from "@/constants/signups";
-import { Gender, type IGame } from "@/types";
+import { type PlaySpeed, Gender, type IGame } from "@/types";
 import { cn } from "@/utils/tailwind";
 
 const MAX_ADDRESS_LENGTH = 22;
@@ -39,7 +39,7 @@ export function Games({
       className={cn(
         "flex flex-col container gap-y-4 pl-9 w-full",
         {
-          "!bg-transparent": cancelled,
+          "!bg-transparent": cancelled || hidden,
         },
         className,
       )}
@@ -50,8 +50,8 @@ export function Games({
             HIDDEN GAME! ADMIN VIEW ONLY
           </small>
         )}
-        <div className="flex gap-x-4 w-full">
-          <strong className="flex items-center gap-x-2 text-lg">
+        <div className="flex gap-x-4 w-full items-center">
+          <strong className="flex items-center gap-x-2 text-lg whitespace-nowrap min-w-[110px]">
             {teams !== undefined ? "Tournament" : "Game"} {game_id}{" "}
             {gender === Gender.FEMALE && (
               <span className=" text-black text-[11px] bg-red-100 px-2 h-[20px] leading-[1.9]">
@@ -59,7 +59,9 @@ export function Games({
               </span>
             )}
           </strong>
-          <strong className="ml-auto whitespace-nowrap">{location}</strong>
+          <strong className="ml-auto whitespace-nowrap overflow-hidden text-ellipsis">
+            {location}
+          </strong>
         </div>
         <div className="flex gap-x-4 w-full">
           Time:
@@ -87,10 +89,10 @@ export function Games({
         <div className="flex gap-x-4 w-full">
           Game pace:
           <strong className="ml-auto whitespace-nowrap uppercase italic">
-            {speed}
+            {(speed as PlaySpeed | "") || "Mixed"}
           </strong>
         </div>
-        {!cancelled && (
+        {!hidden && !cancelled && (
           <RemainingSpots
             title="Spots remaining:"
             signedUp={signupsAmt}
@@ -102,13 +104,15 @@ export function Games({
             className="pl-0 text-md [&>div]:!px-2.5 [&>div]:!py-0.5"
           />
         )}
-        {(cancelled || (waitlistAmt !== null && waitlistAmt <= 0)) && (
-          <div className={`px-2 p-1 ${cancelled ? RED_TW : ORANGE_TW}`}>
-            {cancelled ? "CANCELLED" : waitlistLabel}
+        {(hidden ||
+          cancelled ||
+          (waitlistAmt !== null && waitlistAmt <= 0)) && (
+          <div className={`px-2 p-1 ${hidden ? ORANGE_TW : RED_TW}`}>
+            {hidden ? "HIDDEN" : cancelled ? "CANCELLED" : waitlistLabel}
           </div>
         )}
       </div>
-      <div>{children}</div>
+      {!hidden && <div>{children}</div>}
     </div>
   );
 }

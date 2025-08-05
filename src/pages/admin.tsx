@@ -546,7 +546,7 @@ export default function Admin({
         >
           <div className="container-header !h-auto -mt-2 -mx-1.5 py-2 !text-xl md:!text-2xl">
             <small className="px-2 py-1 text-xs mr-auto">
-              [+/-] expand/minimise
+              [+/-] <span className="hidden xl:inline">expand/minimise</span>
             </small>
             Manage games
           </div>
@@ -567,19 +567,19 @@ export default function Admin({
               </small>
               Games list
             </div>
-            <div className="flex flex-col w-full gap-y-2 sm:gap-y-2 text-xs pt-3 px-1.5">
+            <div className="flex flex-col w-full gap-y-2 sm:gap-y-2 text-xs pt-3">
               {sortedGames.map((game) => (
                 <div
                   key={game._id.toString()}
                   className={cn(
-                    "flex flex-row gap-x-5 justify-between items-center",
+                    "flex flex-row gap-x-5 justify-between items-center px-2 py-1",
                     {
                       "bg-[var(--background-window-highlight)]": game.hidden,
                     },
                   )}
                 >
                   <div className="flex flex-[1_1_70%] justify-start gap-x-4">
-                    <div className="flex flex-col w-auto whitespace-nowrap">
+                    <div className="flex flex-col w-auto whitespace-preline">
                       <strong>
                         {game.day} @ {game.time}{" "}
                         {game.hidden === true && "(Hidden from users)"}
@@ -589,7 +589,7 @@ export default function Admin({
                     <a
                       href={game.mapUrl}
                       target="_blank"
-                      className="min-w-[100px] self-end text-right flex-1"
+                      className="min-w-[100px] self-center text-right flex-1"
                     >
                       {game.address.slice(0, ADDRESS_MAX_LENGTH)}...
                     </a>
@@ -710,7 +710,7 @@ export default function Admin({
                   }}
                   value={targettedGame.speed}
                   name="game-speed"
-                  defaultValue={""}
+                  defaultValue="Mixed"
                   onChange={(e) => {
                     setGameInfo((prev) => ({
                       ...prev,
@@ -718,7 +718,6 @@ export default function Admin({
                     }));
                   }}
                 >
-                  <option value="">- Please select a game speed -</option>
                   <option value="faster">Faster</option>
                   <option value="mixed">Mixed</option>
                   <option value="slower">Slower</option>
@@ -845,7 +844,7 @@ export default function Admin({
         >
           <div className="container-header !h-auto -mt-2 mx-[2px] py-2 !text-xl md:!text-2xl">
             <small className="px-2 py-1 text-xs mr-auto">
-              [+/-] expand/minimise
+              [+/-] <span className="hidden xl:inline">expand/minimise</span>
             </small>
             Track payment per game
           </div>
@@ -865,7 +864,8 @@ export default function Admin({
               >
                 <div className="container-header !py-5">
                   <small className="px-2 py-1 text-xs mr-auto">
-                    [+/-] expand/minimise
+                    [+/-]{" "}
+                    <span className="hidden xl:inline">expand/minimise</span>
                   </small>{" "}
                   <h5>{day}</h5>
                 </div>
@@ -1005,7 +1005,7 @@ export default function Admin({
         >
           <div className="container-header !h-auto -mt-2 mx-[2px] py-2 !text-xl md:!text-2xl">
             <small className="px-2 py-1 text-xs mr-auto">
-              [+/-] expand/minimise
+              [+/-] <span className="hidden xl:inline">expand/minimise</span>
             </small>
             Players in debt
           </div>

@@ -4,7 +4,10 @@ import { copyToClipboard } from "./copy";
 import { computeGameDate, getUSDayIndex } from "./date";
 
 import { DAYS_IN_WEEK_REVERSED } from "@/constants/date";
-import { MAX_SIGNUPS_PER_GAME } from "@/constants/signups";
+import {
+  MAX_SIGNUPS_PER_GAME,
+  MAX_SIGNUPS_PER_TOURNEY,
+} from "@/constants/signups";
 import {
   GameStatus,
   Gender,
@@ -163,12 +166,13 @@ export const getRandomAvailableTourneyIndex = (
   );
 
   // Get list of available bucket keys (still under max)
-  const availableKeys = Object.values(current).filter(
-    (set) => set.size < MAX_SIGNUPS_PER_GAME && !flatCurrent.has(player),
+  const availableKeys = Object.entries(current).filter(
+    ([, set]) => set.size < MAX_SIGNUPS_PER_TOURNEY && !flatCurrent.has(player),
   );
 
   // Stop early if all are full
   if (availableKeys.length === 0) return undefined;
+  else if (availableKeys.length === 1) return Number(availableKeys[0][0]);
 
   // Return a random available key
   return randomInt(0, availableKeys.length);
