@@ -10,6 +10,8 @@ import { useSearchFilter } from "@/hooks/useSearchFilter";
 import type { IUserSafe } from "@/types";
 import { filterUser } from "@/utils/filter";
 
+const GOD_ID = "6803e2f52e7671961ea348fc";
+
 interface IFindAndDeletePlayer {
   users: IUserSafe[];
   openDialog: ReturnType<typeof useDialog>["openDialog"];
@@ -99,14 +101,16 @@ export function FindAndDeletePlayer({
           errorMsg={null}
           loading={false}
         >
-          <button
-            className={RED_TW}
-            onClick={(e) => {
-              handleDelete(e, user);
-            }}
-          >
-            <b>DELETE</b>
-          </button>
+          {user._id !== undefined && user._id.toString() !== GOD_ID && (
+            <button
+              className={RED_TW}
+              onClick={(e) => {
+                handleDelete(e, user);
+              }}
+            >
+              <b>DELETE</b>
+            </button>
+          )}
         </SigneeComponent>
       ))}
     </Collapsible>
