@@ -1,6 +1,6 @@
-import type { IGame, IUser } from "@/types";
+import type { IGame, IUserSafe } from "@/types";
 
-export function filterUser(user: IUser, searchFilter: string) {
+export function filterUser<U extends IUserSafe>(user: U, searchFilter: string) {
   if (searchFilter === "") return true;
 
   const fullName = `${user.first_name} ${user.last_name}`;

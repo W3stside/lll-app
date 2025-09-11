@@ -19,16 +19,16 @@ export function groupUsersById(users: IUser[]) {
 }
 
 export function groupGamesByDay(games: IGame[]) {
-  return sortDaysOfWeek(games).reduce<GamesByDay>(
-    (acc, game) => ({
+  return sortDaysOfWeek(games).reduce<GamesByDay>((acc, game) => {
+    if (game.hidden === true) return acc;
+    return {
       ...acc,
       [game.day]: [...(acc[game.day] ?? []), game].sort(
         (a, b) =>
           Number(a.time.replace(/:/g, "")) - Number(b.time.replace(/:/g, "")),
       ),
-    }),
-    {},
-  );
+    };
+  }, {});
 }
 
 export function checkPlayerCanCancel(player?: IUserSafe, user?: IUserSafe) {

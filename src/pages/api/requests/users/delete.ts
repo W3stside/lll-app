@@ -1,7 +1,8 @@
 /* eslint-disable no-console */
+import { ObjectId } from "mongodb";
 import type { NextApiRequest, NextApiResponse } from "next";
 
-import clientPromise from "@/lib/mongodb";
+import client from "@/lib/mongodb";
 import { Collection } from "@/types";
 import type { IUser } from "@/types/users";
 
@@ -10,12 +11,10 @@ export default async (req: NextApiRequest, res: NextApiResponse) => {
     const body = req.body as IUser;
     const { _id } = body;
 
-    const client = clientPromise;
-    const db = client.db("LLL");
-    const collection = db.collection<IUser>(Collection.USERS);
+    const collection = client.db("LLL").collection<IUser>(Collection.USERS);
 
     const result = await collection.deleteOne({
-      _id,
+      _id: new ObjectId(_id),
     });
 
     if (result.acknowledged) {

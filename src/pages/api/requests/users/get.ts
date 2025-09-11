@@ -1,14 +1,16 @@
 /* eslint-disable no-console */
 import type { NextApiRequest, NextApiResponse } from "next";
 
-import clientPromise from "@/lib/mongodb";
+import client from "@/lib/mongodb";
 import { Collection } from "@/types";
 
 export default async (_: NextApiRequest, res: NextApiResponse) => {
   try {
-    const client = clientPromise;
-    const db = client.db("LLL");
-    const users = await db.collection(Collection.USERS).find().toArray();
+    const users = await client
+      .db("LLL")
+      .collection(Collection.USERS)
+      .find({})
+      .toArray();
 
     res.status(201).json(users);
   } catch (e) {
