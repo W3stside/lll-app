@@ -10,7 +10,7 @@ import { useSearchFilter } from "@/hooks/useSearchFilter";
 import type { IUserSafe } from "@/types";
 import { filterUser } from "@/utils/filter";
 
-const GOD_ID = process.env.REACT_APP_GOD_ID;
+const GOD_ID = process.env.NEXT_PUBLIC_GOD_ID;
 
 interface IFindAndDeletePlayer {
   users: IUserSafe[];
