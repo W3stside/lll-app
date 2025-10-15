@@ -8,6 +8,7 @@ export enum Gender {
 }
 export enum GameType {
   STANDARD = "Standard",
+  ELEVENS = "Elevens",
   TOURNAMENT = "Tournament",
 }
 
@@ -28,13 +29,13 @@ export interface IGame {
     | "Tuesday"
     | "Wednesday";
   players: string[];
-  // Tournaments
-  teams?: { players: string[] }[];
   gender?: Gender;
   organisers?: ObjectId[];
   cancelled?: boolean;
   hidden?: boolean;
   type?: GameType;
+  // Tournaments
+  teams?: { players: string[] }[];
 }
 
 export type GamesByDay = Partial<Record<IGame["day"], IGame[]>>;

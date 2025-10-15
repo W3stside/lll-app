@@ -4,11 +4,8 @@ import { PlayersList } from "./PlayersList";
 import { StyledGamesList } from "./StyledGamesList";
 import type { IPlayersList } from "./types";
 
-import {
-  MAX_SIGNUPS_PER_GAME,
-  MAX_SIGNUPS_PER_TOURNEY,
-} from "@/constants/signups";
-import { Role } from "@/types";
+import { MAX_SIGNUPS_PER_GAME } from "@/constants/signups";
+import { GameType, Role } from "@/types";
 import { cn } from "@/utils/tailwind";
 
 const TEAMS_INFO = [
@@ -33,8 +30,13 @@ export function TourneyPlayersList({
     ]);
 
     return {
-      confirmedList: flatTourneyPlayers.slice(0, MAX_SIGNUPS_PER_TOURNEY),
-      waitlist: game.players.slice(MAX_SIGNUPS_PER_TOURNEY * 4),
+      confirmedList: flatTourneyPlayers.slice(
+        0,
+        MAX_SIGNUPS_PER_GAME[GameType.TOURNAMENT],
+      ),
+      waitlist: game.players.slice(
+        MAX_SIGNUPS_PER_GAME[GameType.TOURNAMENT] * 4,
+      ),
     };
   }, [game.players, game.teams]);
 
@@ -76,7 +78,10 @@ export function TourneyPlayersList({
               {...rest}
               game={game}
               gameStatus={gameStatus}
-              confirmedList={players.slice(0, MAX_SIGNUPS_PER_GAME)}
+              confirmedList={players.slice(
+                0,
+                MAX_SIGNUPS_PER_GAME[GameType.TOURNAMENT],
+              )}
               waitlist={[]}
               nextGameDate={nextGameDate}
             />

@@ -3,6 +3,7 @@ import { StyledGamesList } from "./StyledGamesList";
 import type { IPlayersList } from "./types";
 
 import { MAX_SIGNUPS_PER_GAME } from "@/constants/signups";
+import { GameType } from "@/types/games";
 
 export function StandardPlayersList({
   game,
@@ -13,8 +14,13 @@ export function StandardPlayersList({
   ...rest
 }: Omit<IPlayersList, "confirmedList" | "waitlist">) {
   const gameCancelled = game.cancelled === true || game.hidden === true;
-  const confirmedList = game.players.slice(0, MAX_SIGNUPS_PER_GAME);
-  const waitlist = game.players.slice(MAX_SIGNUPS_PER_GAME);
+  const confirmedList = game.players.slice(
+    0,
+    MAX_SIGNUPS_PER_GAME[game.type ?? GameType.STANDARD],
+  );
+  const waitlist = game.players.slice(
+    MAX_SIGNUPS_PER_GAME[game.type ?? GameType.STANDARD],
+  );
 
   return (
     <StyledGamesList

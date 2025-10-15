@@ -16,6 +16,7 @@ import { useActions } from "@/context/Actions/context";
 import { useUser } from "@/context/User/context";
 import {
   GameStatus,
+  GameType,
   Role,
   type IAdmin,
   type IGame,
@@ -94,7 +95,7 @@ export function Profile({
                 waitlistAmt={
                   game.players.findIndex(
                     (pl) => pl.toString() === profileUser._id.toString(),
-                  ) < MAX_SIGNUPS_PER_GAME
+                  ) < MAX_SIGNUPS_PER_GAME[game.type ?? GameType.STANDARD]
                     ? null
                     : 0
                 }
