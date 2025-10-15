@@ -18,7 +18,14 @@ import { useUser } from "@/context/User/context";
 import { withServerSideProps } from "@/hoc/withServerSideProps";
 import { useWeeklyGamesData } from "@/hooks/signups/useWeeklyGamesData";
 import { useFilterGames } from "@/hooks/useFilterGames";
-import { GameStatus, Role, type IAdmin, type IGame, type IUser } from "@/types";
+import {
+  GameStatus,
+  GameType,
+  Role,
+  type IAdmin,
+  type IGame,
+  type IUser,
+} from "@/types";
 import { computeGameDate } from "@/utils/date";
 import { cn } from "@/utils/tailwind";
 
@@ -195,7 +202,7 @@ const Signups: React.FC<ISignups> = ({
                                   ? 85
                                   : 49
                                 : 85
-                              : 103
+                              : 100
                         }
                         customState={collapsed[day]}
                         disabled={userContext.role !== Role.ADMIN && noGames}
@@ -371,7 +378,10 @@ const Signups: React.FC<ISignups> = ({
                               ).toISOString();
 
                               // Non-tourney game
-                              if (game.teams === undefined) {
+                              if (
+                                game.type !== GameType.TOURNAMENT ||
+                                game.teams === undefined
+                              ) {
                                 return (
                                   <StandardPlayersList
                                     key={game._id.toString()}
@@ -397,8 +407,6 @@ const Signups: React.FC<ISignups> = ({
                                   usersById={usersById}
                                 />
                               );
-
-                              return null;
                             })}
                           </div>
                         </div>

@@ -4,12 +4,10 @@ import { copyToClipboard } from "./copy";
 import { computeGameDate, getUSDayIndex } from "./date";
 
 import { DAYS_IN_WEEK_REVERSED } from "@/constants/date";
-import {
-  MAX_SIGNUPS_PER_GAME,
-  MAX_SIGNUPS_PER_TOURNEY,
-} from "@/constants/signups";
+import { MAX_SIGNUPS_PER_GAME } from "@/constants/signups";
 import {
   GameStatus,
+  GameType,
   Gender,
   type IUserSafe,
   type GamesByDay,
@@ -74,7 +72,7 @@ export const shareGameList = async ({
   if (typeof globalThis.window === "undefined") return;
 
   const text = games
-    .map(({ day: d, gender, time, address, location, players }) => {
+    .map(({ day: d, gender, time, address, location, players, type }) => {
       const playersMapped = players.map((p) => ({
         name: `${usersById[p.toString()].first_name} ${
           usersById[p.toString()].last_name
@@ -88,7 +86,7 @@ WHERE: ${location} - ${address}
 OPEN SPOTS: ${openSpots}
 
 CONFIRMED PLAYERS: ${playersMapped
-        .slice(0, MAX_SIGNUPS_PER_GAME)
+        .slice(0, MAX_SIGNUPS_PER_GAME[type ?? GameType.STANDARD])
         .map(
           (p) => `
 ${p.name} (${p.phone})`,
@@ -96,7 +94,7 @@ ${p.name} (${p.phone})`,
         .join("")}
 
 WAITLIST: ${playersMapped
-        .slice(MAX_SIGNUPS_PER_GAME)
+        .slice(MAX_SIGNUPS_PER_GAME[type ?? GameType.STANDARD])
         .map(
           (p) => `
 ${p.name} (${p.phone})`,
@@ -167,7 +165,9 @@ export const getRandomAvailableTourneyIndex = (
 
   // Get list of available bucket keys (still under max)
   const availableKeys = Object.entries(current).filter(
-    ([, set]) => set.size < MAX_SIGNUPS_PER_TOURNEY && !flatCurrent.has(player),
+    ([, set]) =>
+      set.size < MAX_SIGNUPS_PER_GAME[GameType.TOURNAMENT] &&
+      !flatCurrent.has(player),
   );
 
   // Stop early if all are full

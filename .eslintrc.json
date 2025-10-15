@@ -19,6 +19,7 @@
   ],
   "rules": {
     // Todo Linter: fix the following rules
+    "capitalized-comments": "off",
     "camelcase": "off",
     "id-length": "off",
     "func-style": "off",

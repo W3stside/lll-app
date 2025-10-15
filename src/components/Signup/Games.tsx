@@ -2,7 +2,7 @@ import { RemainingSpots } from "../ui";
 
 import { ORANGE_TW, RED_TW } from "@/constants/colours";
 import { MAX_SIGNUPS_PER_GAME } from "@/constants/signups";
-import { type PlaySpeed, Gender, type IGame } from "@/types";
+import { type PlaySpeed, Gender, type IGame, GameType } from "@/types";
 import { cn } from "@/utils/tailwind";
 
 const MAX_ADDRESS_LENGTH = 22;
@@ -30,9 +30,14 @@ export function Games({
   waitlistLabel = "Waitlist only",
   cancelled = false,
   hidden = false,
+  type,
   children,
   className,
 }: IGames) {
+  const maxSignups =
+    MAX_SIGNUPS_PER_GAME[type ?? GameType.STANDARD] *
+    Math.max((teams ?? []).length, 1);
+
   return (
     <div
       key={game_id}
@@ -96,11 +101,7 @@ export function Games({
           <RemainingSpots
             title="Spots remaining:"
             signedUp={signupsAmt}
-            maxSignups={
-              teams !== undefined
-                ? MAX_SIGNUPS_PER_GAME * 2
-                : MAX_SIGNUPS_PER_GAME
-            }
+            maxSignups={maxSignups}
             className="pl-0 text-md [&>div]:!px-2.5 [&>div]:!py-0.5"
           />
         )}

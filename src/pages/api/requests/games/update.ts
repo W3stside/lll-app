@@ -4,7 +4,13 @@ import type { NextApiRequest, NextApiResponse } from "next";
 
 import { MAX_SIGNUPS_PER_GAME } from "@/constants/signups";
 import client from "@/lib/mongodb";
-import { type IAdmin, Collection, type IUser, type IGame } from "@/types";
+import {
+  type IAdmin,
+  Collection,
+  type IUser,
+  type IGame,
+  GameType,
+} from "@/types";
 import {
   sendBumpedMessage,
   sendGameCancelledMessage,
@@ -113,7 +119,9 @@ export default async (req: NextApiRequest, res: NextApiResponse) => {
         result !== null &&
         previous !== null &&
         cancelPlayerId !== undefined &&
-        (isAdminCancel || previous.players.length > MAX_SIGNUPS_PER_GAME)
+        (isAdminCancel ||
+          previous.players.length >
+            MAX_SIGNUPS_PER_GAME[previous.type ?? GameType.STANDARD])
       ) {
         const playerIdx = previous.players.findIndex(
           (pl) => pl === cancelPlayerId.toString(),
@@ -122,14 +130,18 @@ export default async (req: NextApiRequest, res: NextApiResponse) => {
         // Admin cancelled a guy. Ping him
         if (isAdminCancel) {
           // Reinsert player at the top of the waitlist queue
-          if (previous.players.length > MAX_SIGNUPS_PER_GAME) {
+          if (
+            previous.players.length >
+            MAX_SIGNUPS_PER_GAME[previous.type ?? GameType.STANDARD]
+          ) {
             const pushResult = await gamesCollection.updateOne(
               { _id: gameIdWrapped },
               {
                 $push: {
                   players: {
                     $each: [cancelPlayerId.toString()],
-                    $position: MAX_SIGNUPS_PER_GAME,
+                    $position:
+                      MAX_SIGNUPS_PER_GAME[previous.type ?? GameType.STANDARD],
                   },
                 },
               },
@@ -137,12 +149,12 @@ export default async (req: NextApiRequest, res: NextApiResponse) => {
 
             if (pushResult.modifiedCount === 0) {
               console.error(
-                `Failed to reinsert ID "${cancelPlayerId.toString()}" at position ${MAX_SIGNUPS_PER_GAME} for document "${gameIdWrapped.toHexString()}".`,
+                `Failed to reinsert ID "${cancelPlayerId.toString()}" at position ${MAX_SIGNUPS_PER_GAME[previous.type ?? GameType.STANDARD]} for document "${gameIdWrapped.toHexString()}".`,
               );
               // Handle error appropriately
             } else {
               console.log(
-                `Successfully moved ID "${cancelPlayerId.toString()}" in array "players" for document "${gameIdWrapped.toHexString()}" to position ${MAX_SIGNUPS_PER_GAME}.`,
+                `Successfully moved ID "${cancelPlayerId.toString()}" in array "players" for document "${gameIdWrapped.toHexString()}" to position ${MAX_SIGNUPS_PER_GAME[previous.type ?? GameType.STANDARD]}.`,
               );
             }
           }
@@ -166,9 +178,11 @@ export default async (req: NextApiRequest, res: NextApiResponse) => {
           }
         }
         // Player cancelling is in the waitlist
-        else if (playerIdx < MAX_SIGNUPS_PER_GAME) {
+        else if (
+          playerIdx < MAX_SIGNUPS_PER_GAME[previous.type ?? GameType.STANDARD]
+        ) {
           const newlyConfirmedPlayer = result.players.at(
-            MAX_SIGNUPS_PER_GAME - 1,
+            MAX_SIGNUPS_PER_GAME[previous.type ?? GameType.STANDARD] - 1,
           );
 
           const ids = [
@@ -227,7 +241,7 @@ export default async (req: NextApiRequest, res: NextApiResponse) => {
 
         const userData = Object.fromEntries(
           result.players
-            .slice(0, MAX_SIGNUPS_PER_GAME)
+            .slice(0, MAX_SIGNUPS_PER_GAME[result.type ?? GameType.STANDARD])
             .map((p) => [
               usersById[p.toString()].first_name,
               usersById[p.toString()].phone_number,

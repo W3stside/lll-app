@@ -137,10 +137,7 @@ export function ManageGames({
               name="day-of-the-week"
               defaultValue={""}
               onChange={(e) => {
-                setGameInfo((prev) => ({
-                  ...prev,
-                  day: e.target.value as IGame["day"],
-                }));
+                handleChange("day", e.target.value as IGame["day"]);
               }}
             >
               <option value="">- Please select a day -</option>
@@ -156,12 +153,9 @@ export function ManageGames({
               }}
               value={targettedGame.type}
               name="type-of-game"
-              defaultValue="Standard"
+              defaultValue={GameType.STANDARD}
               onChange={(e) => {
-                setGameInfo((prev) => ({
-                  ...prev,
-                  type: e.target.value as GameType,
-                }));
+                handleChange("type", e.target.value as GameType);
               }}
             >
               {Object.values(GameType).map((type) => (
@@ -222,10 +216,7 @@ export function ManageGames({
               name="game-speed"
               defaultValue="Mixed"
               onChange={(e) => {
-                setGameInfo((prev) => ({
-                  ...prev,
-                  speed: e.target.value as PlaySpeed,
-                }));
+                handleChange("speed", e.target.value as PlaySpeed);
               }}
             >
               <option value="faster">Faster</option>
@@ -240,10 +231,7 @@ export function ManageGames({
               name="gender"
               defaultValue={""}
               onChange={(e) => {
-                setGameInfo((prev) => ({
-                  ...prev,
-                  gender: e.target.value as Gender,
-                }));
+                handleChange("gender", e.target.value as Gender);
               }}
             >
               <option value="">- (optional) Ladies game? -</option>
@@ -257,12 +245,9 @@ export function ManageGames({
                 targettedGame.cancelled === true ? "cancelled" : "confirmed"
               }
               name="status"
-              defaultValue={""}
+              defaultValue=""
               onChange={(e) => {
-                setGameInfo((prev) => ({
-                  ...prev,
-                  cancelled: e.target.value === "cancelled",
-                }));
+                handleChange("cancelled", e.target.value === "cancelled");
               }}
             >
               <option value="">Status: Confirmed</option>
@@ -276,10 +261,7 @@ export function ManageGames({
               name="hidden"
               defaultValue="visible"
               onChange={(e) => {
-                setGameInfo((prev) => ({
-                  ...prev,
-                  hidden: e.target.value === "hidden",
-                }));
+                handleChange("hidden", e.target.value === "hidden");
               }}
             >
               <option value="visible"> View: Visible</option>

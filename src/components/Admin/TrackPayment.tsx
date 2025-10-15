@@ -6,7 +6,7 @@ import { Collapsible } from "../ui";
 
 import errorIcon from "@/assets/error.png";
 import { MAX_SIGNUPS_PER_GAME } from "@/constants/signups";
-import type { IGame, IUser } from "@/types";
+import { GameType, type IGame, type IUser } from "@/types";
 import { formatDateStr, computeGameDate } from "@/utils/date";
 import { cn } from "@/utils/tailwind";
 
@@ -86,103 +86,105 @@ export function TrackPayment({
                     <small className="px-2 py-1 text-xs mr-auto">[+/-]</small>
                     Game {g.game_id} - {gameDateStr}
                   </div>
-                  {g.players.slice(0, MAX_SIGNUPS_PER_GAME).flatMap((u) => {
-                    const specificUser = usersById[u];
-                    if (specificUser === undefined) return [];
+                  {g.players
+                    .slice(0, MAX_SIGNUPS_PER_GAME[g.type ?? GameType.STANDARD])
+                    .flatMap((u) => {
+                      const specificUser = usersById[u];
+                      if (specificUser === undefined) return [];
 
-                    const hasMissingPayment =
-                      specificUser.missedPayments?.some(
-                        (info) => info.date === gameDateStr,
-                      ) ?? false;
-                    const userPaid =
-                      paymentsConfirmed[gameDateStr]?.includes(u) ?? false;
+                      const hasMissingPayment =
+                        specificUser.missedPayments?.some(
+                          (info) => info.date === gameDateStr,
+                        ) ?? false;
+                      const userPaid =
+                        paymentsConfirmed[gameDateStr]?.includes(u) ?? false;
 
-                    return (
-                      <SigneeComponent
-                        key={u}
-                        className="justify-center min-h-[88px] [&>div]:flex-row [&>div>div>div:nth-child(2)]:text-left [&>div>div>div:nth-child(2)>div]:justify-start"
-                        hideAvatar
-                        errorMsg={null}
-                        loading={loading}
-                        {...specificUser}
-                      >
-                        <div className="flex flex-row-reverse gap-x-2 items-center min-w-[130px]">
-                          {(hasMissingPayment || !userPaid) && (
+                      return (
+                        <SigneeComponent
+                          key={u}
+                          className="justify-center min-h-[88px] [&>div]:flex-row [&>div>div>div:nth-child(2)]:text-left [&>div>div>div:nth-child(2)>div]:justify-start"
+                          hideAvatar
+                          errorMsg={null}
+                          loading={loading}
+                          {...specificUser}
+                        >
+                          <div className="flex flex-row-reverse gap-x-2 items-center min-w-[130px]">
+                            {(hasMissingPayment || !userPaid) && (
+                              <button
+                                className={cn(
+                                  "flex-1 justify-center whitespace-nowrap h-[60px]",
+                                  {
+                                    "bg-[var(--background-2)]":
+                                      !hasMissingPayment,
+                                  },
+                                )}
+                                disabled={
+                                  (!hasMissingPayment && userPaid) || loading
+                                }
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setPaymentsConfirmed((prev) => ({
+                                    ...prev,
+                                    [gameDateStr]: [
+                                      ...(prev[gameDateStr] ?? []),
+                                      u,
+                                    ],
+                                  }));
+
+                                  if (hasMissingPayment) {
+                                    void handlePayment(
+                                      specificUser._id,
+                                      g,
+                                      gameDateStr,
+                                      true,
+                                    );
+                                  }
+                                }}
+                              >
+                                <div className="flex gap-x-1 items-center">
+                                  <span className="text-3xl">✅</span>
+                                </div>
+                              </button>
+                            )}
                             <button
                               className={cn(
                                 "flex-1 justify-center whitespace-nowrap h-[60px]",
                                 {
-                                  "bg-[var(--background-2)]":
+                                  "bg-[var(--background-error-alt)]":
                                     !hasMissingPayment,
                                 },
                               )}
-                              disabled={
-                                (!hasMissingPayment && userPaid) || loading
-                              }
+                              disabled={hasMissingPayment || loading}
                               onClick={(e) => {
                                 e.stopPropagation();
-                                setPaymentsConfirmed((prev) => ({
-                                  ...prev,
-                                  [gameDateStr]: [
-                                    ...(prev[gameDateStr] ?? []),
-                                    u,
-                                  ],
-                                }));
-
-                                if (hasMissingPayment) {
-                                  void handlePayment(
-                                    specificUser._id,
-                                    g,
-                                    gameDateStr,
-                                    true,
-                                  );
+                                void handlePayment(
+                                  specificUser._id,
+                                  g,
+                                  gameDateStr,
+                                  hasMissingPayment,
+                                );
+                                if (userPaid) {
+                                  setPaymentsConfirmed((prev) => ({
+                                    ...prev,
+                                    [gameDateStr]: prev[gameDateStr]?.filter(
+                                      (id) => id !== u,
+                                    ),
+                                  }));
                                 }
                               }}
                             >
-                              <div className="flex gap-x-1 items-center">
-                                <span className="text-3xl">✅</span>
+                              <div className="flex gap-x-2.5 items-center justify-center w-full">
+                                <Image
+                                  src={errorIcon}
+                                  alt="error"
+                                  className="size-8"
+                                />
                               </div>
                             </button>
-                          )}
-                          <button
-                            className={cn(
-                              "flex-1 justify-center whitespace-nowrap h-[60px]",
-                              {
-                                "bg-[var(--background-error-alt)]":
-                                  !hasMissingPayment,
-                              },
-                            )}
-                            disabled={hasMissingPayment || loading}
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              void handlePayment(
-                                specificUser._id,
-                                g,
-                                gameDateStr,
-                                hasMissingPayment,
-                              );
-                              if (userPaid) {
-                                setPaymentsConfirmed((prev) => ({
-                                  ...prev,
-                                  [gameDateStr]: prev[gameDateStr]?.filter(
-                                    (id) => id !== u,
-                                  ),
-                                }));
-                              }
-                            }}
-                          >
-                            <div className="flex gap-x-2.5 items-center justify-center w-full">
-                              <Image
-                                src={errorIcon}
-                                alt="error"
-                                className="size-8"
-                              />
-                            </div>
-                          </button>
-                        </div>
-                      </SigneeComponent>
-                    );
-                  })}
+                          </div>
+                        </SigneeComponent>
+                      );
+                    })}
                   <small className="mt-2 mx-auto">- End game data -</small>
                 </Collapsible>
               );

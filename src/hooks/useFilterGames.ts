@@ -4,7 +4,7 @@ import { useMemo } from "react";
 import { useSearchFilter } from "./useSearchFilter";
 
 import { MAX_SIGNUPS_PER_GAME } from "@/constants/signups";
-import { GameStatus, type GamesByDay, type IUser } from "@/types";
+import { GameStatus, GameType, type GamesByDay, type IUser } from "@/types";
 import { filterUser } from "@/utils/filter";
 import { computeGameStatus, getLastGame } from "@/utils/games";
 
@@ -52,7 +52,8 @@ export function useFilterGames({
       case GameFilters.OPEN_GAMES:
         filteredGames = flatGames.filter(
           (fg) =>
-            fg.players.length < MAX_SIGNUPS_PER_GAME &&
+            fg.players.length <
+              MAX_SIGNUPS_PER_GAME[fg.type ?? GameType.STANDARD] &&
             computeGameStatus(flatGames, fg.day, lastGameOfWeek).gameStatus !==
               GameStatus.PAST,
         );

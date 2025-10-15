@@ -33,7 +33,8 @@ import { sharePaymentsMissingList } from "@/utils/games";
 import { sortDaysOfWeek } from "@/utils/sort";
 import { cn } from "@/utils/tailwind";
 
-const GOOGLE_MAPS_REGEX = /^(https?:\/\/)?(www\.)?google\.com\/maps/;
+const GOOGLE_MAPS_REGEX =
+  /^(https?:\/\/)?(www\.)?(google\.com\/maps|maps\.google\.com|maps\.app\.goo\.gl)/;
 const ERRORS_MAP = {
   time: "Invalid! Must be 24h format (e.g 19:00)",
   location: "Invalid! Must be at least 5 characters",
@@ -251,6 +252,7 @@ export default function Admin({
           }
         >("create", Collection.GAMES, {
           ...gameNoId,
+          type,
           players: [],
           teams,
         });
@@ -265,6 +267,7 @@ export default function Admin({
           }
         >("update", Collection.GAMES, {
           _id,
+          type,
           ...gameNoId,
         });
       }

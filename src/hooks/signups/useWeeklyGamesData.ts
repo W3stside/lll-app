@@ -2,7 +2,7 @@ import { useMemo } from "react";
 
 import { MAX_SIGNUPS_PER_GAME } from "@/constants/signups";
 import { useGames } from "@/context/Games/context";
-import { type IGame, type IUser, GameStatus } from "@/types";
+import { type IGame, type IUser, GameStatus, GameType } from "@/types";
 import { groupGamesByDay } from "@/utils/data";
 import { computeGameStatus, getLastGame, shareGameList } from "@/utils/games";
 
@@ -64,27 +64,35 @@ export function useWeeklyGamesData(
         (g) => g.cancelled !== true && g.hidden !== true,
       );
 
-      const { total: signedUp, capacity } = games.reduce<{
+      const {
+        total: signedUp,
+        capacity,
+        maxSignups,
+      } = games.reduce<{
         total: number;
         capacity: number[];
+        maxSignups: number;
       }>(
-        (acc, { players = [], teams }) => {
+        (acc, { players = [], teams, type }) => {
           const tourneyPlayers =
             teams !== undefined
               ? Object.values(teams).flatMap((t) => [...t.players])
               : [];
 
+          const limit = MAX_SIGNUPS_PER_GAME[type ?? GameType.STANDARD];
+
           return {
+            maxSignups: acc.maxSignups + limit,
             total: acc.total + (tourneyPlayers.length || players.length),
             capacity: [
               ...acc.capacity,
               tourneyPlayers.length > 0
-                ? MAX_SIGNUPS_PER_GAME * 2 - tourneyPlayers.length
-                : MAX_SIGNUPS_PER_GAME - players.length,
+                ? limit * 2 - tourneyPlayers.length
+                : limit - players.length,
             ],
           };
         },
-        { total: 0, capacity: [] },
+        { total: 0, capacity: [], maxSignups: 0 },
       );
 
       const gamesFullyCapped = capacity.flatMap((gc) => (gc <= 0 ? [gc] : []));
@@ -93,7 +101,6 @@ export function useWeeklyGamesData(
         (acc, cap) => Math.max(0, cap) + acc,
         0,
       );
-      const maxSignups = MAX_SIGNUPS_PER_GAME * games.length;
 
       return [
         {
