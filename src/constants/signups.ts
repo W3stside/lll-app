@@ -2,7 +2,7 @@ import { GameType } from "@/types";
 
 export const MAX_SIGNUPS_PER_GAME = {
   [GameType.STANDARD]: 16,
-  [GameType.ELEVENS]: 24,
+  [GameType.ELEVENS]: 26,
   [GameType.TOURNAMENT]: 8,
 };
 
