@@ -1,18 +1,19 @@
 import { ObjectId } from "mongodb";
 import type { GetServerSideProps } from "next";
+import Image from "next/image";
 import { useCallback, useEffect, useMemo, useState } from "react";
 
 import { FindAndDeletePlayer } from "@/components/Admin/FindAndDeletePlayer";
 import { ManageGames } from "@/components/Admin/ManageGames";
 import { OweMoney } from "@/components/Admin/OweMoney";
+import { SignupsManagement } from "@/components/Admin/SignupsManagement";
 import { TrackPayment } from "@/components/Admin/TrackPayment";
 import { DEFAULT_GAME_STATE } from "@/components/Admin/constants";
 import type { ErrorUser } from "@/components/Admin/types";
 import { PartnerProducts } from "@/components/PartnerProducts";
-import { RED_TW } from "@/constants/colours";
-import { NAVLINKS_MAP } from "@/constants/links";
+import { ADMIN_NAVLINK, NAVLINKS_MAP } from "@/constants/links";
 import { useAdmin } from "@/context/Admin/context";
-import { DialogVariant, useDialog } from "@/context/Dialog/context";
+import { useDialog } from "@/context/Dialog/context";
 import { useGames } from "@/context/Games/context";
 import { useUser } from "@/context/User/context";
 import { withServerSideProps } from "@/hoc/withServerSideProps";
@@ -31,7 +32,6 @@ import { fetchUsersFromMongodb } from "@/utils/api/mongodb";
 import { isValid24hTime } from "@/utils/date";
 import { sharePaymentsMissingList } from "@/utils/games";
 import { sortDaysOfWeek } from "@/utils/sort";
-import { cn } from "@/utils/tailwind";
 
 const GOOGLE_MAPS_REGEX =
   /^(https?:\/\/)?(www\.)?(google\.com\/maps|maps\.google\.com|maps\.app\.goo\.gl)/;
@@ -448,7 +448,15 @@ export default function Admin({
     <>
       <div className="flex flex-col gap-y-3 text-black container">
         <div className="container-header !h-auto -mt-2 -mx-1.5">
-          <h4 className="mr-auto px-2 py-1">LLL Admin</h4> X
+          <h4 className="flex items-center mr-auto px-2 py-1">
+            <Image
+              src={ADMIN_NAVLINK.icon}
+              alt="program"
+              className="size-12 -mt-1"
+            />{" "}
+            LLL Admin
+          </h4>{" "}
+          X
         </div>
         <div className="px-2 py-2">
           Hey {user.first_name}! <br />
@@ -457,70 +465,45 @@ export default function Admin({
           actions to configure the LLL app.
           <br />
           <br />
-          More coming soon!
+          <i>More coming soon!</i>
         </div>
-
-        {admin !== undefined && (
-          <div className="flex flex-col gap-y-1 text-black container">
-            <div className="container-header !h-auto -mt-2 -mx-1.5 py-2 !text-xl md:!text-2xl">
-              Game and signups management
-            </div>
-            <div className="flex flex-col justify-start p-2">
-              <div className="flex flex-wrap gap-2 items-center justify-between py-1">
-                <div className="my-2 flex gap-x-4">
-                  <strong>Signups enabled?</strong>{" "}
-                  <div
-                    className={cn("font-bold", {
-                      "text-red-700": !admin.signup_open,
-                      "text-green-700": admin.signup_open,
-                    })}
-                  >
-                    {admin.signup_open ? "ENABLED" : "DISABLED"}
-                  </div>
-                </div>
-                <button
-                  onClick={handleToggleSignupsAvailable}
-                  className="!max-w-none w-[90px] justify-center"
-                  disabled={loading}
-                >
-                  {admin.signup_open ? "Disable" : "Enable"}
-                </button>
-              </div>
-              <div className="flex flex-wrap gap-2 items-center justify-between py-1">
-                <div className="my-2 flex gap-x-4">
-                  <strong>Clear all game signups:</strong>{" "}
-                </div>
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    openDialog({
-                      variant: DialogVariant.CONFIRM,
-                      title: "Careful!",
-                      content: (
-                        <div>
-                          Are you sure you want to remove all players from
-                          signups? This action cannot be undone. <br />
-                          <br />
-                          You should really only be doing this on Sunday night
-                          after the last game has been played and when preparing
-                          next week's games.
-                        </div>
-                      ),
-                      action: async () => {
-                        await handleClearAllSignups();
-                        openDialog();
-                      },
-                    });
-                  }}
-                  className={`!max-w-none w-max ${RED_TW}`}
-                  disabled={loading}
-                >
-                  Clear all
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
+        <br />
+        <h5 className="flex items-center ml-1 font-bold">
+          <Image
+            src={ADMIN_NAVLINK.icon}
+            alt="program"
+            className="size-11 -mt-1"
+          />{" "}
+          Players admin
+        </h5>
+        <TrackPayment
+          gamesByDay={gamesByDay}
+          usersById={usersById}
+          paymentsConfirmed={paymentsConfirmed}
+          setPaymentsConfirmed={setPaymentsConfirmed}
+          handlePayment={handlePayment}
+          loading={loading}
+          startCollapsed={false}
+        />
+        <OweMoney
+          usersWhomOweMoney={usersWhomOweMoney}
+          handlePayment={handlePayment}
+          sharePaymentsMissingList={sharePaymentsMissingList}
+          loading={loading}
+        />
+        <FindAndDeletePlayer
+          users={users}
+          openDialog={openDialog}
+          handleDeletePlayer={handleDeletePlayer}
+        />
+        <h5 className="flex items-center ml-1 font-bold">
+          <Image
+            src={ADMIN_NAVLINK.icon}
+            alt="program"
+            className="size-11 -mt-1"
+          />{" "}
+          Games admin
+        </h5>
         <ManageGames
           sortedGames={sortedGames}
           loading={loading}
@@ -535,27 +518,12 @@ export default function Admin({
           addGameError={addGameError}
           generalError={generalError}
         />
-
-        <TrackPayment
-          gamesByDay={gamesByDay}
-          usersById={usersById}
-          paymentsConfirmed={paymentsConfirmed}
-          setPaymentsConfirmed={setPaymentsConfirmed}
-          handlePayment={handlePayment}
+        <SignupsManagement
+          admin={admin}
           loading={loading}
-        />
-
-        <OweMoney
-          usersWhomOweMoney={usersWhomOweMoney}
-          handlePayment={handlePayment}
-          sharePaymentsMissingList={sharePaymentsMissingList}
-          loading={loading}
-        />
-
-        <FindAndDeletePlayer
-          users={users}
           openDialog={openDialog}
-          handleDeletePlayer={handleDeletePlayer}
+          handleClearAllSignups={handleClearAllSignups}
+          handleToggleSignupsAvailable={handleToggleSignupsAvailable}
         />
       </div>
       <PartnerProducts />

@@ -32,6 +32,7 @@ interface IManageGames {
   handleUpdateGame: () => Promise<void>;
   addGameError: Record<string, string> | null;
   generalError: Error | null;
+  startCollapsed?: boolean;
 }
 
 export function ManageGames({
@@ -47,12 +48,13 @@ export function ManageGames({
   generalError,
   openDialog,
   handleUpdateGame,
+  startCollapsed = true,
 }: IManageGames) {
   return (
     <Collapsible
       className="flex flex-col gap-y-1 text-black container !border-0"
       collapsedHeight={39}
-      startCollapsed
+      startCollapsed={startCollapsed}
     >
       <div className="container-header !h-auto -mt-2 -mx-1.5 py-2 !text-xl md:!text-2xl">
         <small className="px-2 py-1 text-xs mr-auto">

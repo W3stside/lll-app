@@ -1,7 +1,7 @@
 import { useMemo } from "react";
 
 import { PlayersList } from "./PlayersList";
-import { StyledGamesList } from "./StyledGamesList";
+import { StyledGamesList, type IStyledGamesList } from "./StyledGamesList";
 import type { IPlayersList } from "./types";
 
 import { MAX_SIGNUPS_PER_GAME } from "@/constants/signups";
@@ -18,11 +18,11 @@ const TEAMS_INFO = [
 export function TourneyPlayersList({
   game,
   gameStatus,
-  capacity,
-  index,
   nextGameDate,
+  collapsedHeight,
   ...rest
-}: Omit<IPlayersList, "confirmedList" | "waitlist">) {
+}: Omit<IPlayersList, "confirmedList" | "waitlist"> &
+  Pick<IStyledGamesList, "collapsedHeight">) {
   const gameCancelled = game.cancelled === true || game.hidden === true;
   const { confirmedList, waitlist } = useMemo(() => {
     const flatTourneyPlayers = Object.values(game.teams ?? {}).flatMap((t) => [
@@ -51,10 +51,10 @@ export function TourneyPlayersList({
     <StyledGamesList
       game={game}
       gameCancelled={gameCancelled}
-      capacity={capacity}
-      index={index}
+      waitlistAmt={waitlist.length}
       confirmedList={confirmedList}
       nextGameDate={nextGameDate}
+      collapsedHeight={collapsedHeight}
     >
       <div className="flex flex-col gap-y-8">
         {game.teams.map(({ players }, teamIndex) => (

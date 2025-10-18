@@ -2,6 +2,7 @@ import doc from "@/assets/doc.png";
 import error from "@/assets/error.png";
 import games from "@/assets/games.png";
 import info from "@/assets/info.png";
+import programs from "@/assets/programs.png";
 
 export const WHATS_APP = "https://wa.me";
 export const WHATS_APP_GROUP_URL =
@@ -23,8 +24,13 @@ export const NAVLINKS_MAP = {
   NOT_FOUND: "/404",
   BANNED: "/shadow-realm",
 } as const;
-
 export const ADMIN_PATH = "/admin";
+export const ADMIN_NAVLINK = {
+  name: "Admin",
+  url: ADMIN_PATH,
+  icon: programs,
+  highlight: true,
+};
 
 export const INSTAGRAM_URL = "https://www.instagram.com/lisbons_lowest_league/";
 export const RULEBOOK_URL =
