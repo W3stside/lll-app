@@ -23,11 +23,13 @@ interface IOweMoney {
     date: string,
     isPaid: boolean,
   ) => Promise<void>;
+  startCollapsed?: boolean;
 }
 
 export function OweMoney({
   usersWhomOweMoney,
   loading,
+  startCollapsed = true,
   sharePaymentsMissingList,
   handlePayment,
 }: IOweMoney) {
@@ -35,7 +37,7 @@ export function OweMoney({
     <Collapsible
       className="flex flex-col gap-y-1 text-black container !px-0 !border-0"
       collapsedHeight={39}
-      startCollapsed
+      startCollapsed={startCollapsed}
     >
       <div className="container-header !h-auto -mt-2 mx-[2px] py-2 !text-xl md:!text-2xl">
         <small className="px-2 py-1 text-xs mr-auto">

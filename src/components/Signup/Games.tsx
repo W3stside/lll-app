@@ -97,7 +97,7 @@ export function Games({
             {(speed as PlaySpeed | "") || "Mixed"}
           </strong>
         </div>
-        {!hidden && !cancelled && (
+        {signupsAmt !== null && !hidden && !cancelled && (
           <RemainingSpots
             title="Spots remaining:"
             signedUp={signupsAmt}

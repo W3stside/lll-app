@@ -5,8 +5,6 @@ import type { GameStatus, IGame, IUser } from "@/types";
 export interface IPlayersList {
   game: IGame;
   gameStatus: GameStatus;
-  capacity: number[];
-  index: number;
   nextGameDate: string;
   user: IUser;
   usersById: Partial<Record<string, IUser>>;

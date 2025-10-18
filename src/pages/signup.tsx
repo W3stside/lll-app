@@ -371,6 +371,12 @@ const Signups: React.FC<ISignups> = ({
                           </div>
                           <div className="flex flex-col gap-y-2">
                             {games.flatMap((game, gIdx) => {
+                              const height =
+                                game.cancelled === true
+                                  ? 146
+                                  : capacity[gIdx] <= 0
+                                    ? 182
+                                    : 160;
                               const nextGameDate = computeGameDate(
                                 game.day,
                                 game.time,
@@ -388,8 +394,7 @@ const Signups: React.FC<ISignups> = ({
                                     game={game}
                                     gameStatus={gameStatus}
                                     nextGameDate={nextGameDate}
-                                    capacity={capacity}
-                                    index={gIdx}
+                                    collapsedHeight={height}
                                     user={user}
                                     usersById={usersById}
                                   />
@@ -401,8 +406,7 @@ const Signups: React.FC<ISignups> = ({
                                   game={game}
                                   gameStatus={gameStatus}
                                   nextGameDate={nextGameDate}
-                                  capacity={capacity}
-                                  index={gIdx}
+                                  collapsedHeight={height}
                                   user={user}
                                   usersById={usersById}
                                 />

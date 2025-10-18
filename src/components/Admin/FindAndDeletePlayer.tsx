@@ -14,12 +14,14 @@ const GOD_ID = process.env.NEXT_PUBLIC_GOD_ID;
 
 interface IFindAndDeletePlayer {
   users: IUserSafe[];
+  startCollapsed?: boolean;
   openDialog: ReturnType<typeof useDialog>["openDialog"];
   handleDeletePlayer: (userToDelete: IUserSafe | undefined) => Promise<void>;
 }
 
 export function FindAndDeletePlayer({
   users,
+  startCollapsed = true,
   handleDeletePlayer,
   openDialog,
 }: IFindAndDeletePlayer) {
@@ -65,7 +67,7 @@ export function FindAndDeletePlayer({
     <Collapsible
       className="flex flex-col gap-y-1 text-black container !px-0 !border-0"
       collapsedHeight={39}
-      startCollapsed
+      startCollapsed={startCollapsed}
     >
       <div className="container-header !h-auto -mt-2 mx-[2px] py-2 !text-xl md:!text-2xl">
         <small className="px-2 py-1 text-xs mr-auto">

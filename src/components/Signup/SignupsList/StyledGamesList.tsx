@@ -6,23 +6,25 @@ import { Collapsible } from "@/components/ui";
 import type { IGame } from "@/types";
 import { cn } from "@/utils/tailwind";
 
-interface IStyledGamesList {
+export interface IStyledGamesList {
   game: IGame;
   gameCancelled: boolean;
-  capacity: number[];
-  index: number;
-  confirmedList: string[];
+  waitlistAmt: number | null;
+  confirmedList: string[] | null;
   nextGameDate: string;
+  collapsedHeight: number;
+  startCollapsed?: boolean;
   children: ReactNode;
 }
 
 export function StyledGamesList({
   game,
   gameCancelled,
-  capacity,
-  index,
+  waitlistAmt,
   confirmedList,
   nextGameDate,
+  collapsedHeight,
+  startCollapsed = false,
   children,
 }: IStyledGamesList) {
   return (
@@ -35,14 +37,14 @@ export function StyledGamesList({
         },
       )}
       collapsedClassName="mb-0"
-      collapsedHeight={gameCancelled ? 146 : capacity[index] <= 0 ? 182 : 160}
-      startCollapsed={gameCancelled}
+      collapsedHeight={collapsedHeight}
+      startCollapsed={startCollapsed || gameCancelled}
       disabled={gameCancelled}
     >
       <Games
         {...game}
-        signupsAmt={confirmedList.length}
-        waitlistAmt={capacity[index]}
+        signupsAmt={confirmedList !== null ? confirmedList.length : null}
+        waitlistAmt={waitlistAmt}
         date={nextGameDate}
         cancelled={gameCancelled}
       >

@@ -7,8 +7,9 @@ import { useCallback } from "react";
 import { LogoffButton } from "./Buttons/Logoff";
 
 import logo from "@/assets/logo.png";
-import { NAVLINKS, NAVLINKS_MAP } from "@/constants/links";
+import { ADMIN_NAVLINK, NAVLINKS, NAVLINKS_MAP } from "@/constants/links";
 import { useClientUser } from "@/hooks/useClientUser";
+import { Role } from "@/types";
 import type { IUser } from "@/types/users";
 import { dbAuth } from "@/utils/api/dbAuth";
 import { cn } from "@/utils/tailwind";
@@ -59,7 +60,13 @@ export function Navbar({ usersById }: INavbar) {
           )}
         </h1>
         <div className="flex-1 sm:grow-0 mb-2 sm:m-0 sm:ml-auto m-2 flex items-center justify-center gap-x-4 w-min">
-          {NAVLINKS.flatMap(({ name, url, ...rest }) =>
+          {[
+            ...NAVLINKS,
+            ...(router.pathname.includes(NAVLINKS_MAP.SHAME) &&
+            user?.role === Role.ADMIN
+              ? [ADMIN_NAVLINK]
+              : []),
+          ].flatMap(({ name, url, ...rest }) =>
             !router.pathname.includes(url)
               ? [
                   <Link
