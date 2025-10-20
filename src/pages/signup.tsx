@@ -26,7 +26,6 @@ import {
   type IGame,
   type IUser,
 } from "@/types";
-import { computeGameDate } from "@/utils/date";
 import { cn } from "@/utils/tailwind";
 
 export interface ISignups {
@@ -134,8 +133,8 @@ const Signups: React.FC<ISignups> = ({
                     capacity,
                     day,
                     games,
-                    gameDate,
-                    gameStatus,
+                    status: gameStatus,
+                    date: gameDate,
                     gamesFullyCapped,
                     maxSignups,
                     openSpots,
@@ -370,19 +369,7 @@ const Signups: React.FC<ISignups> = ({
                               )}
                           </div>
                           <div className="flex flex-col gap-y-2">
-                            {games.flatMap((game, gIdx) => {
-                              const height =
-                                game.cancelled === true
-                                  ? 146
-                                  : capacity[gIdx] <= 0
-                                    ? 182
-                                    : 160;
-                              const nextGameDate = computeGameDate(
-                                game.day,
-                                game.time,
-                                "WET",
-                              ).toISOString();
-
+                            {games.flatMap((game) => {
                               // Non-tourney game
                               if (
                                 game.type !== GameType.TOURNAMENT ||
@@ -393,8 +380,7 @@ const Signups: React.FC<ISignups> = ({
                                     key={game._id.toString()}
                                     game={game}
                                     gameStatus={gameStatus}
-                                    nextGameDate={nextGameDate}
-                                    collapsedHeight={height}
+                                    nextGameDate={game.date}
                                     user={user}
                                     usersById={usersById}
                                   />
@@ -405,8 +391,7 @@ const Signups: React.FC<ISignups> = ({
                                   key={game._id.toString()}
                                   game={game}
                                   gameStatus={gameStatus}
-                                  nextGameDate={nextGameDate}
-                                  collapsedHeight={height}
+                                  nextGameDate={game.date}
                                   user={user}
                                   usersById={usersById}
                                 />

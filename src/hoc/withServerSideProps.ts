@@ -10,7 +10,7 @@ import { NAVLINKS_MAP } from "@/constants/links";
 import { getUserFromServerSideRequest } from "@/lib/authUtils";
 import client from "@/lib/mongodb";
 import type { IServerSideProps } from "@/pages/_app";
-import { Collection, Role } from "@/types";
+import { Collection } from "@/types";
 import type { IAdmin } from "@/types/admin";
 import type { IUser } from "@/types/users";
 import { fetchRequiredCollectionsFromMongoDb } from "@/utils/api/mongodb";
@@ -77,11 +77,6 @@ export function withServerSideProps<P extends object>(
         serialised: false,
       })();
 
-      let roleAdjustedGamesList = games;
-      if (fullUser?.role !== Role.ADMIN) {
-        roleAdjustedGamesList = games.filter((game) => game.hidden !== true);
-      }
-
       const usersById = groupUsersById(users);
 
       let result: GetServerSidePropsResult<P> = { props: {} as P };
@@ -91,7 +86,7 @@ export function withServerSideProps<P extends object>(
           parentProps: {
             admin,
             user: fullUser,
-            games: roleAdjustedGamesList,
+            games,
             users,
             usersById,
           },
@@ -102,7 +97,7 @@ export function withServerSideProps<P extends object>(
         isConnected: true,
         admin: JSON.parse(JSON.stringify(admin)) as string,
         user: JSON.parse(JSON.stringify(fullUser)) as string,
-        games: JSON.parse(JSON.stringify(roleAdjustedGamesList)) as string,
+        games: JSON.parse(JSON.stringify(games)) as string,
         users: JSON.parse(JSON.stringify(users)) as string,
         usersById: JSON.parse(JSON.stringify(usersById)) as string,
       };

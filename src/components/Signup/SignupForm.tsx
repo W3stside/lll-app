@@ -44,7 +44,7 @@ export function SignupForm({
               <option
                 disabled={
                   players.includes(userId.toString()) ||
-                  computeGameStatus(games, day, game).gameStatus ===
+                  computeGameStatus(game, day, game).gameStatus ===
                     GameStatus.PAST
                 }
                 value={_id.toString()}

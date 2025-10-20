@@ -1,5 +1,7 @@
 import type { ObjectId } from "mongodb";
 
+import type { GameStatus } from ".";
+
 export type PlaySpeed = "faster" | "mixed" | "slower";
 export enum Gender {
   FEMALE = "female",
@@ -36,6 +38,9 @@ export interface IGame {
   type?: GameType;
   // Tournaments
   teams?: { players: string[] }[];
+  // Aux
+  status: GameStatus;
+  date: string;
 }
 
 export type GamesByDay = Partial<Record<IGame["day"], IGame[]>>;

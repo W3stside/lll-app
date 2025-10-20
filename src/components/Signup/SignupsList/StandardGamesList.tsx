@@ -1,5 +1,5 @@
 import { PlayersList } from "./PlayersList";
-import { StyledGamesList, type IStyledGamesList } from "./StyledGamesList";
+import { StyledGamesList } from "./StyledGamesList";
 import type { IPlayersList } from "./types";
 
 import { MAX_SIGNUPS_PER_GAME } from "@/constants/signups";
@@ -9,10 +9,8 @@ export function StandardPlayersList({
   game,
   usersById,
   nextGameDate,
-  collapsedHeight,
   ...rest
-}: Omit<IPlayersList, "confirmedList" | "waitlist"> &
-  Pick<IStyledGamesList, "collapsedHeight">) {
+}: Omit<IPlayersList, "confirmedList" | "waitlist">) {
   const gameCancelled = game.cancelled === true || game.hidden === true;
   const confirmedList = game.players.slice(
     0,
@@ -29,7 +27,10 @@ export function StandardPlayersList({
       waitlistAmt={waitlist.length}
       confirmedList={confirmedList}
       nextGameDate={nextGameDate}
-      collapsedHeight={collapsedHeight}
+      collapsible={{
+        collapsedHeight: 200,
+        disabled: true,
+      }}
     >
       <div className="flex flex-col gap-y-2">
         <PlayersList

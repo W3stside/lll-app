@@ -6,7 +6,7 @@ import { GREEN_TW, ORANGE_TW, RED_TW, YELLOW_TW } from "@/constants/colours";
 import { ORANGE_THRESHOLD, YELLOW_THRESHOLD } from "@/constants/signups";
 import { cn } from "@/utils/tailwind";
 
-interface ICollapsible {
+export interface ICollapsible {
   children: React.ReactNode;
   className?: string;
   collapsedClassName?: string;
@@ -43,12 +43,12 @@ export const Collapsible = ({
             }))
       }
       className={cn(className, "cursor-pointer", {
-        "!bg-[#c16969] cursor-not-allowed": disabled,
+        "cursor-default": disabled,
         "overflow-hidden": rCollapsed,
         [collapsedClassName as string]:
           rCollapsed && collapsedClassName !== undefined,
       })}
-      style={{ height: rCollapsed ? collapsedHeight : "auto" }}
+      style={{ height: !disabled && rCollapsed ? collapsedHeight : "auto" }}
     >
       {children}
     </div>

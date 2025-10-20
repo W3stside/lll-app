@@ -8,6 +8,7 @@ export enum Collection {
 
 export enum GameStatus {
   PAST = "past",
+  LOCKED = "locked",
   UPCOMING = "upcoming",
 }
 

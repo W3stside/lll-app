@@ -63,7 +63,7 @@ export function TrackPayment({
         {Object.entries(gamesByDay).map(([day, gamesForDay]) => (
           <Collapsible
             key={day}
-            className="relative flex flex-col items-center justify-start md:px-5 gap-y-8 mb-30 w-full"
+            className="relative flex flex-col items-center justify-start md:px-5 gap-y-8 mb-10 w-full"
             collapsedClassName="container mb-0"
             collapsedHeight={80}
             customState={collapsed[day]}
@@ -119,23 +119,19 @@ export function TrackPayment({
               <div className="flex flex-col gap-y-2 justify-start w-full">
                 <div className="flex flex-col gap-y-2">
                   {gamesForDay.map((g) => {
-                    const gameDateStr = formatDateStr(
-                      computeGameDate(
-                        day as IGame["day"],
-                        g.time,
-                        "WET",
-                      ).toISOString(),
-                    );
+                    const gameDateStr = formatDateStr(g.date);
 
                     return (
                       <StyledGamesList
                         game={g}
-                        collapsedHeight={140}
                         nextGameDate=""
                         gameCancelled={false}
                         confirmedList={null}
                         waitlistAmt={null}
-                        startCollapsed
+                        collapsible={{
+                          collapsedHeight: 120,
+                          startCollapsed: true,
+                        }}
                       >
                         <div className="flex flex-col gap-y-2">
                           {g.players

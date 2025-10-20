@@ -23,7 +23,8 @@ import {
   type IUser,
   type IUserSafe,
 } from "@/types";
-import { groupGamesByDay } from "@/utils/data";
+import { checkPlayerCanCancel, groupGamesByDay } from "@/utils/data";
+import { computeGameDate } from "@/utils/date";
 import { computeGameStatus, getLastGame } from "@/utils/games";
 import { isValidUserUpdate } from "@/utils/signup";
 import { formatPhoneNumber } from "@/utils/user";
@@ -71,59 +72,63 @@ export function Profile({
       if (dGames.length === 0) return [];
 
       const lGame = getLastGame(gbd, dGames);
-      const { gameDate, gameStatus } = computeGameStatus(
-        dGames,
-        day as IGame["day"],
-        lGame,
-      );
-
-      if (gameDate === undefined || gameStatus === GameStatus.PAST) {
-        return [];
-      }
+      if (lGame === undefined) return [];
 
       return [
         <div className="flex flex-col gap-y-1" key={day}>
           <h5 className="ml-1 font-bold">
-            {day} - {gameDate.toDateString()}{" "}
+            {day} -{" "}
+            {computeGameDate(day as IGame["day"], lGame.time).toDateString()}
           </h5>
-          {dGames.map((game) => (
-            <div className="flex flex-row gap-x-2" key={game._id.toString()}>
-              <Games
-                {...game}
-                date={gameDate.toUTCString()}
-                waitlistLabel={`${isOwner ? "You're" : `${profileUser.first_name} is`} on the waitlist`}
-                waitlistAmt={
-                  game.players.findIndex(
-                    (pl) => pl.toString() === profileUser._id.toString(),
-                  ) < MAX_SIGNUPS_PER_GAME[game.type ?? GameType.STANDARD]
-                    ? null
-                    : 0
-                }
-                signupsAmt={game.players.length}
-              />
-              {isOwner && (
-                <button
-                  className="flex items-center justify-center h-full w-[50px] bg-[var(--background-error)]"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    cancelGame(game._id, profileUser._id, "", {
-                      callback: router.reload,
-                    });
-                  }}
-                >
-                  X
-                </button>
-              )}
-            </div>
-          ))}
+          {dGames.flatMap((game) => {
+            if (game.status === GameStatus.PAST) return [];
+
+            const { gameStatus } = computeGameStatus(game, game.day, lGame);
+            const canCancel = checkPlayerCanCancel(
+              profileUser,
+              currentUser,
+              gameStatus,
+            );
+            return (
+              <div className="flex flex-row gap-x-2" key={game._id.toString()}>
+                <Games
+                  {...game}
+                  className="flex-1 w-[85%] overflow-x-hidden"
+                  date={game.date}
+                  waitlistLabel={`${isOwner ? "You're" : `${profileUser.first_name} is`} on the waitlist`}
+                  waitlistAmt={
+                    game.players.findIndex(
+                      (pl) => pl.toString() === profileUser._id.toString(),
+                    ) < MAX_SIGNUPS_PER_GAME[game.type ?? GameType.STANDARD]
+                      ? null
+                      : 0
+                  }
+                  signupsAmt={game.players.length}
+                />
+                {canCancel && (
+                  <button
+                    className="flex items-center justify-center w-[50px] bg-[var(--background-error)]"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      cancelGame(game._id, profileUser._id, "", {
+                        callback: router.reload,
+                      });
+                    }}
+                  >
+                    X
+                  </button>
+                )}
+              </div>
+            );
+          })}
         </div>,
       ];
     });
   }, [
     cancelGame,
+    currentUser,
     isOwner,
-    profileUser._id,
-    profileUser.first_name,
+    profileUser,
     router.reload,
     userGamesServer,
   ]);
