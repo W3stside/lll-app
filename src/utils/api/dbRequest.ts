@@ -44,7 +44,7 @@ export async function dbRequest<T, R = undefined>(
     });
 
     // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-    const json: JSONResponse<T> = await res.json();
+    const json: JSONResponse<T> | undefined = await res.json();
 
     if (!res.ok) {
       console.error("Request response NOT ok. json.error: ", json);
@@ -56,7 +56,7 @@ export async function dbRequest<T, R = undefined>(
     }
 
     return {
-      data: (json.data ?? json) as R extends undefined ? T : R,
+      data: (json?.data ?? json) as R extends undefined ? T : R,
       error: null,
     };
   } catch (e) {

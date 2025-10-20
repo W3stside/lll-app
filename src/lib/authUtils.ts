@@ -48,7 +48,7 @@ export const refreshAndSetJwtTokens = (
   payload: Buffer | object | string,
   res: ServerResponse,
 ) => {
-  const newAccessToken = generateRefreshToken(payload);
+  const newAccessToken = generateAccessToken(payload);
   const newRefreshToken = generateRefreshToken(payload);
 
   // Set new access token cookie

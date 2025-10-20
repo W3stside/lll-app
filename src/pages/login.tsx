@@ -1,15 +1,22 @@
+import { ObjectId } from "mongodb";
 import type { GetServerSideProps } from "next";
 import { useRouter } from "next/router";
 import { useCallback, useState } from "react";
 
 import { RegisterUser } from "@/components/Register/RegisterUser";
 import { Loader } from "@/components/ui";
-import { NAVLINKS_MAP } from "@/constants/links";
+import { NAVLINKS_MAP, SMS_VERIFICATION } from "@/constants/links";
 import { useUser } from "@/context/User/context";
+import { DEFAULT_USER } from "@/context/User/provider";
 import { JWT_REFRESH_SECRET, JWT_SECRET, verifyToken } from "@/lib/authUtils";
 import client from "@/lib/mongodb";
 import { Collection } from "@/types";
-import type { IUserSafe, IUserFromCookies } from "@/types/users";
+import type {
+  IUserSafe,
+  IUserFromCookies,
+  IUser,
+  INewSignup,
+} from "@/types/users";
 import { dbAuth } from "@/utils/api/dbAuth";
 import { isValidLogin, isValidNewSignup } from "@/utils/signup";
 
@@ -34,7 +41,16 @@ export const getServerSideProps: GetServerSideProps = async (context) => {
     const userInfo = await client
       .db("LLL")
       .collection<IUserSafe>(Collection.USERS)
-      .findOne({ _id: user?._id });
+      .findOne({ _id: new ObjectId(user?._id) });
+
+    if (userInfo?.verified === true) {
+      return {
+        redirect: {
+          destination: NAVLINKS_MAP.HOME,
+          permanent: false,
+        },
+      };
+    }
 
     return {
       props: {
@@ -53,15 +69,16 @@ export default function Login({
   isConnected,
   user: userFromCookies,
 }: LoginPage) {
+  const { user: player, setUser } = useUser();
+
   const [view, setView] = useState<"login" | "register">("register");
-  const { user: player } = useUser();
 
   const [appError, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
   const router = useRouter();
 
-  const handleSignup = useCallback(
+  const handleRegister = useCallback(
     async (e: React.FormEvent, password: string | undefined) => {
       e.preventDefault();
       setError(null);
@@ -72,14 +89,17 @@ export default function Login({
           throw new Error("Player is invalid. Check fields.");
         }
 
-        const { error } = await dbAuth("register", { ...player, password });
+        const { error } = await dbAuth("register", {
+          ...player,
+          password,
+        });
 
         if (error !== null) {
           setError(error.message);
           throw error;
         }
 
-        void router.push(NAVLINKS_MAP.HOME);
+        void router.push(SMS_VERIFICATION);
       } catch (error) {
         const newError = new Error(
           error instanceof Error ? error.message : "Unknown error occurred.",
@@ -99,20 +119,41 @@ export default function Login({
       setLoading(true);
 
       try {
-        if (!isValidLogin(player, password)) {
-          throw new Error(
-            "Login fields are invalid. Please check and try again.",
-          );
+        let isVerified = false;
+        if (player._id === undefined) {
+          if (password === undefined || !isValidLogin(player, password)) {
+            throw new Error(
+              "Login fields are invalid. Please check and try again.",
+            );
+          }
+
+          const { data: { user: response } = { user: undefined }, error } =
+            await dbAuth<INewSignup, { user: Omit<IUser, "password"> }>(
+              "login",
+              {
+                ...player,
+                password,
+              },
+            );
+
+          if (error !== null) {
+            setError(error.message);
+            throw error;
+          }
+
+          if (response !== undefined) {
+            setUser(response);
+
+            if (response.verified === false || !("verified" in response)) {
+              void router.push(SMS_VERIFICATION);
+            }
+            isVerified = true;
+          }
         }
 
-        const { error } = await dbAuth("login", { ...player, password });
-
-        if (error !== null) {
-          setError(error.message);
-          throw error;
+        if (isVerified) {
+          void router.push(NAVLINKS_MAP.HOME);
         }
-
-        void router.push(NAVLINKS_MAP.HOME);
       } catch (error) {
         const newError = new Error(
           error instanceof Error ? error.message : "Unknown error occurred.",
@@ -122,19 +163,27 @@ export default function Login({
         setLoading(false);
       }
     },
-    [player, router],
+    [player, router, setUser],
   );
 
-  const handleLogout = useCallback(async (e: React.FormEvent) => {
-    e.preventDefault();
-    try {
-      await dbAuth("logout");
-    } catch (error) {
-      throw new Error(
-        error instanceof Error ? error.message : "Unknown error occurred.",
-      );
-    }
-  }, []);
+  const handleLogout = useCallback(
+    async (e?: React.FormEvent) => {
+      e?.preventDefault();
+      setError(null);
+
+      if (player._id === undefined) return;
+
+      try {
+        await dbAuth("logout");
+        setUser(DEFAULT_USER);
+      } catch (error) {
+        throw new Error(
+          error instanceof Error ? error.message : "Unknown error occurred.",
+        );
+      }
+    },
+    [player._id, setUser],
+  );
 
   return (
     <div className="flex flex-col gap-y-1 text-black container">
@@ -146,33 +195,34 @@ export default function Login({
       </div>
       {!loading && isConnected ? (
         <div className="px-2 py-2">
-          <h5 className="mb-5">
-            {view !== "login"
-              ? "Register yourself first to find games!"
-              : "Welcome back!"}
-          </h5>
+          <p className="mb-5">
+            {view === "login"
+              ? "Welcome back!"
+              : "Register yourself first to find games!"}
+          </p>
           <RegisterUser
+            view={view}
             loading={false}
             title="Please enter credentials"
-            label={view === "login" ? "Login" : "Register"}
-            handleAction={view !== "login" ? handleSignup : handleLogin}
+            label={view === "login" ? "Login" : "Continue"}
+            handleAction={view === "register" ? handleRegister : handleLogin}
             handleLogout={userFromCookies !== null ? handleLogout : undefined}
-            isLogin={view === "login"}
           />
           {appError !== null && (
             <p className="flex mb-6 w-full justify-center text-red-700">
-              {view !== "login" ? "Registration" : "Login"} error: {appError}
+              {view !== "register" ? "Login" : "Registration"} error: {appError}
             </p>
           )}
           <p
             className="p-1 hover:bg-[var(--background-window-highlight)] cursor-pointer flex w-fit mx-auto justify-center underline text-[var(--background-windows-blue)]"
             onClick={() => {
-              setView((prev) => (prev === "login" ? "register" : "login"));
+              void handleLogout();
+              setView((prev) => (prev !== "register" ? "register" : "login"));
             }}
           >
-            {view !== "login"
-              ? "Already a degenerate? Login!"
-              : "Not already a degenerate? Register!"}
+            {view === "login"
+              ? "Not already a degenerate? Register!"
+              : "Already a degenerate? Login!"}
           </p>
         </div>
       ) : (

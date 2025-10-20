@@ -70,6 +70,7 @@ export interface IRegisterForm {
   handleAction: (
     e: React.FormEvent<HTMLFormElement>,
     password: string | undefined,
+    verified: boolean,
   ) => Promise<void>;
   handleLogout?: (e: React.FormEvent) => Promise<void>;
 }
@@ -100,7 +101,7 @@ export function RegisterForm({
             handleLogout !== undefined
               ? handleLogout
               : async (e) => {
-                  await handleAction(e, password);
+                  await handleAction(e, password, false);
                 }
           }
         >
