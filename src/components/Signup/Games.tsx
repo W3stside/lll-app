@@ -105,9 +105,7 @@ export function Games({
             className="pl-0 text-md [&>div]:!px-2.5 [&>div]:!py-0.5"
           />
         )}
-        {(hidden ||
-          cancelled ||
-          (waitlistAmt !== null && waitlistAmt <= 0)) && (
+        {(hidden || cancelled || (waitlistAmt !== null && waitlistAmt > 0)) && (
           <div className={`px-2 p-1 ${hidden ? ORANGE_TW : RED_TW}`}>
             {hidden ? "HIDDEN" : cancelled ? "CANCELLED" : waitlistLabel}
           </div>
