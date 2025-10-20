@@ -60,9 +60,7 @@ export function PlayersList({
                 signee._id.toString() !== user._id.toString() &&
                 user.role === Role.ADMIN;
 
-              const canCancel =
-                gameStatus !== GameStatus.PAST &&
-                checkPlayerCanCancel(signee, user);
+              const canCancel = checkPlayerCanCancel(signee, user, gameStatus);
 
               const userAlreadyShamed = signee.shame.some(
                 ({ date }) => date === nextGameDate,
@@ -128,9 +126,7 @@ export function PlayersList({
 
               if (signee === undefined) return [];
 
-              const canCancel =
-                gameStatus !== GameStatus.PAST &&
-                checkPlayerCanCancel(signee, user);
+              const canCancel = checkPlayerCanCancel(signee, user, gameStatus);
 
               return (
                 <Signees

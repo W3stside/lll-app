@@ -224,7 +224,8 @@ export default function Admin({
             game.gender === targettedGame.gender &&
             game.speed === targettedGame.speed &&
             game.cancelled === targettedGame.cancelled &&
-            game.type === targettedGame.type,
+            game.type === targettedGame.type &&
+            game.hidden === targettedGame.hidden,
         )
       ) {
         throw new Error(
@@ -426,7 +427,13 @@ export default function Admin({
 
   const sortedGames = useMemo(() => sortDaysOfWeek(games), [games]);
   const usersWhomOweMoney = useMemo(
-    () => users.filter((usr) => (usr.missedPayments?.length ?? 0) > 0),
+    () =>
+      users
+        .filter((usr) => (usr.missedPayments?.length ?? 0) > 0)
+        .sort(
+          (a, b) =>
+            (b.missedPayments?.length ?? 0) - (a.missedPayments?.length ?? 0),
+        ),
     [users],
   );
 

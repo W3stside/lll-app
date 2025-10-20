@@ -1,14 +1,22 @@
+import Image from "next/image";
+
 import { RemainingSpots } from "../ui";
 
+import locked from "@/assets/lock.png";
 import { ORANGE_TW, RED_TW } from "@/constants/colours";
 import { MAX_SIGNUPS_PER_GAME } from "@/constants/signups";
-import { type PlaySpeed, Gender, type IGame, GameType } from "@/types";
+import {
+  type PlaySpeed,
+  type IGame,
+  Gender,
+  GameType,
+  GameStatus,
+} from "@/types";
 import { cn } from "@/utils/tailwind";
 
 const MAX_ADDRESS_LENGTH = 22;
 
 interface IGames extends IGame {
-  date: string | undefined;
   signupsAmt: number | null;
   waitlistAmt: number | null;
   waitlistLabel?: string;
@@ -30,6 +38,7 @@ export function Games({
   waitlistLabel = "Waitlist only",
   cancelled = false,
   hidden = false,
+  status,
   type,
   children,
   className,
@@ -45,10 +54,19 @@ export function Games({
         "flex flex-col container gap-y-4 pl-9 w-full",
         {
           "!bg-transparent": cancelled || hidden,
+          "!bg-[var(--background-color-2)]": status === GameStatus.LOCKED,
         },
         className,
       )}
     >
+      {status === GameStatus.LOCKED && (
+        <div className="flex items-center gap-x-2 bg-[var(--button-disabled-background-color)]">
+          <Image src={locked} alt="locked" />
+          <b className="text-[var(--background-yellow-warn)]">
+            LOCKED! Game cannot be cancelled.
+          </b>
+        </div>
+      )}
       <div className="flex flex-row flex-wrap items-start w-full">
         {hidden && (
           <small className="mb-1 px-1 bg-[var(--background-window-highlight)]">

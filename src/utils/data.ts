@@ -1,6 +1,7 @@
 import { sortDaysOfWeek } from "./sort";
 
 import {
+  GameStatus,
   Role,
   type GamesByDay,
   type IGame,
@@ -31,12 +32,19 @@ export function groupGamesByDay(games: IGame[]) {
   }, {});
 }
 
-export function checkPlayerCanCancel(player?: IUserSafe, user?: IUserSafe) {
-  if (player === undefined || user === undefined) {
+export function checkPlayerCanCancel(
+  player?: IUserSafe,
+  user?: IUserSafe,
+  status?: GameStatus,
+): boolean {
+  if (player === undefined || user === undefined || status === undefined) {
     return false;
   }
 
+  const isSelf = player._id?.toString() === user._id?.toString();
+
   return (
-    player._id?.toString() === user._id?.toString() || user.role === Role.ADMIN
+    (user.role === Role.ADMIN && !isSelf) ||
+    (status === GameStatus.UPCOMING && isSelf)
   );
 }

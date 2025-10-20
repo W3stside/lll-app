@@ -1,16 +1,15 @@
 import { useMemo } from "react";
 
 import { MAX_SIGNUPS_PER_GAME } from "@/constants/signups";
-import { useGames } from "@/context/Games/context";
 import { type IGame, type IUser, GameStatus, GameType } from "@/types";
 import { groupGamesByDay } from "@/utils/data";
-import { computeGameStatus, getLastGame, shareGameList } from "@/utils/games";
+import { shareGameList } from "@/utils/games";
 
 type GameData = {
   day: IGame["day"];
   games: IGame[];
-  gameStatus: GameStatus;
-  gameDate: Date | undefined;
+  date: Date | undefined;
+  status: GameStatus;
   signedUp: number;
   capacity: number[];
   gamesFullyCapped: number[];
@@ -23,8 +22,8 @@ type GameData = {
 const DEFAULT_GAME_DATA: GameData = {
   day: "Monday",
   games: [] as IGame[],
-  gameStatus: GameStatus.UPCOMING,
-  gameDate: undefined,
+  date: undefined,
+  status: GameStatus.UPCOMING,
   signedUp: 0,
   capacity: [0],
   gamesFullyCapped: [0],
@@ -39,10 +38,7 @@ export function useWeeklyGamesData(
   user: IUser,
   usersById: Record<string, IUser>,
 ) {
-  const { games: gamesContext, gamesByDay } = useGames();
-
   return useMemo(() => {
-    const lastGameOfWeek = getLastGame(gamesByDay, gamesContext);
     const filteredGamesByDay = Object.entries(groupGamesByDay(filteredGames));
 
     return filteredGamesByDay.flatMap<GameData>(([day, unadjustedGames]) => {
@@ -50,18 +46,12 @@ export function useWeeklyGamesData(
         return [DEFAULT_GAME_DATA];
       }
 
-      const { gameStatus, gameDate } = computeGameStatus(
-        unadjustedGames,
-        day as IGame["day"],
-        lastGameOfWeek,
-      );
-
       const userFullyBooked = unadjustedGames.every((g) =>
         g.players.some((p) => p.toString() === user._id.toString()),
       );
 
-      const games = unadjustedGames.filter(
-        (g) => g.cancelled !== true && g.hidden !== true,
+      const games = unadjustedGames.flatMap((g) =>
+        g.cancelled !== true && g.hidden !== true ? [g] : [],
       );
 
       const {
@@ -101,12 +91,13 @@ export function useWeeklyGamesData(
         (acc, cap) => Math.max(0, cap) + acc,
         0,
       );
+      const gameDate = games[0].date;
 
       return [
         {
           day: day as IGame["day"],
-          gameStatus,
-          gameDate,
+          status: games[games.length - 1]?.status ?? GameStatus.UPCOMING,
+          date: new Date(gameDate),
           games: unadjustedGames,
           signedUp,
           capacity,
@@ -120,11 +111,11 @@ export function useWeeklyGamesData(
               usersById,
               openSpots,
               day: day as IGame["day"],
-              gameDate,
+              gameDate: new Date(gameDate),
             });
           },
         },
       ];
     });
-  }, [filteredGames, gamesByDay, gamesContext, user._id, usersById]);
+  }, [filteredGames, user._id, usersById]);
 }

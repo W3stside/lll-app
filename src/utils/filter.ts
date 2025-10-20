@@ -1,4 +1,4 @@
-import type { IGame, IUserSafe } from "@/types";
+import type { IUserSafe } from "@/types";
 
 export function filterUser<U extends IUserSafe>(user: U, searchFilter: string) {
   if (searchFilter === "") return true;
@@ -10,10 +10,4 @@ export function filterUser<U extends IUserSafe>(user: U, searchFilter: string) {
     fullName.toLowerCase().includes(searchTerm) ||
     user.phone_number.includes(searchTerm)
   );
-}
-
-export function filterGame(game: IGame, date: Date, searchFilter: string) {
-  const fullInfo = `${game.day} ${game.time} ${game.location} ${date.toUTCString()}`;
-  const searchTerm = searchFilter.toLowerCase();
-  return fullInfo.toLowerCase().includes(searchTerm);
 }

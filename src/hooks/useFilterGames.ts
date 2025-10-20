@@ -54,7 +54,7 @@ export function useFilterGames({
           (fg) =>
             fg.players.length <
               MAX_SIGNUPS_PER_GAME[fg.type ?? GameType.STANDARD] &&
-            computeGameStatus(flatGames, fg.day, lastGameOfWeek).gameStatus !==
+            computeGameStatus(fg, fg.day, lastGameOfWeek).gameStatus !==
               GameStatus.PAST,
         );
         break;

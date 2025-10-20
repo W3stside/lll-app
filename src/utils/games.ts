@@ -16,7 +16,7 @@ import {
 } from "@/types";
 
 export const computeGameStatus = (
-  games: IGame[],
+  game: IGame,
   day: IGame["day"],
   lastGame: IGame | undefined,
 ) => {
@@ -24,21 +24,20 @@ export const computeGameStatus = (
     return { gameStatus: GameStatus.PAST, gameDate: undefined };
   }
 
-  const todayIdx = getUSDayIndex(new Date());
+  const today = new Date();
+  const todayIdx = getUSDayIndex(today);
   const lastGameDate = computeGameDate(lastGame.day, lastGame.time, "WET");
 
-  const gameDate = computeGameDate(
-    day,
-    games[games.length - 1].time,
-    "WET",
-    new Date() > lastGameDate,
-  );
+  const gameDate = computeGameDate(day, game.time, "WET", today > lastGameDate);
 
   const gameStatus =
-    new Date() > lastGameDate ||
-    (todayIdx >= getUSDayIndex(gameDate) && new Date() > gameDate)
+    today > lastGameDate ||
+    (todayIdx >= getUSDayIndex(gameDate) && today > gameDate)
       ? GameStatus.PAST
-      : GameStatus.UPCOMING;
+      : getUSDayIndex(today) === getUSDayIndex(gameDate) &&
+          gameDate.getHours() - today.getHours() < 8
+        ? GameStatus.LOCKED
+        : GameStatus.UPCOMING;
 
   return { gameStatus, gameDate };
 };
@@ -59,7 +58,7 @@ interface IShareGameList {
   usersById: Record<string, IUser>;
   openSpots?: number;
   day?: IGame["day"];
-  gameDate?: Date;
+  gameDate: Date;
 }
 
 export const shareGameList = async ({
@@ -108,7 +107,7 @@ ${p.name} (${p.phone})`,
 
   void copyToClipboard(text);
   await navigator.share({
-    title: `${day} ${gameDate?.toUTCString() ?? ""} games`,
+    title: `${day} ${gameDate.toUTCString()} games`,
     text,
   });
 };
