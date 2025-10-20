@@ -55,8 +55,6 @@ export function withServerSideProps<P extends object>(
           { projection: { password: 0 } },
         );
 
-      console.debug("fullUser", fullUser, userFromCookies);
-
       if (fullUser?.verified !== true) {
         return {
           redirect: {

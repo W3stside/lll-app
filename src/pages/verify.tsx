@@ -3,17 +3,20 @@ import type { GetServerSideProps } from "next";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/router";
-import React, { useCallback, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 
 import mail from "@/assets/mail.png";
 import { RED_TW } from "@/constants/colours";
 import { NAVLINKS_MAP, WHATS_APP_GROUP_URL } from "@/constants/links";
+import { useActions } from "@/context/Actions/context";
 import { useUser } from "@/context/User/context";
 import { JWT_REFRESH_SECRET, JWT_SECRET, verifyToken } from "@/lib/authUtils";
 import client from "@/lib/mongodb";
 import { sendVerificationCode, verifyCode } from "@/lib/verification/sms";
 import { type IUser, type IUserFromCookies, Collection } from "@/types";
 import { dbRequest } from "@/utils/api/dbRequest";
+import { isValidPhoneNumber } from "@/utils/signup";
+import { cn } from "@/utils/tailwind";
 
 const COOLDOWN_SECONDS = 60;
 
@@ -66,10 +69,26 @@ export default function Verify() {
   const [code, setCode] = useState("");
   const [cooldown, setCooldown] = useState(0);
 
-  const [error, setError] = useState("");
+  const [singleError, setError] = useState<string>();
   const [loading, setLoading] = useState(false);
 
   const router = useRouter();
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setCooldown((prev) => {
+        if (prev <= 1) {
+          clearInterval(interval);
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+
+    return () => {
+      clearInterval(interval);
+    };
+  }, [cooldown]);
 
   const sendCode = useCallback(
     async (e?: React.FormEvent) => {
@@ -78,21 +97,16 @@ export default function Verify() {
       setError("");
 
       try {
-        const data = await sendVerificationCode(user.phone_number);
+        const data = await sendVerificationCode(
+          user.phone_number.startsWith("+")
+            ? user.phone_number
+            : `+${user.phone_number}`,
+        );
 
         if (data.success === true) {
           setStep("code");
           // Start cooldown for resend
           setCooldown(COOLDOWN_SECONDS);
-          const interval = setInterval(() => {
-            setCooldown((prev) => {
-              if (prev <= 1) {
-                clearInterval(interval);
-                return 0;
-              }
-              return prev - 1;
-            });
-          }, 1000);
         } else {
           setError(data.error ?? "Failed to send code");
         }
@@ -145,6 +159,29 @@ export default function Verify() {
     [code, router, setUser, user],
   );
 
+  const { error: userError, updateUser } = useActions();
+  const [changePhoneNumber, setChangePhoneNumber] = useState(false);
+  const handleChangePhoneNumber = useCallback(async () => {
+    try {
+      if (!isValidPhoneNumber(user.phone_number)) {
+        throw new Error("Please enter a valid phone number.");
+      }
+
+      await updateUser({
+        ...user,
+        phone_number: user.phone_number.replace(/^\+/, ""),
+      });
+
+      setChangePhoneNumber(false);
+    } catch (e) {
+      setError(
+        e instanceof Error ? e.message : "Unknown user update error occurred.",
+      );
+    }
+  }, [updateUser, user]);
+
+  const error = userError?.message ?? singleError;
+
   return (
     <div className="flex flex-col gap-y-1 text-black container">
       <div className="container-header !h-auto -mt-2 -mx-1.5">
@@ -168,23 +205,49 @@ export default function Verify() {
                   id="phone"
                   type="tel"
                   placeholder="+1234567890"
-                  value={`+${user.phone_number}`}
+                  value={user.phone_number}
+                  onChange={(e) => {
+                    setUser((u) => ({
+                      ...u,
+                      phone_number: e.target.value,
+                    }));
+                  }}
                   required
-                  disabled
-                  className="bg-[var(--background-color-2)] w-full p-2"
+                  disabled={!changePhoneNumber}
+                  className={cn(
+                    "w-full p-2 [&:disabled]:bg-[var(--background-color-2)] ",
+                  )}
                 />
               </div>
 
-              {error && <p style={{ color: "red" }}>{error}</p>}
+              {error !== undefined && <p style={{ color: "red" }}>{error}</p>}
 
-              <button
-                type="submit"
-                disabled={loading}
-                className="flex items-center justify-center gap-x-2 w-full"
-              >
-                <Image src={mail} alt="Mail Icon" className="size-8 mr-2" />{" "}
-                {loading ? "Sending..." : "Send Verification Code"}
-              </button>
+              <div className="flex flex-col gap-y-2 [&>*]:flex [&>*]:justify-center">
+                <button
+                  type="submit"
+                  disabled={loading || error !== undefined}
+                  className="flex items-center justify-center gap-x-2 w-full"
+                >
+                  <Image src={mail} alt="Mail Icon" className="size-8 mr-2" />{" "}
+                  <b>{loading ? "Sending..." : "Send verification code"}</b>
+                </button>
+                <p
+                  onClick={() => {
+                    setChangePhoneNumber((prev) => !prev);
+                  }}
+                  className="py-2.5 px-5 w-full"
+                >
+                  {!changePhoneNumber ? (
+                    <i>
+                      <u>Change phone number</u>
+                    </i>
+                  ) : (
+                    <button onClick={handleChangePhoneNumber}>
+                      Save changes
+                    </button>
+                  )}
+                </p>
+              </div>
             </form>
           ) : (
             <form onSubmit={handleVerifyCode}>
@@ -211,36 +274,28 @@ export default function Verify() {
                 />
               </div>
 
-              {error && <p className={`pl-4 ${RED_TW}`}>{error}</p>}
+              {error !== undefined && (
+                <p className={`pl-4 ${RED_TW}`}>{error}</p>
+              )}
 
-              <button
-                type="submit"
-                disabled={loading}
-                className="w-full px-4 py-2 mb-2 text-white bg-indigo-600 rounded-md hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-indigo-500"
-              >
-                {loading ? "Verifying..." : "Verify Code"}
-              </button>
+              <div className="flex justify-between gap-x-6">
+                <button
+                  type="submit"
+                  disabled={loading || code.length !== 6}
+                  className="flex justify-center w-full px-4 py-2 mb-2 text-white bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                >
+                  {loading ? "Verifying..." : "Verify Code"}
+                </button>
 
-              <button
-                type="button"
-                onClick={sendCode}
-                disabled={cooldown > 0 || loading}
-                className={`w-full py-2 px-4 mb-2 ${cooldown > 0 || loading ? "opacity-50 cursor-not-allowed" : ""}`}
-              >
-                {cooldown > 0 ? `Resend Code (${cooldown}s)` : "Resend Code"}
-              </button>
-
-              <button
-                type="button"
-                onClick={() => {
-                  setCode("");
-                  setError("");
-                  setCooldown(0);
-                }}
-                className="py-2.5 px-5 w-full"
-              >
-                Change Phone Number
-              </button>
+                <button
+                  type="button"
+                  onClick={sendCode}
+                  disabled={cooldown > 0 || loading}
+                  className={`flex justify-center w-full py-2 px-4 mb-2 ${cooldown > 0 || loading ? "opacity-50 cursor-not-allowed" : ""}`}
+                >
+                  {cooldown > 0 ? `Resend Code (${cooldown}s)` : "Resend Code"}
+                </button>
+              </div>
             </form>
           )}
         </div>
