@@ -3,7 +3,7 @@ import type { GetServerSideProps } from "next";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/router";
-import React, { useCallback, useEffect, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 
 import mail from "@/assets/mail.png";
 import { RED_TW } from "@/constants/colours";
@@ -62,12 +62,15 @@ export const getServerSideProps: GetServerSideProps = async (context) => {
   };
 };
 
+const KEY = "verification-cooldown";
+
 export default function Verify() {
   const { user, setUser } = useUser();
+  const phoneNumberRef = useRef<string>(user.phone_number);
 
   const [step, setStep] = useState<"code" | "phone">("phone");
   const [code, setCode] = useState("");
-  const [cooldown, setCooldown] = useState(0);
+  const [cooldown, setCooldown] = useState<number>();
 
   const [singleError, setError] = useState<string>();
   const [loading, setLoading] = useState(false);
@@ -75,8 +78,17 @@ export default function Verify() {
   const router = useRouter();
 
   useEffect(() => {
+    setCooldown(
+      localStorage.getItem(KEY) !== null
+        ? Number(localStorage.getItem(KEY))
+        : 0,
+    );
+  }, []);
+
+  useEffect(() => {
     const interval = setInterval(() => {
       setCooldown((prev) => {
+        if (prev === undefined) return undefined;
         if (prev <= 1) {
           clearInterval(interval);
           return 0;
@@ -87,6 +99,9 @@ export default function Verify() {
 
     return () => {
       clearInterval(interval);
+      if (cooldown !== undefined) {
+        localStorage.setItem(KEY, cooldown.toString());
+      }
     };
   }, [cooldown]);
 
@@ -160,8 +175,10 @@ export default function Verify() {
   );
 
   const { error: userError, updateUser } = useActions();
-  const [changePhoneNumber, setChangePhoneNumber] = useState(false);
+  const [numberEditable, setNumberEditable] = useState(false);
   const handleChangePhoneNumber = useCallback(async () => {
+    setError(undefined);
+    setCooldown(COOLDOWN_SECONDS);
     try {
       if (!isValidPhoneNumber(user.phone_number)) {
         throw new Error("Please enter a valid phone number.");
@@ -172,15 +189,28 @@ export default function Verify() {
         phone_number: user.phone_number.replace(/^\+/, ""),
       });
 
-      setChangePhoneNumber(false);
+      setNumberEditable(false);
+      phoneNumberRef.current = user.phone_number;
     } catch (e) {
-      setError(
-        e instanceof Error ? e.message : "Unknown user update error occurred.",
-      );
+      const err = e instanceof Error ? e : new Error("Unknown error");
+      setError(err.message);
     }
   }, [updateUser, user]);
 
   const error = userError?.message ?? singleError;
+
+  // Reset number to prev if new change exists
+  useEffect(() => {
+    if (
+      error !== undefined &&
+      error.includes("User with this number already exists")
+    ) {
+      setUser((u) => ({
+        ...u,
+        phone_number: phoneNumberRef.current || u.phone_number,
+      }));
+    }
+  }, [error, setUser]);
 
   return (
     <div className="flex flex-col gap-y-1 text-black container">
@@ -213,7 +243,7 @@ export default function Verify() {
                     }));
                   }}
                   required
-                  disabled={!changePhoneNumber}
+                  disabled={!numberEditable}
                   className={cn(
                     "w-full p-2 [&:disabled]:bg-[var(--background-color-2)] ",
                   )}
@@ -225,7 +255,7 @@ export default function Verify() {
               <div className="flex flex-col gap-y-2 [&>*]:flex [&>*]:justify-center">
                 <button
                   type="submit"
-                  disabled={loading || error !== undefined}
+                  disabled={numberEditable || loading || error !== undefined}
                   className="flex items-center justify-center gap-x-2 w-full"
                 >
                   <Image src={mail} alt="Mail Icon" className="size-8 mr-2" />{" "}
@@ -233,17 +263,24 @@ export default function Verify() {
                 </button>
                 <p
                   onClick={() => {
-                    setChangePhoneNumber((prev) => !prev);
+                    setNumberEditable((prev) => !prev);
                   }}
-                  className="py-2.5 px-5 w-full"
+                  className="mx-auto py-2.5 px-0 w-max cursor-pointer"
                 >
-                  {!changePhoneNumber ? (
+                  {!numberEditable ? (
                     <i>
                       <u>Change phone number</u>
                     </i>
                   ) : (
-                    <button onClick={handleChangePhoneNumber}>
-                      Save changes
+                    <button
+                      onClick={handleChangePhoneNumber}
+                      disabled={
+                        cooldown === undefined || cooldown > 0 || loading
+                      }
+                    >
+                      {cooldown !== undefined && cooldown > 0
+                        ? `Retry in (${cooldown}s)`
+                        : "Save changes"}
                     </button>
                   )}
                 </p>
@@ -290,10 +327,12 @@ export default function Verify() {
                 <button
                   type="button"
                   onClick={sendCode}
-                  disabled={cooldown > 0 || loading}
-                  className={`flex justify-center w-full py-2 px-4 mb-2 ${cooldown > 0 || loading ? "opacity-50 cursor-not-allowed" : ""}`}
+                  disabled={cooldown === undefined || cooldown > 0 || loading}
+                  className={`flex justify-center w-full py-2 px-4 mb-2 ${(cooldown !== undefined && cooldown > 0) || loading ? "opacity-50 cursor-not-allowed" : ""}`}
                 >
-                  {cooldown > 0 ? `Resend Code (${cooldown}s)` : "Resend Code"}
+                  {cooldown !== undefined && cooldown > 0
+                    ? `Resend Code (${cooldown}s)`
+                    : "Resend Code"}
                 </button>
               </div>
             </form>

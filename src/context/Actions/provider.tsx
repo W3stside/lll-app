@@ -254,8 +254,9 @@ export function ActionProvider({ children }: IActionProvider) {
           }
 
           setUser(_user);
-        } catch (err) {
-          setError(err instanceof Error ? err : DEFAULT_ERROR);
+        } catch (error) {
+          setError(error instanceof Error ? error : DEFAULT_ERROR);
+          throw error;
         } finally {
           setLoading(false);
         }

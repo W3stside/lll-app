@@ -30,7 +30,7 @@ export default async function handler(
       message:
         user !== null &&
         userWithNumber?._id?.toString() !== user._id?.toString()
-          ? "User with number already exists"
+          ? "User with this number already exists"
           : "Invalid credentials",
     });
   } else {
