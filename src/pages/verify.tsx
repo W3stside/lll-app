@@ -6,6 +6,7 @@ import { useRouter } from "next/router";
 import React, { useCallback, useEffect, useRef, useState } from "react";
 
 import mail from "@/assets/mail.png";
+import { Loader } from "@/components/ui";
 import { RED_TW } from "@/constants/colours";
 import { NAVLINKS_MAP, WHATS_APP_GROUP_URL } from "@/constants/links";
 import { useActions } from "@/context/Actions/context";
@@ -62,13 +63,14 @@ export const getServerSideProps: GetServerSideProps = async (context) => {
   };
 };
 
-const KEY = "verification-cooldown";
+const COOLDOWN_KEY = "verification-cooldown";
+const STEP_KEY = "verification-step";
 
 export default function Verify() {
   const { user, setUser } = useUser();
   const phoneNumberRef = useRef<string>(user.phone_number);
 
-  const [step, setStep] = useState<"code" | "phone">("phone");
+  const [step, setStep] = useState<"code" | "phone">();
   const [code, setCode] = useState("");
   const [cooldown, setCooldown] = useState<number>();
 
@@ -79,11 +81,16 @@ export default function Verify() {
 
   useEffect(() => {
     setCooldown(
-      localStorage.getItem(KEY) !== null
-        ? Number(localStorage.getItem(KEY))
+      localStorage.getItem(COOLDOWN_KEY) !== null
+        ? Number(localStorage.getItem(COOLDOWN_KEY))
         : 0,
     );
+    setStep(localStorage.getItem(STEP_KEY) === "code" ? "code" : "phone");
   }, []);
+
+  useEffect(() => {
+    localStorage.setItem(STEP_KEY, step === undefined ? "phone" : step);
+  }, [step]);
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -100,7 +107,7 @@ export default function Verify() {
     return () => {
       clearInterval(interval);
       if (cooldown !== undefined) {
-        localStorage.setItem(KEY, cooldown.toString());
+        localStorage.setItem(COOLDOWN_KEY, cooldown.toString());
       }
     };
   }, [cooldown]);
@@ -226,118 +233,124 @@ export default function Verify() {
           to receive your verification code. If you haven't joined the group
           yet, click the link above and send us a message!
         </p>
-        <div className="m-auto w-[90%]">
-          {step === "phone" ? (
-            <form onSubmit={sendCode}>
-              <div className="mb-[15px] w-full">
-                <label htmlFor="phone">Phone Number (with country code)</label>
-                <input
-                  id="phone"
-                  type="tel"
-                  placeholder="+1234567890"
-                  value={user.phone_number}
-                  onChange={(e) => {
-                    setUser((u) => ({
-                      ...u,
-                      phone_number: e.target.value,
-                    }));
-                  }}
-                  required
-                  disabled={!numberEditable}
-                  className={cn(
-                    "w-full p-2 [&:disabled]:bg-[var(--background-color-2)] ",
-                  )}
-                />
-              </div>
+        {step !== undefined ? (
+          <div className="m-auto w-[90%]">
+            {step === "phone" ? (
+              <form onSubmit={sendCode}>
+                <div className="mb-[15px] w-full">
+                  <label htmlFor="phone">
+                    Phone Number (with country code)
+                  </label>
+                  <input
+                    id="phone"
+                    type="tel"
+                    placeholder="+1234567890"
+                    value={user.phone_number}
+                    onChange={(e) => {
+                      setUser((u) => ({
+                        ...u,
+                        phone_number: e.target.value,
+                      }));
+                    }}
+                    required
+                    disabled={!numberEditable}
+                    className={cn(
+                      "w-full p-2 [&:disabled]:bg-[var(--background-color-2)] ",
+                    )}
+                  />
+                </div>
 
-              {error !== undefined && <p style={{ color: "red" }}>{error}</p>}
+                {error !== undefined && <p style={{ color: "red" }}>{error}</p>}
 
-              <div className="flex flex-col gap-y-2 [&>*]:flex [&>*]:justify-center">
-                <button
-                  type="submit"
-                  disabled={numberEditable || loading || error !== undefined}
-                  className="flex items-center justify-center gap-x-2 w-full"
-                >
-                  <Image src={mail} alt="Mail Icon" className="size-8 mr-2" />{" "}
-                  <b>{loading ? "Sending..." : "Send verification code"}</b>
-                </button>
-                <p
-                  onClick={() => {
-                    setNumberEditable((prev) => !prev);
-                  }}
-                  className="mx-auto py-2.5 px-0 w-max cursor-pointer"
-                >
-                  {!numberEditable ? (
-                    <i>
-                      <u>Change phone number</u>
-                    </i>
-                  ) : (
-                    <button
-                      onClick={handleChangePhoneNumber}
-                      disabled={
-                        cooldown === undefined || cooldown > 0 || loading
-                      }
-                    >
-                      {cooldown !== undefined && cooldown > 0
-                        ? `Retry in (${cooldown}s)`
-                        : "Save changes"}
-                    </button>
-                  )}
-                </p>
-              </div>
-            </form>
-          ) : (
-            <form onSubmit={handleVerifyCode}>
-              <p>Code sent to {user.phone_number}</p>
+                <div className="flex flex-col gap-y-2 [&>*]:flex [&>*]:justify-center">
+                  <button
+                    type="submit"
+                    disabled={numberEditable || loading || error !== undefined}
+                    className="flex items-center justify-center gap-x-2 w-full"
+                  >
+                    <Image src={mail} alt="Mail Icon" className="size-8 mr-2" />{" "}
+                    <b>{loading ? "Sending..." : "Send verification code"}</b>
+                  </button>
+                  <p
+                    onClick={() => {
+                      setNumberEditable((prev) => !prev);
+                    }}
+                    className="mx-auto py-2.5 px-0 w-max cursor-pointer"
+                  >
+                    {!numberEditable ? (
+                      <i>
+                        <u>Change phone number</u>
+                      </i>
+                    ) : (
+                      <button
+                        onClick={handleChangePhoneNumber}
+                        disabled={
+                          cooldown === undefined || cooldown > 0 || loading
+                        }
+                      >
+                        {cooldown !== undefined && cooldown > 0
+                          ? `Retry in (${cooldown}s)`
+                          : "Save changes"}
+                      </button>
+                    )}
+                  </p>
+                </div>
+              </form>
+            ) : (
+              <form onSubmit={handleVerifyCode}>
+                <p>Code sent to {user.phone_number}</p>
 
-              <div className="mb-4">
-                <label
-                  htmlFor="code"
-                  className="block text-sm font-medium text-gray-700"
-                >
-                  Verification Code
-                </label>
-                <input
-                  id="code"
-                  type="text"
-                  placeholder="123456"
-                  value={code}
-                  onChange={(e) => {
-                    setCode(e.target.value);
-                  }}
-                  required
-                  maxLength={6}
-                  className="mt-1 w-full px-3 py-2 border border-gray-300 shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-                />
-              </div>
+                <div className="mb-4">
+                  <label
+                    htmlFor="code"
+                    className="block text-sm font-medium text-gray-700"
+                  >
+                    Verification Code
+                  </label>
+                  <input
+                    id="code"
+                    type="text"
+                    placeholder="123456"
+                    value={code}
+                    onChange={(e) => {
+                      setCode(e.target.value);
+                    }}
+                    required
+                    maxLength={6}
+                    className="mt-1 w-full px-3 py-2 border border-gray-300 shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                  />
+                </div>
 
-              {error !== undefined && (
-                <p className={`pl-4 ${RED_TW}`}>{error}</p>
-              )}
+                {error !== undefined && (
+                  <p className={`pl-4 ${RED_TW}`}>{error}</p>
+                )}
 
-              <div className="flex justify-between gap-x-6">
-                <button
-                  type="submit"
-                  disabled={loading || code.length !== 6}
-                  className="flex justify-center w-full px-4 py-2 mb-2 text-white bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                >
-                  {loading ? "Verifying..." : "Verify Code"}
-                </button>
+                <div className="flex justify-between gap-x-6">
+                  <button
+                    type="submit"
+                    disabled={loading || code.length !== 6}
+                    className="flex justify-center w-full px-4 py-2 mb-2 text-white bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  >
+                    {loading ? "Verifying..." : "Verify Code"}
+                  </button>
 
-                <button
-                  type="button"
-                  onClick={sendCode}
-                  disabled={cooldown === undefined || cooldown > 0 || loading}
-                  className={`flex justify-center w-full py-2 px-4 mb-2 ${(cooldown !== undefined && cooldown > 0) || loading ? "opacity-50 cursor-not-allowed" : ""}`}
-                >
-                  {cooldown !== undefined && cooldown > 0
-                    ? `Resend Code (${cooldown}s)`
-                    : "Resend Code"}
-                </button>
-              </div>
-            </form>
-          )}
-        </div>
+                  <button
+                    type="button"
+                    onClick={sendCode}
+                    disabled={cooldown === undefined || cooldown > 0 || loading}
+                    className={`flex justify-center w-full py-2 px-4 mb-2 ${(cooldown !== undefined && cooldown > 0) || loading ? "opacity-50 cursor-not-allowed" : ""}`}
+                  >
+                    {cooldown !== undefined && cooldown > 0
+                      ? `Resend Code (${cooldown}s)`
+                      : "Resend Code"}
+                  </button>
+                </div>
+              </form>
+            )}
+          </div>
+        ) : (
+          <Loader className="size-[300px] mx-auto" />
+        )}
       </div>
     </div>
   );
