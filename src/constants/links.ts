@@ -6,7 +6,7 @@ import programs from "@/assets/programs.png";
 
 export const WHATS_APP = "https://wa.me";
 export const WHATS_APP_GROUP_URL =
-  "https://chat.whatsapp.com/HtFbF7KNjyg7rnDmHek9e5";
+  "https://chat.whatsapp.com/IBKYIi1cbf3Fu8J2bMCZXF";
 export const NAVLINKS = [
   { name: "Home", url: "/" },
   { name: "Games", url: "/signup", icon: games },
@@ -24,6 +24,7 @@ export const NAVLINKS_MAP = {
   NOT_FOUND: "/404",
   BANNED: "/shadow-realm",
 } as const;
+export const SMS_VERIFICATION = "/verify";
 export const ADMIN_PATH = "/admin";
 export const ADMIN_NAVLINK = {
   name: "Admin",

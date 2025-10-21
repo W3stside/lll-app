@@ -18,10 +18,21 @@ export default async function handler(
   const db = client.db("LLL");
   const users = db.collection(Collection.USERS);
 
-  const user = await users.findOne<INewSignup>({ _id: new ObjectId(_id) });
+  const userId = new ObjectId(_id);
+  const user = await users.findOne<INewSignup>({ _id: userId });
+  const userWithNumber = await users.findOne<INewSignup>({
+    _id: { $ne: userId },
+    phone_number,
+  });
 
-  if (!user) {
-    res.status(401).json({ message: "Invalid credentials" });
+  if (!user || userWithNumber?._id !== undefined) {
+    res.status(401).json({
+      message:
+        user !== null &&
+        userWithNumber?._id?.toString() !== user._id?.toString()
+          ? "User with this number already exists"
+          : "Invalid credentials",
+    });
   } else {
     await users.updateOne(
       { _id: user._id },

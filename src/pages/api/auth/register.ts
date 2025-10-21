@@ -16,8 +16,13 @@ export default async function handler(
   try {
     verifyAuthBody(req, res, "register");
 
-    const { first_name, last_name, phone_number, password } =
-      req.body as INewSignup;
+    const {
+      first_name,
+      last_name,
+      phone_number,
+      password,
+      verified = false,
+    } = req.body as INewSignup;
 
     if (BANNED_USERS_SET.has(phone_number)) {
       throw new Error(
@@ -44,6 +49,7 @@ export default async function handler(
       password: hashedPassword,
       createdAt,
       shame: [],
+      verified,
     });
 
     refreshAndSetJwtTokens({ _id: newUser.insertedId }, res);

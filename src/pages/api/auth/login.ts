@@ -29,11 +29,10 @@ export default async function handler(
       res.status(401).json({ message: "Invalid credentials" });
     } else {
       refreshAndSetJwtTokens({ _id: user._id }, res);
+      const { password: _, ...simpleUser } = user;
       res.status(200).json({
         message: "Login successful",
-        user: {
-          _id: user._id,
-        },
+        user: simpleUser,
       });
     }
   }

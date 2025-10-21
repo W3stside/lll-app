@@ -3,14 +3,17 @@ import { useState } from "react";
 import { type IRegisterForm, RegisterForm } from "./RegisterForm";
 
 import { useUser } from "@/context/User/context";
-import { isValidNewSignup, isValidLogin } from "@/utils/signup";
+import { isValidLogin } from "@/utils/signup";
 
 interface IRegisterUser
-  extends Omit<IRegisterForm, "disabled" | "password" | "setPassword"> {
-  isLogin?: boolean;
+  extends Omit<
+    IRegisterForm,
+    "disabled" | "handleAction" | "password" | "setPassword"
+  > {
   loading: boolean;
   label: string;
   title?: string;
+  view: "login" | "register" | "verify";
   handleAction: (
     e: React.FormEvent,
     password: string | undefined,
@@ -22,7 +25,7 @@ export function RegisterUser({
   loading,
   label,
   title = "Register to play",
-  isLogin = false,
+  view,
   handleAction,
   handleLogout,
 }: IRegisterUser) {
@@ -34,16 +37,13 @@ export function RegisterUser({
       <div className="container-header !h-auto !text-md p-1 w-full -mb-3.5">
         <span className="mr-2">{title}</span>
       </div>
+
       <RegisterForm
+        isLogin={view === "login"}
         loading={loading}
         label={label}
-        isLogin={isLogin}
         password={password}
-        disabled={
-          !isLogin
-            ? !isValidNewSignup(user, password)
-            : !isValidLogin(user, password)
-        }
+        disabled={!isValidLogin(user, password)}
         handleAction={handleAction}
         handleLogout={handleLogout}
         setPassword={setPassword}

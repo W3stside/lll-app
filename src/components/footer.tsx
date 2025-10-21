@@ -17,6 +17,8 @@ import {
   NAVLINKS_MAP,
   WHATS_APP_GROUP_URL,
 } from "@/constants/links";
+import { useUser } from "@/context/User/context";
+import { DEFAULT_USER } from "@/context/User/provider";
 import { useClientTheme } from "@/hooks/useClientTheme";
 import { useClientUser } from "@/hooks/useClientUser";
 import { Role } from "@/types";
@@ -25,16 +27,18 @@ import { cn } from "@/utils/tailwind";
 
 export function Footer() {
   const router = useRouter();
+  const { setUser } = useUser();
   const { isDark, toggleTheme } = useClientTheme();
 
   const handleLogout = useCallback(async () => {
     try {
       await dbAuth("logout");
+      setUser(DEFAULT_USER);
       void router.push(NAVLINKS_MAP.LOGIN);
     } catch (error) {
       throw error instanceof Error ? error : new Error("Unknown error");
     }
-  }, [router]);
+  }, [router, setUser]);
 
   const { user, isLoading } = useClientUser(router.pathname);
 

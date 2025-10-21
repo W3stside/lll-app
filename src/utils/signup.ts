@@ -9,7 +9,7 @@ import type { INewSignup } from "@/types/users";
 const PHONE_REGEX = new RegExp(
   `^\\d{${PHONE_MIN_LENGTH},${PHONE_MAX_LENGTH}}$`,
 );
-function _isValidPhoneNumber(phone_number?: number | string): boolean {
+export function isValidPhoneNumber(phone_number?: number | string): boolean {
   return (
     phone_number !== undefined && PHONE_REGEX.test(phone_number.toString())
   );
@@ -24,7 +24,7 @@ export function isValidUserUpdate(
     player.first_name.length >= NAME_MIN_LENGTH &&
     player.last_name !== undefined &&
     player.last_name.length > 0 &&
-    _isValidPhoneNumber(player.phone_number)
+    isValidPhoneNumber(player.phone_number)
   );
 }
 
@@ -47,6 +47,6 @@ export function isValidLogin(
     player !== null &&
     password !== undefined &&
     password.toString().length >= PASSWORD_MIN_LENGTH &&
-    _isValidPhoneNumber(player.phone_number)
+    isValidPhoneNumber(player.phone_number)
   );
 }

@@ -1,18 +1,18 @@
 /* eslint-disable no-console */
 import type { AuthAction, JSONResponse } from "@/types/http";
 
-export async function dbAuth<T>(
+export async function dbAuth<T, R = T>(
   action: "logout",
   body?: never,
-): Promise<JSONResponse<T>>;
-export async function dbAuth<T>(
+): Promise<JSONResponse<R>>;
+export async function dbAuth<T, R = T>(
   action: "login" | "register" | "update",
   body: T,
-): Promise<JSONResponse<T>>;
-export async function dbAuth<T>(
+): Promise<JSONResponse<R>>;
+export async function dbAuth<T, R = T>(
   action: AuthAction,
   body?: T,
-): Promise<JSONResponse<T>> {
+): Promise<JSONResponse<R>> {
   try {
     const res = await fetch(`/api/auth/${action}`, {
       method: "POST",
@@ -28,7 +28,7 @@ export async function dbAuth<T>(
     if (!res.ok) {
       console.error("Response NOT OK. Error:", json.message);
       return {
-        data: undefined as T,
+        data: undefined as R,
         error:
           json instanceof Error
             ? json
@@ -36,7 +36,7 @@ export async function dbAuth<T>(
       };
     }
 
-    return { data: (json.data ?? json) as T, error: null };
+    return { data: (json.data ?? json) as R, error: null };
   } catch (e) {
     console.error("An error occurred trying to register:", e);
     throw new Error(

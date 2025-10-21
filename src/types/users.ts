@@ -16,13 +16,14 @@ export interface INewSignup extends IBaseUser {
   shame: { game_id: ObjectId; date: string }[];
   missedPayments?: (Pick<IGame, "_id" | "day" | "time"> & { date: string })[];
   role?: Role;
+  verified?: boolean;
 }
 
 export interface IUser extends INewSignup {
   _id: ObjectId;
 }
 
-export type IUserFromCookies = Pick<IUser, "_id">;
+export type IUserFromCookies = Pick<IUser, "_id" | "verified">;
 
 export type IUserSafe = Omit<IUser, "_id" | "createdAt" | "password"> & {
   _id: IUser["_id"] | undefined;
