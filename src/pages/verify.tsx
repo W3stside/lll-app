@@ -79,39 +79,6 @@ export default function Verify() {
 
   const router = useRouter();
 
-  useEffect(() => {
-    setCooldown(
-      localStorage.getItem(COOLDOWN_KEY) !== null
-        ? Number(localStorage.getItem(COOLDOWN_KEY))
-        : 0,
-    );
-    setStep(localStorage.getItem(STEP_KEY) === "code" ? "code" : "phone");
-  }, []);
-
-  useEffect(() => {
-    localStorage.setItem(STEP_KEY, step === undefined ? "phone" : step);
-  }, [step]);
-
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setCooldown((prev) => {
-        if (prev === undefined) return undefined;
-        if (prev <= 1) {
-          clearInterval(interval);
-          return 0;
-        }
-        return prev - 1;
-      });
-    }, 1000);
-
-    return () => {
-      clearInterval(interval);
-      if (cooldown !== undefined) {
-        localStorage.setItem(COOLDOWN_KEY, cooldown.toString());
-      }
-    };
-  }, [cooldown]);
-
   const sendCode = useCallback(
     async (e?: React.FormEvent) => {
       if (e) e.preventDefault();
@@ -164,6 +131,8 @@ export default function Verify() {
             verified: true,
           });
           setUser((prev) => ({ ...prev, verified: true }));
+          setStep(undefined);
+          setCooldown(0);
           void router.push(NAVLINKS_MAP.HOME);
         } else {
           setError(message ?? "Invalid verification code");
@@ -206,6 +175,39 @@ export default function Verify() {
 
   const error = userError?.message ?? singleError;
 
+  useEffect(() => {
+    setCooldown(
+      localStorage.getItem(COOLDOWN_KEY) !== null
+        ? Number(localStorage.getItem(COOLDOWN_KEY))
+        : 0,
+    );
+    setStep(localStorage.getItem(STEP_KEY) === "code" ? "code" : "phone");
+  }, []);
+
+  useEffect(() => {
+    localStorage.setItem(STEP_KEY, step === undefined ? "phone" : step);
+  }, [step]);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setCooldown((prev) => {
+        if (prev === undefined) return undefined;
+        if (prev <= 1) {
+          clearInterval(interval);
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+
+    return () => {
+      clearInterval(interval);
+      if (cooldown !== undefined) {
+        localStorage.setItem(COOLDOWN_KEY, cooldown.toString());
+      }
+    };
+  }, [cooldown]);
+
   // Reset number to prev if new change exists
   useEffect(() => {
     if (
@@ -238,15 +240,17 @@ export default function Verify() {
             {step === "phone" ? (
               <form onSubmit={sendCode}>
                 <div className="mb-[15px] w-full">
-                  <label htmlFor="phone">
-                    Phone Number (with country code)
-                  </label>
+                  <label htmlFor="phone">Country Code and Phone Number</label>
                   <input
                     id="phone"
                     type="tel"
                     placeholder="+1234567890"
                     value={user.phone_number}
                     onChange={(e) => {
+                      if (!/^(?!.*[+\-*/])\d*$/.test(e.target.value)) {
+                        return;
+                      }
+
                       setUser((u) => ({
                         ...u,
                         phone_number: e.target.value,
@@ -258,6 +262,7 @@ export default function Verify() {
                       "w-full p-2 [&:disabled]:bg-[var(--background-color-2)] ",
                     )}
                   />
+                  <small>e.g 351999888777</small>
                 </div>
 
                 {error !== undefined && <p style={{ color: "red" }}>{error}</p>}
