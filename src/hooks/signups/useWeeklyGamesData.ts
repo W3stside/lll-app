@@ -3,6 +3,7 @@ import { useMemo } from "react";
 import { MAX_SIGNUPS_PER_GAME } from "@/constants/signups";
 import { type IGame, type IUser, GameStatus, GameType } from "@/types";
 import { groupGamesByDay } from "@/utils/data";
+import { computeGameDate } from "@/utils/date";
 import { shareGameList } from "@/utils/games";
 
 type GameData = {
@@ -91,7 +92,10 @@ export function useWeeklyGamesData(
         (acc, cap) => Math.max(0, cap) + acc,
         0,
       );
-      const gameDate = games[0].date;
+
+      const gameDate =
+        games[0]?.date ??
+        computeGameDate(day as IGame["day"], "12:00", "WET").toISOString();
 
       return [
         {
