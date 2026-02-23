@@ -11,6 +11,7 @@ export interface IOpenDialog {
   content?: ReactNode;
   confirmLabel?: string;
   loading?: boolean;
+  confirmDisabled?: boolean;
   action?: (() => Promise<void>) | (() => void);
 }
 

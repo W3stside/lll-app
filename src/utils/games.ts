@@ -174,12 +174,23 @@ export const getRandomAvailableTourneyIndex = (
   else if (availableKeys.length === 1) return Number(availableKeys[0][0]);
 
   // Return a random available key
-  return randomInt(0, availableKeys.length);
+  const randomIndex = randomInt(0, availableKeys.length);
+  return Number(availableKeys[randomIndex][0]);
 };
 
 export const findPlayerInTourney = (
   playerId: string,
   teams: { players: string[] }[],
 ): number | undefined => {
-  return teams.findIndex((team) => team.players.includes(playerId));
+  const index = teams.findIndex((team) => team.players.includes(playerId));
+  return index === -1 ? undefined : index;
+};
+
+export const getMaxPlayers = (game: IGame) => {
+  if (game.type === GameType.TOURNAMENT) {
+    return (
+      MAX_SIGNUPS_PER_GAME[GameType.TOURNAMENT] * (game.teams?.length ?? 4)
+    );
+  }
+  return MAX_SIGNUPS_PER_GAME[game.type ?? GameType.STANDARD];
 };

@@ -36,6 +36,7 @@ export interface IGame {
   cancelled?: boolean;
   hidden?: boolean;
   type?: GameType;
+  name?: string;
   // Tournaments
   teams?: { players: string[] }[];
   // Aux

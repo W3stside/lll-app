@@ -11,4 +11,5 @@ export const DEFAULT_GAME_STATE = {
   day: undefined,
   cancelled: false,
   type: GameType.STANDARD,
+  name: "",
 } as const;
