@@ -6,14 +6,6 @@ import type { IPlayersList } from "./types";
 
 import { MAX_SIGNUPS_PER_GAME } from "@/constants/signups";
 import { GameType, Role } from "@/types";
-import { cn } from "@/utils/tailwind";
-
-const TEAMS_INFO = [
-  { label: "Team 1", className: "bg-red-500", colour: "Red" },
-  { label: "Team 2", className: "bg-blue-500", colour: "Blue" },
-  { label: "Team 3", className: "bg-green-500", colour: "Green" },
-  { label: "Team 4", className: "bg-white", colour: "White" },
-] as const;
 
 export function TourneyPlayersList({
   game,
@@ -27,14 +19,13 @@ export function TourneyPlayersList({
       ...t.players,
     ]);
 
+    const maxConfirmed =
+      MAX_SIGNUPS_PER_GAME[GameType.TOURNAMENT_RANDOM] *
+      (game.teams?.length ?? 4);
+
     return {
-      confirmedList: flatTourneyPlayers.slice(
-        0,
-        MAX_SIGNUPS_PER_GAME[GameType.TOURNAMENT],
-      ),
-      waitlist: game.players.slice(
-        MAX_SIGNUPS_PER_GAME[GameType.TOURNAMENT] * 4,
-      ),
+      confirmedList: flatTourneyPlayers.slice(0, maxConfirmed),
+      waitlist: game.players.slice(maxConfirmed),
     };
   }, [game.players, game.teams]);
 
@@ -58,36 +49,33 @@ export function TourneyPlayersList({
       }}
     >
       <div className="flex flex-col gap-y-8">
-        {game.teams.map(({ players }, teamIndex) => (
-          <div
-            key={TEAMS_INFO[teamIndex]?.label ?? teamIndex}
-            className="flex flex-col gap-y-0"
-          >
-            <div
-              className="container ml-auto w-[90%] sm:w-[350px] flex items-center gap-x-2 font-bold justify-end !py-0.5"
-              onClick={(e) => {
-                e.stopPropagation();
-              }}
-            >
-              {TEAMS_INFO[teamIndex]?.label ?? ""} -{" "}
-              {TEAMS_INFO[teamIndex]?.colour ?? ""}
+        {game.teams.map(({ name, players }, teamIndex) => {
+          const teamName = name ?? `Team ${teamIndex}`;
+          return (
+            <div key={teamName} className="flex flex-col gap-y-0">
               <div
-                className={cn(TEAMS_INFO[teamIndex]?.className, "w-7.5 h-5")}
+                className="container ml-auto w-[90%] sm:w-[350px] flex items-center gap-x-2 font-bold justify-end !py-0.5"
+                onClick={(e) => {
+                  e.stopPropagation();
+                }}
+              >
+                {teamName}
+                {name === undefined && <div className="w-7.5 h-5" />}
+              </div>
+              <PlayersList
+                {...rest}
+                game={game}
+                gameStatus={gameStatus}
+                confirmedList={players.slice(
+                  0,
+                  MAX_SIGNUPS_PER_GAME[GameType.TOURNAMENT_RANDOM],
+                )}
+                waitlist={[]}
+                nextGameDate={nextGameDate}
               />
             </div>
-            <PlayersList
-              {...rest}
-              game={game}
-              gameStatus={gameStatus}
-              confirmedList={players.slice(
-                0,
-                MAX_SIGNUPS_PER_GAME[GameType.TOURNAMENT],
-              )}
-              waitlist={[]}
-              nextGameDate={nextGameDate}
-            />
-          </div>
-        ))}
+          );
+        })}
         {waitlist.length > 0 && (
           <PlayersList
             {...rest}

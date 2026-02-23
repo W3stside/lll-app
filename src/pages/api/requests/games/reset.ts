@@ -16,11 +16,29 @@ export default async (req: NextApiRequest, res: NextApiResponse) => {
     const games = await collection.find().toArray();
     const result = await collection.updateMany(
       { _id: { $in: games.map(({ _id }) => _id) } },
-      {
-        $set: {
-          players: [],
+      [
+        {
+          $set: {
+            players: [],
+            teams: {
+              $cond: {
+                if: { $isArray: "$teams" },
+                then: {
+                  $map: {
+                    input: "$teams",
+                    as: "team",
+                    in: {
+                      name: "$$team.name",
+                      players: [],
+                    },
+                  },
+                },
+                else: "$$REMOVE",
+              },
+            },
+          },
         },
-      },
+      ],
     );
 
     const gamesBulkUpdates = games.map(({ _id, organisers = [] }) => ({

@@ -2,7 +2,6 @@
 import { type WithId, ObjectId } from "mongodb";
 import type { NextApiRequest, NextApiResponse } from "next";
 
-import { MAX_SIGNUPS_PER_GAME } from "@/constants/signups";
 import client from "@/lib/mongodb";
 import {
   type IAdmin,
@@ -19,6 +18,7 @@ import {
 import { groupUsersById } from "@/utils/data";
 import {
   findPlayerInTourney,
+  getMaxPlayers,
   getRandomAvailableTourneyIndex,
 } from "@/utils/games";
 
@@ -42,8 +42,16 @@ export default async (req: NextApiRequest, res: NextApiResponse) => {
       newPlayerId?: ObjectId;
       cancelPlayerId?: ObjectId;
       isAdminCancel: boolean;
+      teamId?: number;
     };
-    const { _id, newPlayerId, cancelPlayerId, isAdminCancel, ...rest } = body;
+    const {
+      _id,
+      newPlayerId,
+      cancelPlayerId,
+      isAdminCancel,
+      teamId: teamIdFromReq,
+      ...rest
+    } = body;
 
     const db = client.db("LLL");
     const gamesCollection = db.collection<IGame>(Collection.GAMES);
@@ -59,6 +67,13 @@ export default async (req: NextApiRequest, res: NextApiResponse) => {
         _id: gameIdWrapped,
       });
 
+      if (previous === null) {
+        res.status(404).json({ message: "Document not found" });
+        return;
+      }
+
+      const maxPlayers = getMaxPlayers(previous);
+
       result = await gamesCollection.findOneAndUpdate(
         { _id: gameIdWrapped },
         newPlayerId !== undefined
@@ -69,15 +84,18 @@ export default async (req: NextApiRequest, res: NextApiResponse) => {
         { returnDocument: "after" },
       );
 
+      let teamId: number | undefined;
       // Adding/removing a player to/from tourney game
       if (result?.teams !== undefined) {
-        const teamId =
+        teamId =
           // Adding a new player, get random team index
           newPlayerId !== undefined
-            ? getRandomAvailableTourneyIndex(
-                newPlayerId.toString(),
-                result.teams,
-              )
+            ? teamIdFromReq !== undefined
+              ? teamIdFromReq
+              : getRandomAvailableTourneyIndex(
+                  newPlayerId.toString(),
+                  result.teams,
+                )
             : // Cancelling a player, get team index of the player
               findPlayerInTourney(
                 cancelPlayerId?.toString() ?? "",
@@ -104,24 +122,15 @@ export default async (req: NextApiRequest, res: NextApiResponse) => {
             { returnDocument: "after" },
           );
         }
-        // No more teams available
-        else {
-          res.status(400).json({
-            message: "No available team for the player",
-          });
-        }
       }
 
       // User has cancelled a game
       // Check the list to see if we need to notify because
-      // Pre-update list length is greater than MAX_SIGNUPS_PER_GAME (meaning there is a waitlist)
+      // Pre-update list length is greater than maxPlayers (meaning there is a waitlist)
       if (
         result !== null &&
-        previous !== null &&
         cancelPlayerId !== undefined &&
-        (isAdminCancel ||
-          previous.players.length >
-            MAX_SIGNUPS_PER_GAME[previous.type ?? GameType.STANDARD])
+        (isAdminCancel || previous.players.length > maxPlayers)
       ) {
         const playerIdx = previous.players.findIndex(
           (pl) => pl === cancelPlayerId.toString(),
@@ -130,31 +139,29 @@ export default async (req: NextApiRequest, res: NextApiResponse) => {
         // Admin cancelled a guy. Ping him
         if (isAdminCancel) {
           // Reinsert player at the top of the waitlist queue
-          if (
-            previous.players.length >
-            MAX_SIGNUPS_PER_GAME[previous.type ?? GameType.STANDARD]
-          ) {
-            const pushResult = await gamesCollection.updateOne(
+          if (previous.players.length > maxPlayers) {
+            const pushResult = await gamesCollection.findOneAndUpdate(
               { _id: gameIdWrapped },
               {
                 $push: {
                   players: {
                     $each: [cancelPlayerId.toString()],
-                    $position:
-                      MAX_SIGNUPS_PER_GAME[previous.type ?? GameType.STANDARD],
+                    $position: maxPlayers,
                   },
                 },
               },
+              { returnDocument: "after" },
             );
 
-            if (pushResult.modifiedCount === 0) {
+            if (pushResult === null) {
               console.error(
-                `Failed to reinsert ID "${cancelPlayerId.toString()}" at position ${MAX_SIGNUPS_PER_GAME[previous.type ?? GameType.STANDARD]} for document "${gameIdWrapped.toHexString()}".`,
+                `Failed to reinsert ID "${cancelPlayerId.toString()}" at position ${maxPlayers} for document "${gameIdWrapped.toHexString()}".`,
               );
               // Handle error appropriately
             } else {
+              result = pushResult;
               console.log(
-                `Successfully moved ID "${cancelPlayerId.toString()}" in array "players" for document "${gameIdWrapped.toHexString()}" to position ${MAX_SIGNUPS_PER_GAME[previous.type ?? GameType.STANDARD]}.`,
+                `Successfully moved ID "${cancelPlayerId.toString()}" in array "players" for document "${gameIdWrapped.toHexString()}" to position ${maxPlayers}.`,
               );
             }
           }
@@ -177,41 +184,62 @@ export default async (req: NextApiRequest, res: NextApiResponse) => {
             throw new Error("User not found");
           }
         }
-        // Player cancelling is in the waitlist
-        else if (
-          playerIdx < MAX_SIGNUPS_PER_GAME[previous.type ?? GameType.STANDARD]
-        ) {
-          const newlyConfirmedPlayer = result.players.at(
-            MAX_SIGNUPS_PER_GAME[previous.type ?? GameType.STANDARD] - 1,
-          );
+        // Player cancelling is in the confirmed list
+        else if (playerIdx < maxPlayers) {
+          const newlyConfirmedPlayer = result.players.at(maxPlayers - 1);
 
-          const ids = [
-            new ObjectId(newlyConfirmedPlayer),
-            new ObjectId(cancelPlayerId),
-          ];
-
-          const [newConfirmedUser, cancelledUser] = await db
-            .collection(Collection.USERS)
-            .aggregate<IUser>([
+          // If it's a tournament, add the newly confirmed player to the team of the cancelled player
+          if (
+            (result.type === GameType.TOURNAMENT_RANDOM ||
+              result.type === GameType.TOURNAMENT_NATIONS) &&
+            teamId !== undefined &&
+            newlyConfirmedPlayer !== undefined
+          ) {
+            const key = `teams.${teamId}.players`;
+            result = await gamesCollection.findOneAndUpdate(
+              { _id: gameIdWrapped },
               {
-                $match: {
-                  _id: { $in: ids },
+                $addToSet: {
+                  [key]: newlyConfirmedPlayer,
                 },
               },
-              {
-                $addFields: {
-                  sortOrder: {
-                    $indexOfArray: [ids, "$_id"],
+              { returnDocument: "after" },
+            );
+          }
+
+          if (newlyConfirmedPlayer !== undefined && result !== null) {
+            const ids = [
+              new ObjectId(newlyConfirmedPlayer),
+              new ObjectId(cancelPlayerId),
+            ];
+
+            const [newConfirmedUser, cancelledUser] = await db
+              .collection(Collection.USERS)
+              .aggregate<IUser>([
+                {
+                  $match: {
+                    _id: { $in: ids },
                   },
                 },
-              },
-              {
-                $sort: { sortOrder: 1 },
-              },
-            ])
-            .toArray();
+                {
+                  $addFields: {
+                    sortOrder: {
+                      $indexOfArray: [ids, "$_id"],
+                    },
+                  },
+                },
+                {
+                  $sort: { sortOrder: 1 },
+                },
+              ])
+              .toArray();
 
-          await sendQueueChangeMessage(newConfirmedUser, cancelledUser, result);
+            await sendQueueChangeMessage(
+              newConfirmedUser,
+              cancelledUser,
+              result,
+            );
+          }
         }
       }
     }
@@ -238,10 +266,11 @@ export default async (req: NextApiRequest, res: NextApiResponse) => {
           .toArray();
 
         const usersById = groupUsersById(users);
+        const resultMaxPlayers = getMaxPlayers(result);
 
         const userData = Object.fromEntries(
           result.players
-            .slice(0, MAX_SIGNUPS_PER_GAME[result.type ?? GameType.STANDARD])
+            .slice(0, resultMaxPlayers)
             .map((p) => [
               usersById[p.toString()].first_name,
               usersById[p.toString()].phone_number,

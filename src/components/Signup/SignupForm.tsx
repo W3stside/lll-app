@@ -40,17 +40,20 @@ export function SignupForm({
           <option value={""}>- Please select a game -</option>
           {games.map((game) => {
             const { _id, day, game_id, time, players } = game;
+            const isRegistered = players.includes(userId.toString());
             return (
               <option
                 disabled={
-                  players.includes(userId.toString()) ||
+                  isRegistered ||
                   computeGameStatus(game, day, game).gameStatus ===
                     GameStatus.PAST
                 }
                 value={_id.toString()}
                 key={_id.toString()}
               >
-                Game {game_id} @ {time}
+                Game {game_id} @ {time}{" "}
+                {game.name !== undefined && `[${game.name}]`}{" "}
+                {isRegistered && "(Already registered)"}
               </option>
             );
           })}

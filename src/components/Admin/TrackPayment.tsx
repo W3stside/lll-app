@@ -123,6 +123,7 @@ export function TrackPayment({
 
                     return (
                       <StyledGamesList
+                        key={g._id.toString()}
                         game={g}
                         nextGameDate=""
                         gameCancelled={false}

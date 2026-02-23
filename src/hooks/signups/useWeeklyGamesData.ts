@@ -1,10 +1,9 @@
 import { useMemo } from "react";
 
-import { MAX_SIGNUPS_PER_GAME } from "@/constants/signups";
-import { type IGame, type IUser, GameStatus, GameType } from "@/types";
+import { type IGame, type IUser, GameStatus } from "@/types";
 import { groupGamesByDay } from "@/utils/data";
 import { computeGameDate } from "@/utils/date";
-import { shareGameList } from "@/utils/games";
+import { getMaxPlayers, shareGameList } from "@/utils/games";
 
 type GameData = {
   day: IGame["day"];
@@ -64,22 +63,21 @@ export function useWeeklyGamesData(
         capacity: number[];
         maxSignups: number;
       }>(
-        (acc, { players = [], teams, type }) => {
+        (acc, game) => {
+          const { players = [], teams } = game;
           const tourneyPlayers =
             teams !== undefined
               ? Object.values(teams).flatMap((t) => [...t.players])
               : [];
 
-          const limit = MAX_SIGNUPS_PER_GAME[type ?? GameType.STANDARD];
+          const limit = getMaxPlayers(game);
 
           return {
             maxSignups: acc.maxSignups + limit,
             total: acc.total + (tourneyPlayers.length || players.length),
             capacity: [
               ...acc.capacity,
-              tourneyPlayers.length > 0
-                ? limit * 2 - tourneyPlayers.length
-                : limit - players.length,
+              limit - (tourneyPlayers.length || players.length),
             ],
           };
         },

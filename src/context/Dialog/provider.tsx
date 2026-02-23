@@ -25,6 +25,7 @@ export function DialogProvider({ children }: IDialogProvider) {
     IDialogContext["confirmLabel"] | undefined
   >(undefined);
   const [loading, setLoading] = useState(false);
+  const [confirmDisabled, setConfirmDisabled] = useState(false);
 
   const openDialog: IDialogContext["openDialog"] = useCallback((props) => {
     setVariant(props?.variant);
@@ -33,6 +34,7 @@ export function DialogProvider({ children }: IDialogProvider) {
     setConfirmLabel(props?.confirmLabel);
     setAction(() => props?.action);
     setLoading(props?.loading ?? false);
+    setConfirmDisabled(props?.confirmDisabled ?? false);
   }, []);
 
   const handleAction = useCallback(async () => {
@@ -57,6 +59,7 @@ export function DialogProvider({ children }: IDialogProvider) {
         content,
         variant,
         loading,
+        confirmDisabled,
         openDialog,
       }}
     >

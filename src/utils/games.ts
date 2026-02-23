@@ -9,6 +9,7 @@ import {
   GameStatus,
   GameType,
   Gender,
+  type ITourneyGameType,
   type IUserSafe,
   type GamesByDay,
   type IGame,
@@ -150,7 +151,7 @@ const RANDOM_TOURNEY_SET = {
 
 export const getRandomAvailableTourneyIndex = (
   player: string,
-  teams?: { players: string[] }[],
+  teams?: ITourneyGameType[],
 ) => {
   const current = teams
     ? (Object.fromEntries(
@@ -165,7 +166,7 @@ export const getRandomAvailableTourneyIndex = (
   // Get list of available bucket keys (still under max)
   const availableKeys = Object.entries(current).filter(
     ([, set]) =>
-      set.size < MAX_SIGNUPS_PER_GAME[GameType.TOURNAMENT] &&
+      set.size < MAX_SIGNUPS_PER_GAME[GameType.TOURNAMENT_RANDOM] &&
       !flatCurrent.has(player),
   );
 
@@ -174,12 +175,27 @@ export const getRandomAvailableTourneyIndex = (
   else if (availableKeys.length === 1) return Number(availableKeys[0][0]);
 
   // Return a random available key
-  return randomInt(0, availableKeys.length);
+  const randomIndex = randomInt(0, availableKeys.length);
+  return Number(availableKeys[randomIndex][0]);
 };
 
 export const findPlayerInTourney = (
   playerId: string,
-  teams: { players: string[] }[],
+  teams: ITourneyGameType[],
 ): number | undefined => {
-  return teams.findIndex((team) => team.players.includes(playerId));
+  const index = teams.findIndex((team) => team.players.includes(playerId));
+  return index === -1 ? undefined : index;
+};
+
+export const getMaxPlayers = (game: IGame) => {
+  if (
+    game.type === GameType.TOURNAMENT_RANDOM ||
+    game.type === GameType.TOURNAMENT_NATIONS
+  ) {
+    return (
+      MAX_SIGNUPS_PER_GAME[GameType.TOURNAMENT_RANDOM] *
+      (game.teams?.length ?? 4)
+    );
+  }
+  return MAX_SIGNUPS_PER_GAME[game.type ?? GameType.STANDARD];
 };
