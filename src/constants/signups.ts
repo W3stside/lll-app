@@ -3,8 +3,11 @@ import { GameType } from "@/types";
 export const MAX_SIGNUPS_PER_GAME = {
   [GameType.STANDARD]: 16,
   [GameType.ELEVENS]: 26,
-  [GameType.TOURNAMENT]: 8,
+  [GameType.TOURNAMENT_RANDOM]: 8,
+  [GameType.TOURNAMENT_NATIONS]: 8,
 };
+
+export const MINIMUM_TOURNAMENT_TEAMS = 2;
 
 export const PASSWORD_MIN_LENGTH = 6;
 export const NAME_MIN_LENGTH = 2;

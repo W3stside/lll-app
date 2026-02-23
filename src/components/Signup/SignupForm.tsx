@@ -51,7 +51,9 @@ export function SignupForm({
                 value={_id.toString()}
                 key={_id.toString()}
               >
-                Game {game_id} @ {time} {isRegistered && "(Already registered)"}
+                Game {game_id} @ {time}{" "}
+                {game.name !== undefined && `[${game.name}]`}{" "}
+                {isRegistered && "(Already registered)"}
               </option>
             );
           })}

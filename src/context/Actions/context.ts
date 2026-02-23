@@ -27,7 +27,11 @@ export interface IActionContext {
       callback?: () => void;
     },
   ) => void;
-  signupForGame: (game: IGame | undefined, userId: ObjectId) => Promise<void>;
+  signupForGame: (
+    game: IGame | undefined,
+    userId: ObjectId,
+    teamId?: number,
+  ) => Promise<void>;
   updateUser: (user: IUserSafe) => Promise<void>;
 }
 

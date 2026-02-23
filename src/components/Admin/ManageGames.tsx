@@ -6,6 +6,7 @@ import { DEFAULT_GAME_STATE } from "./constants";
 import type { ErrorUser } from "./types";
 
 import { DAYS_IN_WEEK } from "@/constants/date";
+import { MINIMUM_TOURNAMENT_TEAMS } from "@/constants/signups";
 import { DialogVariant } from "@/context/Dialog/context";
 import { type PlaySpeed, type IGame, GameType, Gender } from "@/types";
 import { cn } from "@/utils/tailwind";
@@ -178,6 +179,56 @@ export function ManageGames({
                 </option>
               ))}
             </select>
+            {targettedGame.type === GameType.TOURNAMENT_NATIONS && (
+              <div
+                className="flex flex-col gap-y-2 p-2 border-2 border-[var(--border-dark)] mt-2"
+                onClick={(e) => {
+                  e.stopPropagation();
+                }}
+              >
+                <div className="font-bold">Teams</div>
+                {(targettedGame.teams ?? []).map((team, index) => (
+                  <div key={index} className="flex gap-x-2">
+                    <input
+                      className="flex-1"
+                      value={team.name ?? ""}
+                      onChange={(e) => {
+                        const newTeams = [...(targettedGame.teams ?? [])];
+                        newTeams[index] = {
+                          ...newTeams[index],
+                          name: e.target.value,
+                        };
+                        handleChange("teams", newTeams);
+                      }}
+                      placeholder={`Team ${index + 1} Name`}
+                    />
+                    <button
+                      className="bg-[var(--background-error)] text-xs !w-min"
+                      onClick={() => {
+                        const newTeams = targettedGame.teams?.filter(
+                          (_, i) => i !== index,
+                        );
+                        handleChange("teams", newTeams);
+                      }}
+                    >
+                      delete
+                    </button>
+                  </div>
+                ))}
+                <p
+                  className="text-center text-sm font-medium underline !w-full justify-center"
+                  onClick={() => {
+                    const newTeams = [
+                      ...(targettedGame.teams ?? []),
+                      { name: "", players: [] },
+                    ];
+                    handleChange("teams", newTeams);
+                  }}
+                >
+                  + add a new team
+                </p>
+              </div>
+            )}
             <input
               onClick={(e) => {
                 e.stopPropagation();
@@ -317,7 +368,10 @@ export function ManageGames({
             targettedGame.location === "" ||
             targettedGame.address === "" ||
             targettedGame.mapUrl === "" ||
-            targettedGame.speed === undefined
+            targettedGame.speed === undefined ||
+            (targettedGame.type === GameType.TOURNAMENT_NATIONS &&
+              ((targettedGame.teams?.length ?? 0) < MINIMUM_TOURNAMENT_TEAMS ||
+                targettedGame.teams?.some((t) => t.name === "")))
           }
         >
           <strong>

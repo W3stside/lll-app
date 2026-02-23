@@ -26,6 +26,7 @@ interface IGames extends IGame {
 
 export function Games({
   game_id,
+  name,
   location,
   time,
   address,
@@ -72,6 +73,13 @@ export function Games({
           <small className="mb-1 px-1 bg-[var(--background-window-highlight)]">
             HIDDEN GAME! ADMIN VIEW ONLY
           </small>
+        )}
+        {name !== undefined && (
+          <div className="flex gap-x-4 w-full items-center">
+            <strong className="mr-auto whitespace-nowrap overflow-hidden text-ellipsis text-lg min-w-[110px]">
+              {name}
+            </strong>
+          </div>
         )}
         <div className="flex gap-x-4 w-full items-center">
           <strong className="flex items-center gap-x-2 text-lg whitespace-nowrap min-w-[110px]">

@@ -42,8 +42,16 @@ export default async (req: NextApiRequest, res: NextApiResponse) => {
       newPlayerId?: ObjectId;
       cancelPlayerId?: ObjectId;
       isAdminCancel: boolean;
+      teamId?: number;
     };
-    const { _id, newPlayerId, cancelPlayerId, isAdminCancel, ...rest } = body;
+    const {
+      _id,
+      newPlayerId,
+      cancelPlayerId,
+      isAdminCancel,
+      teamId: teamIdFromReq,
+      ...rest
+    } = body;
 
     const db = client.db("LLL");
     const gamesCollection = db.collection<IGame>(Collection.GAMES);
@@ -82,10 +90,12 @@ export default async (req: NextApiRequest, res: NextApiResponse) => {
         teamId =
           // Adding a new player, get random team index
           newPlayerId !== undefined
-            ? getRandomAvailableTourneyIndex(
-                newPlayerId.toString(),
-                result.teams,
-              )
+            ? teamIdFromReq !== undefined
+              ? teamIdFromReq
+              : getRandomAvailableTourneyIndex(
+                  newPlayerId.toString(),
+                  result.teams,
+                )
             : // Cancelling a player, get team index of the player
               findPlayerInTourney(
                 cancelPlayerId?.toString() ?? "",
@@ -180,7 +190,8 @@ export default async (req: NextApiRequest, res: NextApiResponse) => {
 
           // If it's a tournament, add the newly confirmed player to the team of the cancelled player
           if (
-            result.type === GameType.TOURNAMENT &&
+            (result.type === GameType.TOURNAMENT_RANDOM ||
+              result.type === GameType.TOURNAMENT_NATIONS) &&
             teamId !== undefined &&
             newlyConfirmedPlayer !== undefined
           ) {

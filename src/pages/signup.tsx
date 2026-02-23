@@ -370,11 +370,12 @@ const Signups: React.FC<ISignups> = ({
                           </div>
                           <div className="flex flex-col gap-y-2">
                             {games.flatMap((game) => {
+                              const isTourney =
+                                game.type === GameType.TOURNAMENT_RANDOM ||
+                                game.type === GameType.TOURNAMENT_NATIONS;
+
                               // Non-tourney game
-                              if (
-                                game.type !== GameType.TOURNAMENT ||
-                                game.teams === undefined
-                              ) {
+                              if (!isTourney || game.teams === undefined) {
                                 return (
                                   <StandardPlayersList
                                     key={game._id.toString()}
@@ -415,13 +416,14 @@ const Signups: React.FC<ISignups> = ({
                             }
                             disabled={userFullyBooked}
                             setGameId={setSelectedGameId}
-                            handleSignup={async () => {
+                            handleSignup={async (teamId) => {
                               if (selectedGameId === undefined) return;
                               await signupForGame(
                                 gamesByDay[day]?.find(
                                   (g) => g._id.toString() === selectedGameId,
                                 ),
                                 user._id,
+                                teamId,
                               );
                               setUser((u) => ({
                                 ...u,

@@ -49,6 +49,19 @@ const EMPTY_TEAMS = [
 ] as const satisfies IGame["teams"];
 const LOCAL_STORAGE_PAYMENTS_KEY = "LLL-payments-confirmed";
 
+const FIELDS_TO_VALIDATE: (keyof IGame)[] = [
+  "name",
+  "day",
+  "time",
+  "location",
+  "address",
+  "gender",
+  "speed",
+  "cancelled",
+  "type",
+  "hidden",
+];
+
 function _getPaymentConfirmation() {
   if (typeof window !== "undefined") {
     return JSON.parse(
@@ -214,20 +227,21 @@ export default function Admin({
         throw new Error("Invalid game form. Please check the inputs.");
       }
 
-      if (
-        games.some(
-          (game) =>
-            game.day === targettedGame.day &&
-            game.time === targettedGame.time &&
-            game.location === targettedGame.location &&
-            game.address === targettedGame.address &&
-            game.gender === targettedGame.gender &&
-            game.speed === targettedGame.speed &&
-            game.cancelled === targettedGame.cancelled &&
-            game.type === targettedGame.type &&
-            game.hidden === targettedGame.hidden,
-        )
-      ) {
+      const isDuplicate = games.some((game) => {
+        // If updating, exclude the game itself from duplicate check
+        if (
+          targettedGame._id !== undefined &&
+          game._id.toString() === targettedGame._id.toString()
+        ) {
+          return false;
+        }
+
+        return FIELDS_TO_VALIDATE.every(
+          (field) => game[field] === targettedGame[field],
+        );
+      });
+
+      if (isDuplicate) {
         throw new Error(
           "Game already exists for this day with the same configuration",
         );
@@ -238,7 +252,10 @@ export default function Admin({
       const {
         _id,
         type,
-        teams = type === GameType.TOURNAMENT ? EMPTY_TEAMS : undefined,
+        teams = type === GameType.TOURNAMENT_RANDOM ||
+        type === GameType.TOURNAMENT_NATIONS
+          ? (targettedGame.teams ?? EMPTY_TEAMS)
+          : undefined,
         ...gameNoId
       } = targettedGame;
 
@@ -269,6 +286,7 @@ export default function Admin({
         >("update", Collection.GAMES, {
           _id,
           type,
+          teams,
           ...gameNoId,
         });
       }

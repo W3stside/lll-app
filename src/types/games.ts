@@ -11,7 +11,13 @@ export enum Gender {
 export enum GameType {
   STANDARD = "Standard",
   ELEVENS = "Elevens",
-  TOURNAMENT = "Tournament",
+  TOURNAMENT_RANDOM = "Tournament - Random",
+  TOURNAMENT_NATIONS = "Tournament - Nations",
+}
+
+export interface ITourneyGameType {
+  name?: string;
+  players: string[];
 }
 
 export interface IGame {
@@ -38,7 +44,7 @@ export interface IGame {
   type?: GameType;
   name?: string;
   // Tournaments
-  teams?: { players: string[] }[];
+  teams?: ITourneyGameType[];
   // Aux
   status: GameStatus;
   date: string;

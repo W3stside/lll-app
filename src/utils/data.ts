@@ -21,7 +21,7 @@ export function groupUsersById(users: IUser[]) {
 
 export function groupGamesByDay(games: IGame[]) {
   return sortDaysOfWeek(games).reduce<GamesByDay>((acc, game) => {
-    // if (game.hidden === true) return acc;
+    if (game.hidden === true) return acc;
     return {
       ...acc,
       [game.day]: [...(acc[game.day] ?? []), game].sort(
