@@ -68,16 +68,55 @@ export default function About({ isConnected, gamesByDay }: IAbout) {
           </h5>
           <br />
           <p>
-            Sign up for games & view lists{" "}
-            <Link href={NAVLINKS_MAP.SIGNUP}>here</Link>
+            To sign-up for games,{" "}
+            <Link href={NAVLINKS_MAP.SIGNUP}>click here!</Link>
           </p>{" "}
           <br />
-          <p>
-            !! Cancellations <strong>within 12 hours</strong> of a game pay for
-            their spot YOU are responsible for payments of anyone you add to the
-            list !!
-          </p>
+          <ul>
+            <strong>Games:</strong>
+            {Object.entries(gamesByDay).flatMap(([day, games], idx) =>
+              games.length === 0 ? (
+                []
+              ) : (
+                <li key={day}>
+                  <div className="flex flex-wrap gap-x-2">
+                    {idx + 1}. {day}
+                    {games.flatMap((g, i) =>
+                      g.hidden === true ? (
+                        []
+                      ) : (
+                        <span key={g._id.toString()}>
+                          @ {g.time}
+                          {games.length > 1 && i !== games.length - 1 && "//"}
+                        </span>
+                      ),
+                    )}
+                  </div>
+                </li>
+              ),
+            )}
+          </ul>
           <br />
+          <br />
+          <div className="container-header !h-auto -mt-2 -mx-1.5">
+            <h5 className="flex items-center mr-auto px-2 py-1">
+              Cancellation policy{" "}
+            </h5>
+          </div>
+          <div className="mt-2">
+            !! Cancellations <strong>within 12 hours</strong> of a game.
+            Cancellations under 12 hours you need to pay for the spot regardless
+            !!
+            <p>
+              YOU are responsible for payments of anyone you add to the list.
+            </p>
+          </div>
+          <br />
+          <div className="container-header !h-auto -mt-2 -mx-1.5">
+            <h5 className="flex items-center mr-auto px-2 py-1">
+              What to bring{" "}
+            </h5>
+          </div>
           <p>
             <strong>Bring a black AND white shirt</strong> <br />
             <small>
@@ -86,6 +125,11 @@ export default function About({ isConnected, gamesByDay }: IAbout) {
             </small>
           </p>
           <br />
+          <div className="container-header !h-auto -mt-2 -mx-1.5">
+            <h5 className="flex items-center mr-auto px-2 py-1">
+              Payment policy{" "}
+            </h5>
+          </div>
           <p>
             <strong>💵💵 €5/game - CASH ONLY!! 💵💵</strong> <br />
             <small>
@@ -94,27 +138,15 @@ export default function About({ isConnected, gamesByDay }: IAbout) {
             </small>
           </p>
           <br />
+          <div className="container-header !h-auto -mt-2 -mx-1.5">
+            <h5 className="flex items-center mr-auto px-2 py-1">
+              Updates and social links{" "}
+            </h5>
+          </div>
           <p>
             <strong>We have a ladies team!</strong>
           </p>{" "}
           <p>Message Josh for the link if you wanna share it with someone.</p>
-          <br />
-          <ul>
-            <strong>Games:</strong>
-            {Object.entries(gamesByDay).map(([day, games], idx) => (
-              <li key={day}>
-                <div className="flex flex-wrap gap-x-2">
-                  {idx + 1}. {day}
-                  {games.map((g, i) => (
-                    <span key={g._id.toString()}>
-                      @ {g.time}
-                      {games.length > 1 && i !== games.length - 1 && ","}
-                    </span>
-                  ))}
-                </div>
-              </li>
-            ))}
-          </ul>
           <br />
           <div className="mt-2">
             <strong>Group link:</strong>{" "}

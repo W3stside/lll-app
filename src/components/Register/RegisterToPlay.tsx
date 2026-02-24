@@ -29,7 +29,7 @@ function DisclaimerContent({ onAgreed }: IDisclaimerContentProps) {
   }, [agreedToCancel, agreedToCash, onAgreed]);
 
   return (
-    <div className="flex flex-col gap-y-4 p-4 w-full text-black text-sm">
+    <div className="flex flex-col gap-y-4 p-4 w-full">
       <label className="flex items-start gap-x-3 cursor-pointer">
         <input
           type="checkbox"
@@ -40,10 +40,11 @@ function DisclaimerContent({ onAgreed }: IDisclaimerContentProps) {
           }}
         />
         <span>
-          I accept the{" "}
+          I've read and understand the{" "}
           <Link href="/about" className="underline font-bold" target="_blank">
             cancellation policy
           </Link>
+          .
         </span>
       </label>
       <label className="flex items-start gap-x-3 cursor-pointer">
@@ -56,7 +57,7 @@ function DisclaimerContent({ onAgreed }: IDisclaimerContentProps) {
           }}
         />
         <span>
-          I understand that payment methods are <strong>CASH ONLY</strong>
+          I understand that game payments are <strong>CASH ONLY!</strong>
         </span>
       </label>
     </div>
@@ -97,7 +98,7 @@ export function RegisterToPlay({
     (isConfirmDisabled: boolean) => {
       openDialog({
         variant: DialogVariant.CONFIRM,
-        title: "Disclaimer",
+        title: "Please read!",
         content: <DisclaimerContent onAgreed={setCanConfirm} />,
         action: onConfirm,
         confirmDisabled: isConfirmDisabled,

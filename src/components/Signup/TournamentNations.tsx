@@ -1,3 +1,4 @@
+import { ORANGE_TW } from "@/constants/colours";
 import { MAX_SIGNUPS_PER_GAME } from "@/constants/signups";
 import { type IGame, GameType } from "@/types";
 import { cn } from "@/utils/tailwind";
@@ -8,6 +9,8 @@ interface ITournamentNations {
   onSelectTeam: (teamId: number) => void;
   disabled?: boolean;
 }
+
+const LIMIT = MAX_SIGNUPS_PER_GAME[GameType.TOURNAMENT_NATIONS];
 
 export function TournamentNations({
   game,
@@ -24,38 +27,43 @@ export function TournamentNations({
       </div>
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 w-full">
         {game.teams.map((team, index) => {
-          const isFull =
-            team.players.length >=
-            MAX_SIGNUPS_PER_GAME[GameType.TOURNAMENT_NATIONS];
+          const waitlistCount = Math.max(0, team.players.length - LIMIT);
+          const isWaitlist = team.players.length >= LIMIT;
           const isSelected = selectedTeamId === index;
 
           return (
             <button
               key={index}
-              disabled={disabled || isFull}
+              disabled={disabled}
               onClick={() => {
                 onSelectTeam(index);
               }}
               className={cn(
-                "flex flex-col items-center justify-center p-2 border-2 text-sm transition-colors",
+                "flex flex-col items-center justify-center p-2 border-2 text-sm transition-colors min-h-[64px]",
                 {
                   "bg-[var(--background-window-highlight)] border-[var(--border-dark)]":
                     isSelected,
                   "bg-[var(--container-background-color)] border-[var(--border-light)]":
                     !isSelected,
-                  "opacity-50 cursor-not-allowed bg-gray-300":
-                    isFull && !isSelected,
                 },
               )}
             >
               <span className="font-bold">{team.name}</span>
-              <span className="text-xs">
-                {team.name ?? ""} {team.players.length} /{" "}
-                {MAX_SIGNUPS_PER_GAME[GameType.TOURNAMENT_NATIONS]}
-              </span>
-              {isFull && (
-                <span className="text-[10px] text-red-500 uppercase">Full</span>
-              )}
+              <div className="flex flex-col items-center gap-y-0.5">
+                <span className="text-xs">
+                  Players: {Math.min(team.players.length, LIMIT)} / {LIMIT}
+                </span>
+                {isWaitlist && (
+                  <div
+                    className={cn(
+                      "text-[10px] px-2 py-0.5 font-bold text-black uppercase",
+                      ORANGE_TW,
+                    )}
+                  >
+                    Waitlist only (+{waitlistCount})
+                  </div>
+                )}
+              </div>
             </button>
           );
         })}
