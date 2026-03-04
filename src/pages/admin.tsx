@@ -277,8 +277,9 @@ export default function Admin({
       }
       // Update existing game
       else {
+        const { players: _, ...gameNoPlayers } = gameNoId;
         response = await dbRequest<
-          IGame,
+          Omit<IGame, "_id" | "players">,
           {
             updatedGame: IGame;
             games: IGame[];
@@ -287,7 +288,7 @@ export default function Admin({
           _id,
           type,
           teams,
-          ...gameNoId,
+          ...gameNoPlayers,
         });
       }
 

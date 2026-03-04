@@ -245,11 +245,46 @@ export default async (req: NextApiRequest, res: NextApiResponse) => {
     }
     // Updating game parameters
     else {
+      // Fetch the current state of the game to preserve players and teams correctly
+      const currentGame = await gamesCollection.findOne({ _id: gameIdWrapped });
+
+      if (currentGame === null) {
+        res.status(404).json({ message: "Document not found" });
+        return;
+      }
+
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      const {
+        players: _players,
+        teams: incomingTeams,
+        ...paramsToUpdate
+      } = rest;
+
+      const updateDoc: { $set: Partial<IGame> } = {
+        $set: paramsToUpdate,
+      };
+
+      // If teams are provided, we want to update the team names but PRESERVE the players in each team
+      if (incomingTeams !== undefined && Array.isArray(incomingTeams)) {
+        if (currentGame.teams !== undefined) {
+          updateDoc.$set.teams = currentGame.teams.map((existingTeam, i) => {
+            const incomingTeam = incomingTeams[i];
+            return {
+              ...existingTeam,
+              name: incomingTeam.name ?? existingTeam.name,
+              // We explicitly keep the existing players
+              players: existingTeam.players,
+            };
+          });
+        } else {
+          // If the game didn't have teams before, use the incoming ones (they should have empty players)
+          updateDoc.$set.teams = incomingTeams;
+        }
+      }
+
       result = await gamesCollection.findOneAndUpdate(
         { _id: gameIdWrapped },
-        {
-          $set: rest,
-        },
+        updateDoc,
         { returnDocument: "after" },
       );
     }
@@ -260,24 +295,36 @@ export default async (req: NextApiRequest, res: NextApiResponse) => {
       const updatedGames = await gamesCollection.find().toArray();
 
       if (result.cancelled === true) {
-        const users = await db
-          .collection<IUser>(Collection.USERS)
-          .find()
-          .toArray();
+        try {
+          const users = await db
+            .collection<IUser>(Collection.USERS)
+            .find()
+            .toArray();
 
-        const usersById = groupUsersById(users);
-        const resultMaxPlayers = getMaxPlayers(result);
+          const usersById = groupUsersById(users);
+          const resultMaxPlayers = getMaxPlayers(result);
 
-        const userData = Object.fromEntries(
-          result.players
-            .slice(0, resultMaxPlayers)
-            .map((p) => [
-              usersById[p.toString()].first_name,
-              usersById[p.toString()].phone_number,
-            ]),
-        );
+          const userData = Object.fromEntries(
+            result.players
+              .slice(0, resultMaxPlayers)
+              .map((p) => {
+                const user = usersById[p.toString()];
+                if ((user as IUser | undefined) === undefined) return null;
+                return [
+                  `${user.first_name} ${user.last_name} (${user._id.toString()})`,
+                  user.phone_number,
+                ];
+              })
+              .filter((entry): entry is [string, string] => entry !== null),
+          );
 
-        await sendGameCancelledMessage(userData, result);
+          if (Object.keys(userData).length > 0) {
+            await sendGameCancelledMessage(userData, result);
+          }
+        } catch (botError) {
+          console.error("Error sending cancellation message:", botError);
+          // Don't fail the request if the bot fails
+        }
       }
 
       res.status(200).json({ updatedGame: result, games: updatedGames });
