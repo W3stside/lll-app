@@ -3,6 +3,7 @@ import { ObjectId } from "mongodb";
 import type { NextApiRequest, NextApiResponse } from "next";
 
 import client from "@/lib/mongodb";
+import { requireAdmin } from "@/lib/requireAdmin";
 import { Collection } from "@/types";
 import type { IAdmin } from "@/types/admin";
 import { notifySignupsOpen } from "@/utils/notifications";
@@ -14,6 +15,10 @@ export default async (req: NextApiRequest, res: NextApiResponse) => {
   }
 
   try {
+    // Re-opening signups broadcasts a push to every subscribed device, so an
+    // open route would let anyone spam all users by toggling it
+    if (!(await requireAdmin(req, res))) return;
+
     const body = req.body as IAdmin;
     const { _id, signup_open } = body;
 

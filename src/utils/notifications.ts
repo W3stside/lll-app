@@ -94,6 +94,32 @@ export async function notifyBumped(user: IUser, game: IGame): Promise<void> {
   ]);
 }
 
+/** A confirmed player an admin removed from a game that had no waitlist. */
+export async function notifyRemovedByAdmin(
+  user: IUser,
+  game: IGame,
+): Promise<void> {
+  await Promise.all([
+    sendPushToUsers(
+      [user._id.toString()],
+      {
+        title: "You were removed from a game",
+        body: `An admin removed you from ${_describeGame(game)}. Ask an admin in the group if this was a mistake.`,
+        url: NAVLINKS_MAP.SIGNUP,
+        // Same tag as notifyBumped: both mean "you're no longer playing"
+        tag: _gameTag("out", game),
+      },
+      { urgency: "high", ttl: 12 * HOUR_SECONDS },
+    ),
+    // The bot's "bumped" message already reads as removal, and admin cancels
+    // sent it before push existed
+    _withWhatsApp(
+      "removed",
+      async (bot) => await bot.sendBumpedMessage(user, game),
+    ),
+  ]);
+}
+
 /**
  * @param userIds everyone signed up (confirmed + waitlist) - all of them
  *   planned around this game

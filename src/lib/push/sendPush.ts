@@ -29,6 +29,10 @@ export interface ISendPushOptions {
 
 let _vapidConfigured: boolean | undefined;
 
+function _isSet(value: string | undefined): value is string {
+  return value !== undefined && value.trim() !== "";
+}
+
 // Configured lazily (not at import) so a missing key disables push instead of
 // crashing every API route that imports this module
 function _ensureVapid(): boolean {
@@ -37,10 +41,12 @@ function _ensureVapid(): boolean {
   const { NEXT_PUBLIC_VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY, VAPID_SUBJECT } =
     process.env;
 
+  // Empty values count as missing: hosting dashboards often keep a var with no
+  // value, and setVapidDetails would throw on it
   if (
-    NEXT_PUBLIC_VAPID_PUBLIC_KEY === undefined ||
-    VAPID_PRIVATE_KEY === undefined ||
-    VAPID_SUBJECT === undefined
+    !_isSet(NEXT_PUBLIC_VAPID_PUBLIC_KEY) ||
+    !_isSet(VAPID_PRIVATE_KEY) ||
+    !_isSet(VAPID_SUBJECT)
   ) {
     console.warn(
       "[push] VAPID env vars missing - push notifications are disabled",
@@ -49,13 +55,24 @@ function _ensureVapid(): boolean {
     return false;
   }
 
-  setVapidDetails(
-    VAPID_SUBJECT,
-    NEXT_PUBLIC_VAPID_PUBLIC_KEY,
-    VAPID_PRIVATE_KEY,
-  );
-  _vapidConfigured = true;
-  return true;
+  try {
+    setVapidDetails(
+      VAPID_SUBJECT,
+      NEXT_PUBLIC_VAPID_PUBLIC_KEY,
+      VAPID_PRIVATE_KEY,
+    );
+    _vapidConfigured = true;
+  } catch (error) {
+    // Malformed key or subject (e.g. the "..." placeholders in
+    // .env.local.example). Disable push rather than break the triggering request.
+    console.error(
+      "[push] Invalid VAPID config - push notifications are disabled:",
+      error,
+    );
+    _vapidConfigured = false;
+  }
+
+  return _vapidConfigured;
 }
 
 function _collection() {

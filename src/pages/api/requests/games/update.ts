@@ -1,8 +1,9 @@
 /* eslint-disable no-console */
-import { type WithId, ObjectId } from "mongodb";
+import { type Db, type WithId, ObjectId } from "mongodb";
 import type { NextApiRequest, NextApiResponse } from "next";
 
 import client from "@/lib/mongodb";
+import { getApiRequester } from "@/lib/requireAdmin";
 import {
   type IAdmin,
   Collection,
@@ -20,10 +21,20 @@ import {
   notifyBumped,
   notifyGameCancelled,
   notifyPromotedToActive,
+  notifyRemovedByAdmin,
 } from "@/utils/notifications";
 
 // WhatsApp env vars are validated inside utils/bot, which utils/notifications
 // only loads when WHATSAPP_BOT_ENABLED=true - so this route works without them.
+
+async function _isSignupOpen(db: Db): Promise<boolean> {
+  // .at() types the result as possibly undefined, unlike destructuring
+  const adminInfo = (
+    await db.collection<IAdmin>(Collection.ADMIN).find().limit(1).toArray()
+  ).at(0);
+
+  return adminInfo !== undefined && adminInfo.signup_open;
+}
 
 export default async (req: NextApiRequest, res: NextApiResponse) => {
   if (req.method !== "PATCH" && req.method !== "PUT") {
@@ -52,6 +63,26 @@ export default async (req: NextApiRequest, res: NextApiResponse) => {
 
     const isAddOrRemovePlayer =
       newPlayerId !== undefined || cancelPlayerId !== undefined;
+
+    const requester = await getApiRequester(req);
+    if (requester === null) {
+      res.status(401).json({ message: "Not logged in" });
+      return;
+    }
+
+    // Players may only sign themselves up or cancel themselves. Everything else
+    // (editing a game, admin cancels, acting for someone else) moves players
+    // around and sends them push notifications, so it is admin-only.
+    const targetPlayerId = newPlayerId ?? cancelPlayerId;
+    const isSelfAction =
+      isAddOrRemovePlayer &&
+      !isAdminCancel &&
+      targetPlayerId?.toString() === requester.userId;
+
+    if (!isSelfAction && !requester.isAdmin) {
+      res.status(403).json({ message: "Admins only" });
+      return;
+    }
 
     const gameIdWrapped = new ObjectId(_id);
     let result: WithId<IGame> | null;
@@ -173,33 +204,26 @@ export default async (req: NextApiRequest, res: NextApiResponse) => {
             });
 
           if (bumpedUser !== null) {
-            const adminInfo = (
-              await db.collection<IAdmin>(Collection.ADMIN).find().toArray()
-            ).at(0);
-
-            // Only a confirmed player in a game with a waitlist actually lands
-            // on the waitlist. Without a waitlist they are removed outright, and
-            // an already-waitlisted player stays waitlisted - "moved to the
-            // waitlist" would be wrong in both cases
-            const movedToWaitlist =
-              previous.players.length > maxPlayers && playerIdx < maxPlayers;
-
             // Admins reshuffle freely while signups are closed; only ping
             // players once the lists are live
-            if (
-              movedToWaitlist &&
-              adminInfo !== undefined &&
-              adminInfo.signup_open
-            ) {
-              // Their confirmed slot goes to the first waitlisted player
-              const promotedPlayer = result.players.at(maxPlayers - 1);
+            if (await _isSignupOpen(db)) {
+              if (previous.players.length <= maxPlayers) {
+                // No waitlist to land on, so the $pull removed them outright
+                await notifyRemovedByAdmin(bumpedUser, result);
+              } else if (playerIdx < maxPlayers) {
+                // Confirmed player moved to the top of the waitlist; their slot
+                // goes to the first waitlisted player
+                const promotedPlayer = result.players.at(maxPlayers - 1);
 
-              await Promise.all([
-                notifyBumped(bumpedUser, result),
-                promotedPlayer !== undefined
-                  ? notifyPromotedToActive([promotedPlayer], result)
-                  : Promise.resolve(),
-              ]);
+                await Promise.all([
+                  notifyBumped(bumpedUser, result),
+                  promotedPlayer !== undefined
+                    ? notifyPromotedToActive([promotedPlayer], result)
+                    : Promise.resolve(),
+                ]);
+              }
+              // Otherwise they were already waitlisted and stay waitlisted, so
+              // there is nothing to tell them
             }
           } else {
             throw new Error("User not found");
@@ -306,8 +330,13 @@ export default async (req: NextApiRequest, res: NextApiResponse) => {
       );
 
       // Capacity grew (e.g. Standard -> Elevens, or more tourney teams):
-      // waitlisted players now inside the new limit got a spot silently
-      if (result !== null && result.cancelled !== true) {
+      // waitlisted players now inside the new limit got a spot silently.
+      // Same rule as admin cancels: no pings while admins set up closed lists.
+      if (
+        result !== null &&
+        result.cancelled !== true &&
+        (await _isSignupOpen(db))
+      ) {
         const promotedPlayers = result.players.slice(
           getMaxPlayers(currentGame),
           getMaxPlayers(result),

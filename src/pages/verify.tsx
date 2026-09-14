@@ -95,11 +95,7 @@ export default function Verify() {
       setLoading(true);
 
       try {
-        const data = await sendVerificationCode(
-          user.phone_number.startsWith("+")
-            ? user.phone_number
-            : `+${user.phone_number}`,
-        );
+        const data = await sendVerificationCode();
 
         if (data.success === true) {
           setStep("code");

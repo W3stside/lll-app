@@ -10,14 +10,9 @@ interface VerifyCodeResponse {
   error?: string;
 }
 
-export async function sendVerificationCode(
-  phoneNumber: string,
-): Promise<SendCodeResponse> {
-  const res = await fetch("/api/verify-sms/send-code", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ phoneNumber }),
-  });
+// No number sent: the server texts the logged-in user's stored number
+export async function sendVerificationCode(): Promise<SendCodeResponse> {
+  const res = await fetch("/api/verify-sms/send-code", { method: "POST" });
 
   return (await res.json()) as SendCodeResponse;
 }

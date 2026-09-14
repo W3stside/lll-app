@@ -13,10 +13,36 @@ function _isString(value: unknown): value is string {
   return typeof value === "string" && value.length > 0;
 }
 
+// Browsers only hand out endpoints on their vendor's push service. Anything else
+// is forged, and accepting it would make every broadcast POST from our server to
+// an attacker-chosen URL (internal hosts included).
+const PUSH_SERVICE_HOST_SUFFIXES = [
+  // Chrome, Edge, Brave, Opera, Samsung Internet
+  "fcm.googleapis.com",
+  "android.googleapis.com",
+  // Firefox
+  "push.services.mozilla.com",
+  // Safari (macOS, iOS home screen apps)
+  "push.apple.com",
+  // Legacy Edge / Windows
+  "notify.windows.com",
+];
+
+function _isPushServiceHost(hostname: string): boolean {
+  return PUSH_SERVICE_HOST_SUFFIXES.some(
+    (suffix) => hostname === suffix || hostname.endsWith(`.${suffix}`),
+  );
+}
+
 function _isValidEndpoint(value: unknown): value is string {
   if (!_isString(value)) return false;
   try {
-    return new URL(value).protocol === "https:";
+    const url = new URL(value);
+    return (
+      url.protocol === "https:" &&
+      url.port === "" &&
+      _isPushServiceHost(url.hostname)
+    );
   } catch (err) {
     return false;
   }
