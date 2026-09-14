@@ -8,14 +8,19 @@ import {
 
 import type { INewSignup } from "@/types/users";
 
-// eslint-disable-next-line consistent-return
+/**
+ * Sends the error response itself, so callers must stop handling the request
+ * when this returns false. Sending a response doesn't end the handler, and a
+ * register body that failed here used to still insert the user.
+ */
 export function verifyAuthBody(
   req: NextApiRequest,
   res: NextApiResponse,
   action: "login" | "register" | "update",
-) {
+): boolean {
   if (req.method !== "POST") {
-    return res.status(405).end();
+    res.status(405).end();
+    return false;
   }
 
   const body = req.body as INewSignup;
@@ -26,6 +31,8 @@ export function verifyAuthBody(
     (action === "update" && !isValidUserUpdate(body))
   ) {
     res.status(400).json({ message: "Auth verification: Missing fields" });
-    return res.end();
+    return false;
   }
+
+  return true;
 }

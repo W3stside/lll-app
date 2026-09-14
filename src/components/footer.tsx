@@ -23,6 +23,7 @@ import { useClientTheme } from "@/hooks/useClientTheme";
 import { useClientUser } from "@/hooks/useClientUser";
 import { Role } from "@/types";
 import { dbAuth } from "@/utils/api/dbAuth";
+import { unsubscribeFromPush } from "@/utils/push/client";
 import { cn } from "@/utils/tailwind";
 
 export function Footer() {
@@ -32,6 +33,9 @@ export function Footer() {
 
   const handleLogout = useCallback(async () => {
     try {
+      // Stop this device receiving the logged-out user's notifications.
+      // Best-effort: a push failure must never block logging out.
+      await unsubscribeFromPush().catch(() => undefined);
       await dbAuth("logout");
       setUser(DEFAULT_USER);
       void router.push(NAVLINKS_MAP.LOGIN);

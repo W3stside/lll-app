@@ -7,6 +7,7 @@ interface VerifyCodeResponse {
   success?: boolean;
   verified?: boolean;
   message?: string;
+  error?: string;
 }
 
 export async function sendVerificationCode(
@@ -21,14 +22,11 @@ export async function sendVerificationCode(
   return (await res.json()) as SendCodeResponse;
 }
 
-export async function verifyCode(
-  phoneNumber: string,
-  code: string,
-): Promise<VerifyCodeResponse> {
+export async function verifyCode(code: string): Promise<VerifyCodeResponse> {
   const res = await fetch("/api/verify-sms/verify-code", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ phoneNumber, code }),
+    body: JSON.stringify({ code }),
   });
 
   return (await res.json()) as VerifyCodeResponse;

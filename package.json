@@ -23,7 +23,8 @@
     "tailwind-merge": "^3.2.0",
     "twilio": "^5.10.3",
     "use-debounce": "^10.0.4",
-    "uuid": "^11.1.0"
+    "uuid": "^11.1.0",
+    "web-push": "^3.6.7"
   },
   "devDependencies": {
     "@avicenne-studio/eslint-config": "1.0.27",
@@ -39,6 +40,7 @@
     "@types/node": "^20",
     "@types/react": "^18",
     "@types/react-dom": "^18",
+    "@types/web-push": "^3.6.4",
     "@typescript-eslint/eslint-plugin": "7.18.0",
     "@typescript-eslint/parser": "7.18.0",
     "autoprefixer": "^10.0.1",

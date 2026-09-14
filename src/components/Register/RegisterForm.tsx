@@ -6,6 +6,8 @@ import { Loader } from "../ui";
 import {
   NAME_MIN_LENGTH,
   PASSWORD_MIN_LENGTH,
+  PHONE_FORMAT_EXAMPLE,
+  PHONE_FORMAT_HINT,
   PHONE_MIN_LENGTH,
 } from "@/constants/signups";
 import { useUser } from "@/context/User/context";
@@ -26,7 +28,7 @@ const _PasswordValidity = {
 } as const;
 
 const _PhoneNumberValidity = {
-  INCORRECT_FORMAT: "( ¬ _¬) remove those 00s",
+  INCORRECT_FORMAT: "( ¬ _¬) country code first",
   TOO_SHORT: () => `Too short! Number has country code?`,
   VALID: VALID_MESSAGE,
 } as const;
@@ -49,10 +51,11 @@ function _validatePassword(password?: string): string | null {
   return _PasswordValidity.VALID;
 }
 
+// No country code starts with 0, so 07... or 00351... means it's missing
 function _validatePhoneNumber(phoneNumber?: string): string | null {
   if (phoneNumber === undefined) {
     return null;
-  } else if (!/^(?!\+|00)\d+$/.test(phoneNumber)) {
+  } else if (!/^[1-9]\d*$/.test(phoneNumber)) {
     return _PhoneNumberValidity.INCORRECT_FORMAT;
   } else if (phoneNumber.length < PHONE_MIN_LENGTH) {
     return _PhoneNumberValidity.TOO_SHORT();
@@ -72,7 +75,6 @@ export interface IRegisterForm {
     password: string | undefined,
     verified: boolean,
   ) => Promise<void>;
-  handleLogout?: (e: React.FormEvent) => Promise<void>;
 }
 
 export function RegisterForm({
@@ -83,7 +85,6 @@ export function RegisterForm({
   disabled,
   setPassword,
   handleAction,
-  handleLogout,
 }: IRegisterForm) {
   const { user, setUser } = useUser();
 
@@ -97,13 +98,9 @@ export function RegisterForm({
       <div className="flex flex-col items-center gap-y-2 p-2 w-full [&>input]:h-12">
         <form
           className="w-full"
-          onSubmit={
-            handleLogout !== undefined
-              ? handleLogout
-              : async (e) => {
-                  await handleAction(e, password, false);
-                }
-          }
+          onSubmit={async (e) => {
+            await handleAction(e, password, false);
+          }}
         >
           {!isLogin && (
             <>
@@ -169,8 +166,8 @@ export function RegisterForm({
               }}
               placeholder={
                 isLogin
-                  ? "phone number (351961616000)"
-                  : "<country><phone_number> (e.g. 351961616000)"
+                  ? `phone number (e.g. ${PHONE_FORMAT_EXAMPLE})`
+                  : `<COUNTRY_CODE><NUMBER> (e.g. ${PHONE_FORMAT_EXAMPLE})`
               }
             />
             {!isLogin && (
@@ -182,6 +179,9 @@ export function RegisterForm({
               />
             )}
           </div>
+          {!isLogin && (
+            <small className="block text-xs my-1">{PHONE_FORMAT_HINT}</small>
+          )}
           {setPassword !== null && (
             <div className="flex items-center relative">
               <input

@@ -10,7 +10,7 @@ export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse,
 ) {
-  verifyAuthBody(req, res, "update");
+  if (!verifyAuthBody(req, res, "update")) return;
 
   const { _id, first_name, last_name, phone_number, avatarUrl } =
     req.body as INewSignup;

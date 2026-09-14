@@ -1,0 +1,25 @@
+{
+  "id": "/",
+  "name": "Lisbon Lowest League",
+  "short_name": "LLL",
+  "description": "Sign up for Lisbon Lowest League games",
+  "start_url": "/signup",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#028383",
+  "theme_color": "#028383",
+  "icons": [
+    {
+      "src": "/icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    }
+  ]
+}

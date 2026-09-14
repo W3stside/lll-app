@@ -3,6 +3,7 @@ import { useRouter } from "next/router";
 import { useMemo, useRef } from "react";
 
 import { Avatar } from "../Avatar";
+import { NotificationSettingsContainer } from "../Notifications";
 import { PartnerProducts } from "../PartnerProducts";
 import { RegisterForm } from "../Register/RegisterForm";
 import { Games } from "../Signup/Games";
@@ -181,6 +182,7 @@ export function Profile({
           </div>
         </div>
       </div>
+      {isOwner && <NotificationSettingsContainer />}
       {isOwner && (
         <div className="flex flex-col gap-y-3 text-black container">
           <div className="container-header !h-auto -mt-2 -mx-1.5">

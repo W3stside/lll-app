@@ -9,14 +9,20 @@ import mail from "@/assets/mail.png";
 import { Loader } from "@/components/ui";
 import { RED_TW } from "@/constants/colours";
 import { NAVLINKS_MAP, WHATS_APP_GROUP_URL } from "@/constants/links";
+import {
+  PHONE_FORMAT_ERROR,
+  PHONE_FORMAT_EXAMPLE,
+  PHONE_FORMAT_HINT,
+  VERIFICATION_COOLDOWN_KEY,
+  VERIFICATION_STEP_KEY,
+} from "@/constants/signups";
 import { useActions } from "@/context/Actions/context";
 import { useUser } from "@/context/User/context";
 import { JWT_REFRESH_SECRET, JWT_SECRET, verifyToken } from "@/lib/authUtils";
 import client from "@/lib/mongodb";
 import { sendVerificationCode, verifyCode } from "@/lib/verification/sms";
 import { type IUser, type IUserFromCookies, Collection } from "@/types";
-import { dbRequest } from "@/utils/api/dbRequest";
-import { isValidPhoneNumber } from "@/utils/signup";
+import { isValidInternationalPhoneNumber } from "@/utils/signup";
 import { cn } from "@/utils/tailwind";
 
 const COOLDOWN_SECONDS = 60;
@@ -63,9 +69,6 @@ export const getServerSideProps: GetServerSideProps = async (context) => {
   };
 };
 
-const COOLDOWN_KEY = "verification-cooldown";
-const STEP_KEY = "verification-step";
-
 export default function Verify() {
   const { user, setUser } = useUser();
   const phoneNumberRef = useRef<string>(user.phone_number);
@@ -74,7 +77,7 @@ export default function Verify() {
   const [code, setCode] = useState("");
   const [cooldown, setCooldown] = useState<number>();
 
-  const [singleError, setError] = useState<string>();
+  const [error, setError] = useState<string>();
   const [loading, setLoading] = useState(false);
 
   const router = useRouter();
@@ -82,8 +85,14 @@ export default function Verify() {
   const sendCode = useCallback(
     async (e?: React.FormEvent) => {
       if (e) e.preventDefault();
+      setError(undefined);
+
+      if (!isValidInternationalPhoneNumber(user.phone_number)) {
+        setError(PHONE_FORMAT_ERROR);
+        return;
+      }
+
       setLoading(true);
-      setError("");
 
       try {
         const data = await sendVerificationCode(
@@ -116,26 +125,23 @@ export default function Verify() {
     async (e: React.FormEvent) => {
       e.preventDefault();
       setLoading(true);
-      setError("");
+      setError(undefined);
 
       try {
-        const { message, verified = false } = await verifyCode(
-          user.phone_number,
-          code,
-        );
+        // The server marks the account verified itself when the code matches
+        const {
+          message,
+          error: verifyError,
+          verified = false,
+        } = await verifyCode(code);
 
-        if (verified && user._id !== undefined) {
-          await dbRequest("update", Collection.USERS, {
-            ...user,
-            _id: user._id,
-            verified: true,
-          });
+        if (verified) {
           setUser((prev) => ({ ...prev, verified: true }));
           setStep(undefined);
           setCooldown(0);
           void router.push(NAVLINKS_MAP.HOME);
         } else {
-          setError(message ?? "Invalid verification code");
+          setError(message ?? verifyError ?? "Invalid verification code");
         }
       } catch (err) {
         setError(
@@ -147,17 +153,18 @@ export default function Verify() {
         setLoading(false);
       }
     },
-    [code, router, setUser, user],
+    [code, router, setUser],
   );
 
-  const { error: userError, updateUser } = useActions();
+  // updateUser rethrows into the catch below, so its context error isn't read:
+  // that one only resets on the next updateUser call and would linger on screen
+  const { updateUser } = useActions();
   const [numberEditable, setNumberEditable] = useState(false);
   const handleChangePhoneNumber = useCallback(async () => {
     setError(undefined);
-    setCooldown(COOLDOWN_SECONDS);
     try {
-      if (!isValidPhoneNumber(user.phone_number)) {
-        throw new Error("Please enter a valid phone number.");
+      if (!isValidInternationalPhoneNumber(user.phone_number)) {
+        throw new Error(PHONE_FORMAT_ERROR);
       }
 
       await updateUser({
@@ -166,26 +173,42 @@ export default function Verify() {
       });
 
       setNumberEditable(false);
-      phoneNumberRef.current = user.phone_number;
     } catch (e) {
       const err = e instanceof Error ? e : new Error("Unknown error");
       setError(err.message);
     }
   }, [updateUser, user]);
 
-  const error = userError?.message ?? singleError;
+  const handleCancelChangePhoneNumber = useCallback(() => {
+    setError(undefined);
+    setNumberEditable(false);
+    setUser((u) => ({ ...u, phone_number: phoneNumberRef.current }));
+  }, [setUser]);
+
+  // Track the saved number whenever it isn't being edited, so cancelling or a
+  // rejected change can restore it. It arrives after mount on a page refresh.
+  useEffect(() => {
+    if (!numberEditable) {
+      phoneNumberRef.current = user.phone_number;
+    }
+  }, [numberEditable, user.phone_number]);
 
   useEffect(() => {
     setCooldown(
-      localStorage.getItem(COOLDOWN_KEY) !== null
-        ? Number(localStorage.getItem(COOLDOWN_KEY))
+      localStorage.getItem(VERIFICATION_COOLDOWN_KEY) !== null
+        ? Number(localStorage.getItem(VERIFICATION_COOLDOWN_KEY))
         : 0,
     );
-    setStep(localStorage.getItem(STEP_KEY) === "code" ? "code" : "phone");
+    setStep(
+      localStorage.getItem(VERIFICATION_STEP_KEY) === "code" ? "code" : "phone",
+    );
   }, []);
 
   useEffect(() => {
-    localStorage.setItem(STEP_KEY, step === undefined ? "phone" : step);
+    localStorage.setItem(
+      VERIFICATION_STEP_KEY,
+      step === undefined ? "phone" : step,
+    );
   }, [step]);
 
   useEffect(() => {
@@ -203,7 +226,7 @@ export default function Verify() {
     return () => {
       clearInterval(interval);
       if (cooldown !== undefined) {
-        localStorage.setItem(COOLDOWN_KEY, cooldown.toString());
+        localStorage.setItem(VERIFICATION_COOLDOWN_KEY, cooldown.toString());
       }
     };
   }, [cooldown]);
@@ -244,7 +267,7 @@ export default function Verify() {
                   <input
                     id="phone"
                     type="tel"
-                    placeholder="+1234567890"
+                    placeholder={PHONE_FORMAT_EXAMPLE}
                     value={user.phone_number}
                     onChange={(e) => {
                       if (!/^(?!.*[+\-*/])\d*$/.test(e.target.value)) {
@@ -262,32 +285,49 @@ export default function Verify() {
                       "w-full p-2 [&:disabled]:bg-[var(--background-color-2)] ",
                     )}
                   />
-                  <small>e.g 351999888777</small>
+                  <small className="block">{PHONE_FORMAT_HINT}</small>
                 </div>
 
                 {error !== undefined && <p style={{ color: "red" }}>{error}</p>}
 
                 <div className="flex flex-col gap-y-2 [&>*]:flex [&>*]:justify-center">
+                  {/* Not disabled by an error, so a failed send can be retried */}
                   <button
                     type="submit"
-                    disabled={numberEditable || loading || error !== undefined}
+                    disabled={
+                      numberEditable ||
+                      loading ||
+                      cooldown === undefined ||
+                      cooldown > 0
+                    }
                     className="flex items-center justify-center gap-x-2 w-full"
                   >
                     <Image src={mail} alt="Mail Icon" className="size-8 mr-2" />{" "}
-                    <b>{loading ? "Sending..." : "Send verification code"}</b>
+                    <b>
+                      {loading ? "Sending..." : "Send verification code"}
+                      {!loading &&
+                        cooldown !== undefined &&
+                        cooldown > 0 &&
+                        ` (${cooldown}s)`}
+                    </b>
                   </button>
-                  <p
-                    onClick={() => {
-                      setNumberEditable((prev) => !prev);
-                    }}
-                    className="mx-auto py-2.5 px-0 w-max cursor-pointer"
-                  >
-                    {!numberEditable ? (
+                  {!numberEditable ? (
+                    <p
+                      onClick={() => {
+                        setNumberEditable(true);
+                      }}
+                      className="mx-auto py-2.5 px-0 w-max cursor-pointer"
+                    >
                       <i>
                         <u>Change phone number</u>
                       </i>
-                    ) : (
+                    </p>
+                  ) : (
+                    // Outside any clickable <p> and typed "button" so saving doesn't
+                    // also toggle edit mode or submit the send-code form
+                    <div className="gap-x-2">
                       <button
+                        type="button"
                         onClick={handleChangePhoneNumber}
                         disabled={
                           cooldown === undefined || cooldown > 0 || loading
@@ -297,8 +337,14 @@ export default function Verify() {
                           ? `Retry in (${cooldown}s)`
                           : "Save changes"}
                       </button>
-                    )}
-                  </p>
+                      <button
+                        type="button"
+                        onClick={handleCancelChangePhoneNumber}
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  )}
                 </div>
               </form>
             ) : (
@@ -350,6 +396,21 @@ export default function Verify() {
                       : "Resend Code"}
                   </button>
                 </div>
+                {/* The step survives reloads, so this is the only way back to
+                    fix a mistyped number once a code has been sent */}
+                <p
+                  onClick={() => {
+                    setCode("");
+                    setError(undefined);
+                    setNumberEditable(true);
+                    setStep("phone");
+                  }}
+                  className="mx-auto py-2.5 px-0 w-max cursor-pointer"
+                >
+                  <i>
+                    <u>Wrong number? Change it</u>
+                  </i>
+                </p>
               </form>
             )}
           </div>

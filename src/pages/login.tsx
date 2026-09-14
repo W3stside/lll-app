@@ -6,6 +6,7 @@ import { useCallback, useState } from "react";
 import { RegisterUser } from "@/components/Register/RegisterUser";
 import { Loader } from "@/components/ui";
 import { NAVLINKS_MAP, SMS_VERIFICATION } from "@/constants/links";
+import { PHONE_FORMAT_ERROR, VERIFICATION_STEP_KEY } from "@/constants/signups";
 import { useUser } from "@/context/User/context";
 import { DEFAULT_USER } from "@/context/User/provider";
 import { JWT_REFRESH_SECRET, JWT_SECRET, verifyToken } from "@/lib/authUtils";
@@ -18,7 +19,11 @@ import type {
   INewSignup,
 } from "@/types/users";
 import { dbAuth } from "@/utils/api/dbAuth";
-import { isValidLogin, isValidNewSignup } from "@/utils/signup";
+import {
+  isValidInternationalPhoneNumber,
+  isValidLogin,
+  isValidNewSignup,
+} from "@/utils/signup";
 
 type LoginPage = {
   isConnected: boolean;
@@ -41,7 +46,11 @@ export const getServerSideProps: GetServerSideProps = async (context) => {
     const userInfo = await client
       .db("LLL")
       .collection<IUserSafe>(Collection.USERS)
-      .findOne({ _id: new ObjectId(user?._id) });
+      // Page props are serialized into the HTML, so the hash must never load
+      .findOne(
+        { _id: new ObjectId(user?._id) },
+        { projection: { password: 0 } },
+      );
 
     if (userInfo?.verified === true) {
       return {
@@ -65,10 +74,8 @@ export const getServerSideProps: GetServerSideProps = async (context) => {
   }
 };
 
-export default function Login({
-  isConnected,
-  user: userFromCookies,
-}: LoginPage) {
+// `user` isn't read here: _app feeds it into the user context to prefill the form
+export default function Login({ isConnected }: LoginPage) {
   const { user: player, setUser } = useUser();
 
   const [view, setView] = useState<"login" | "register">("register");
@@ -85,6 +92,12 @@ export default function Login({
       setLoading(true);
 
       try {
+        // Checked first so a missing country code gets a specific message rather
+        // than the generic one below
+        if (!isValidInternationalPhoneNumber(player.phone_number)) {
+          throw new Error(PHONE_FORMAT_ERROR);
+        }
+
         if (!isValidNewSignup(player, password)) {
           throw new Error("Player is invalid. Check fields.");
         }
@@ -99,6 +112,9 @@ export default function Login({
           throw error;
         }
 
+        // A retry after a failed verification must not land on a stale "code
+        // sent" screen from the previous attempt
+        localStorage.removeItem(VERIFICATION_STEP_KEY);
         void router.push(SMS_VERIFICATION);
       } catch (error) {
         const newError = new Error(
@@ -118,41 +134,32 @@ export default function Login({
       setError(null);
       setLoading(true);
 
+      // No "already logged in" short-circuit: verified users are redirected away
+      // from this page, so a session here is an unverified one, and logging in
+      // (possibly as someone else) replaces its cookies
       try {
-        let isVerified = false;
-        if (player._id === undefined) {
-          if (password === undefined || !isValidLogin(player, password)) {
-            throw new Error(
-              "Login fields are invalid. Please check and try again.",
-            );
-          }
-
-          const { data: { user: response } = { user: undefined }, error } =
-            await dbAuth<INewSignup, { user: Omit<IUser, "password"> }>(
-              "login",
-              {
-                ...player,
-                password,
-              },
-            );
-
-          if (error !== null) {
-            setError(error.message);
-            throw error;
-          }
-
-          if (response !== undefined) {
-            setUser(response);
-
-            if (response.verified === false || !("verified" in response)) {
-              void router.push(SMS_VERIFICATION);
-            }
-            isVerified = true;
-          }
+        if (password === undefined || !isValidLogin(player, password)) {
+          throw new Error(
+            "Login fields are invalid. Please check and try again.",
+          );
         }
 
-        if (isVerified) {
-          void router.push(NAVLINKS_MAP.HOME);
+        const { data: { user: response } = { user: undefined }, error } =
+          await dbAuth<INewSignup, { user: Omit<IUser, "password"> }>("login", {
+            ...player,
+            password,
+          });
+
+        if (error !== null) {
+          setError(error.message);
+          throw error;
+        }
+
+        if (response !== undefined) {
+          setUser(response);
+          void router.push(
+            response.verified === true ? NAVLINKS_MAP.HOME : SMS_VERIFICATION,
+          );
         }
       } catch (error) {
         const newError = new Error(
@@ -206,7 +213,6 @@ export default function Login({
             title="Please enter credentials"
             label={view === "login" ? "Login" : "Continue"}
             handleAction={view === "register" ? handleRegister : handleLogin}
-            handleLogout={userFromCookies !== null ? handleLogout : undefined}
           />
           {appError !== null && (
             <p className="flex mb-6 w-full justify-center text-red-700">

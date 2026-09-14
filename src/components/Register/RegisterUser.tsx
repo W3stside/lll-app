@@ -18,7 +18,6 @@ interface IRegisterUser
     e: React.FormEvent,
     password: string | undefined,
   ) => Promise<void>;
-  handleLogout?: (e: React.FormEvent) => Promise<void>;
 }
 
 export function RegisterUser({
@@ -27,7 +26,6 @@ export function RegisterUser({
   title = "Register to play",
   view,
   handleAction,
-  handleLogout,
 }: IRegisterUser) {
   const [password, setPassword] = useState("");
   const { user } = useUser();
@@ -45,7 +43,6 @@ export function RegisterUser({
         password={password}
         disabled={!isValidLogin(user, password)}
         handleAction={handleAction}
-        handleLogout={handleLogout}
         setPassword={setPassword}
       />
     </div>

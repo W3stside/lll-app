@@ -89,6 +89,42 @@ export const clearJwtTokens = (res: ServerResponse) => {
   ]);
 };
 
+/**
+ * Resolves the logged-in user id for API routes. Falls back to the refresh
+ * token because the 15 minute access token routinely expires while a page
+ * stays open, and API routes (unlike SSR) don't rotate cookies.
+ */
+export function getUserIdFromApiRequest(
+  cookies: Partial<Record<string, string>>,
+): string | null {
+  const accessToken = cookies[ACCESS_COOKIE_NAME];
+  const refreshToken = cookies[REFRESH_COOKIE_NAME];
+
+  if (accessToken !== undefined) {
+    try {
+      return verifyToken<IUserFromCookies>(
+        accessToken,
+        JWT_SECRET as string,
+      )._id.toString();
+    } catch (err) {
+      // Expired/invalid - try the refresh token below
+    }
+  }
+
+  if (refreshToken !== undefined) {
+    try {
+      return verifyToken<IUserFromCookies>(
+        refreshToken,
+        JWT_REFRESH_SECRET as string,
+      )._id.toString();
+    } catch (err) {
+      return null;
+    }
+  }
+
+  return null;
+}
+
 export function getUserFromServerSideRequest(ctx: GetServerSidePropsContext) {
   const { req, res } = ctx;
   const cookies = parse(req.headers.cookie ?? "");
