@@ -5,6 +5,7 @@ export enum Collection {
   ME = "me",
   TOKENS = "tokens",
   PUSH_SUBSCRIPTIONS = "push_subscriptions",
+  NOTIFICATIONS = "notifications",
 }
 
 export enum GameStatus {
@@ -22,3 +23,4 @@ export * from "./users";
 export * from "./admin";
 export * from "./http";
 export * from "./push";
+export * from "./notifications";

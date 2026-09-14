@@ -34,14 +34,25 @@ self.addEventListener("push", (event) => {
   const payload = _parsePayload(event);
 
   event.waitUntil(
-    self.registration.showNotification(payload.title, {
-      body: payload.body,
-      icon: ICON,
-      tag: payload.tag,
-      // Re-alert when a newer notification replaces one with the same tag
-      renotify: payload.tag !== undefined,
-      data: { url: payload.url ?? DEFAULT_URL },
-    }),
+    Promise.all([
+      self.registration.showNotification(payload.title, {
+        body: payload.body,
+        icon: ICON,
+        tag: payload.tag,
+        // Re-alert when a newer notification replaces one with the same tag
+        renotify: payload.tag !== undefined,
+        data: { url: payload.url ?? DEFAULT_URL },
+      }),
+      // Open tabs refresh their inbox badge. Message type is read by
+      // src/hooks/useUnreadNotificationsCount.ts - keep them in sync
+      self.clients
+        .matchAll({ type: "window", includeUncontrolled: true })
+        .then((windowClients) => {
+          for (const client of windowClients) {
+            client.postMessage({ type: "push-received" });
+          }
+        }),
+    ]),
   );
 });
 

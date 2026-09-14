@@ -23,6 +23,7 @@ export const NAVLINKS_MAP = {
   PROFILES: "/profiles",
   NOT_FOUND: "/404",
   BANNED: "/shadow-realm",
+  NOTIFICATIONS: "/notifications",
 } as const;
 export const SMS_VERIFICATION = "/verify";
 export const ADMIN_PATH = "/admin";

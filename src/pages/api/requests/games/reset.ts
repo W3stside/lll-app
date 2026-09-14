@@ -1,6 +1,8 @@
 import type { NextApiRequest, NextApiResponse } from "next";
 
+import { clearAllNotifications } from "@/lib/inbox";
 import client from "@/lib/mongodb";
+import { requireAdmin } from "@/lib/requireAdmin";
 import { Collection, type IGame } from "@/types";
 
 export default async (req: NextApiRequest, res: NextApiResponse) => {
@@ -10,6 +12,9 @@ export default async (req: NextApiRequest, res: NextApiResponse) => {
   }
 
   try {
+    // Admin-only: wipes every signup list and everyone's inbox
+    if (!(await requireAdmin(req, res))) return;
+
     const db = client.db("LLL");
     const collection = db.collection<IGame>(Collection.GAMES);
 
@@ -60,6 +65,8 @@ export default async (req: NextApiRequest, res: NextApiResponse) => {
     if (bulkResults.matchedCount === 0) {
       res.status(404).json({ message: "Document not found" });
     } else if (result.acknowledged) {
+      // Every list starts over, so last week's inbox no longer applies
+      await clearAllNotifications();
       res.status(200).json(newGames);
     } else {
       res.status(500).json({ message: "Error updating document" });

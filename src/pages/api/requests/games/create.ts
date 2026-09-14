@@ -2,10 +2,19 @@ import type { ObjectId } from "mongodb";
 import type { NextApiRequest, NextApiResponse } from "next";
 
 import client from "@/lib/mongodb";
+import { requireAdmin } from "@/lib/requireAdmin";
 import { Collection, type Gender, type IGame } from "@/types";
 
 export default async (req: NextApiRequest, res: NextApiResponse) => {
+  if (req.method !== "POST") {
+    res.status(405).json({ message: "Method not allowed" });
+    return;
+  }
+
   try {
+    // Admin-only: adds games to the signup page
+    if (!(await requireAdmin(req, res))) return;
+
     const body = req.body as Omit<IGame, "_id">;
     const { gender, ...restGame } = body;
 
