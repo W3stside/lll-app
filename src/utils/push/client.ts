@@ -159,6 +159,22 @@ export async function subscribeToPush(): Promise<void> {
   await _sendToServer("POST", _toSubscriptionJSON(subscription));
 }
 
+/**
+ * Re-sends this device's existing subscription to the server, without ever
+ * prompting. The browser's copy is the source of truth: it can be rotated by the
+ * push service, a POST during enable can fail, or the row can belong to a
+ * previous user of this device - in all of those the UI shows "ON" while the
+ * server has nothing (or the wrong user) to send to.
+ */
+export async function syncPushSubscription(): Promise<void> {
+  if (getNotificationPermission() !== "granted") return;
+
+  const subscription = await getCurrentPushSubscription();
+  if (subscription === null) return;
+
+  await _sendToServer("POST", _toSubscriptionJSON(subscription));
+}
+
 /** Removes this device's subscription from the browser and the server. */
 export async function unsubscribeFromPush(): Promise<void> {
   const subscription = await getCurrentPushSubscription();

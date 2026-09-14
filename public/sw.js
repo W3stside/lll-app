@@ -74,7 +74,8 @@ self.addEventListener("notificationclick", (event) => {
 
 // Browsers can rotate a subscription (expiry, key rotation). Re-subscribe with
 // the same VAPID key and tell the server, otherwise the user silently stops
-// receiving notifications.
+// receiving notifications. Best-effort only: Chrome rarely fires this and the
+// POST needs a live session, so usePushNotifications also re-syncs on app load.
 self.addEventListener("pushsubscriptionchange", (event) => {
   const oldSubscription = event.oldSubscription;
   const applicationServerKey =
