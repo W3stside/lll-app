@@ -5,8 +5,19 @@
 // notification must not fail (or half-apply) the request that triggered it.
 
 import { NAVLINKS_MAP } from "@/constants/links";
-import { sendPushToAll, sendPushToUsers } from "@/lib/push/sendPush";
-import type { IGame, IUser, IUserSafe } from "@/types";
+import { recordGameNotifications } from "@/lib/inbox";
+import {
+  type ISendPushOptions,
+  sendPushToAll,
+  sendPushToUsers,
+} from "@/lib/push/sendPush";
+import type {
+  GameNotificationType,
+  IGame,
+  IPushPayload,
+  IUser,
+  IUserSafe,
+} from "@/types";
 // Type-only: erased at build, so it does not trigger utils/bot env checks
 import type * as BotModule from "@/utils/bot";
 
@@ -43,6 +54,21 @@ function _gameTag(prefix: string, game: IGame): string {
   return `${prefix}-${game._id.toString()}`;
 }
 
+// Game notifications also go to the in-app inbox, so players without push (iOS
+// Safari tabs, blocked permission, never enabled) still see what changed
+async function _sendGameNotification(
+  userIds: string[],
+  game: IGame,
+  type: GameNotificationType,
+  payload: IPushPayload,
+  options: ISendPushOptions,
+): Promise<void> {
+  await Promise.all([
+    sendPushToUsers(userIds, payload, options),
+    recordGameNotifications(userIds, game, type, payload),
+  ]);
+}
+
 /** Waitlisted players who just got a confirmed spot. */
 export async function notifyPromotedToActive(
   userIds: string[],
@@ -50,8 +76,10 @@ export async function notifyPromotedToActive(
   whatsApp?: { promoted: IUserSafe; cancelled: IUserSafe },
 ): Promise<void> {
   await Promise.all([
-    sendPushToUsers(
+    _sendGameNotification(
       userIds,
+      game,
+      "promoted",
       {
         title: "You're in! 🎉",
         body: `A spot opened up - you're off the waitlist for ${_describeGame(game)}.`,
@@ -77,8 +105,10 @@ export async function notifyPromotedToActive(
 /** A confirmed player an admin moved back to the waitlist. */
 export async function notifyBumped(user: IUser, game: IGame): Promise<void> {
   await Promise.all([
-    sendPushToUsers(
+    _sendGameNotification(
       [user._id.toString()],
+      game,
+      "bumped",
       {
         title: "You were moved to the waitlist",
         body: `An admin moved you to the waitlist for ${_describeGame(game)}.`,
@@ -100,8 +130,10 @@ export async function notifyRemovedByAdmin(
   game: IGame,
 ): Promise<void> {
   await Promise.all([
-    sendPushToUsers(
+    _sendGameNotification(
       [user._id.toString()],
+      game,
+      "removed",
       {
         title: "You were removed from a game",
         body: `An admin removed you from ${_describeGame(game)}. Ask an admin in the group if this was a mistake.`,
@@ -131,8 +163,10 @@ export async function notifyGameCancelled(
   whatsAppUserData: Record<string, string>,
 ): Promise<void> {
   await Promise.all([
-    sendPushToUsers(
+    _sendGameNotification(
       userIds,
+      game,
+      "cancelled",
       {
         title: "Game cancelled ❌",
         body: `${_describeGame(game)} has been cancelled. Ask an admin in the group for more info.`,
@@ -151,7 +185,10 @@ export async function notifyGameCancelled(
   ]);
 }
 
-/** Weekly broadcast when an admin re-opens signups. Push only. */
+/**
+ * Weekly broadcast when an admin re-opens signups. Push only: not about a
+ * specific game, and a row per user every week isn't worth storing.
+ */
 export async function notifySignupsOpen(): Promise<void> {
   await sendPushToAll(
     {

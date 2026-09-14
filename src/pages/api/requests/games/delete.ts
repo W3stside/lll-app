@@ -1,12 +1,22 @@
 import { ObjectId } from "mongodb";
 import type { NextApiRequest, NextApiResponse } from "next";
 
+import { clearGameNotifications } from "@/lib/inbox";
 import clientPromise from "@/lib/mongodb";
+import { requireAdmin } from "@/lib/requireAdmin";
 import { Collection } from "@/types";
 import type { IUser } from "@/types/users";
 
 export default async (req: NextApiRequest, res: NextApiResponse) => {
+  if (req.method !== "DELETE") {
+    res.status(405).json({ message: "Method not allowed" });
+    return;
+  }
+
   try {
+    // Admin-only: deletes games
+    if (!(await requireAdmin(req, res))) return;
+
     const { _id } = req.body as IUser;
 
     const client = clientPromise;
@@ -18,6 +28,8 @@ export default async (req: NextApiRequest, res: NextApiResponse) => {
     });
 
     if (result.acknowledged) {
+      // A deleted game's notifications would point at nothing
+      await clearGameNotifications(new ObjectId(_id).toString());
       res.status(201).json({
         message: "Record deleted successfully",
       });

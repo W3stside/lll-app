@@ -5,10 +5,12 @@ import { useRouter } from "next/router";
 import { useCallback } from "react";
 
 import { LogoffButton } from "./Buttons/Logoff";
+import { InboxNavLink } from "./Notifications/InboxNavLink";
 
 import logo from "@/assets/logo.png";
 import { ADMIN_NAVLINK, NAVLINKS, NAVLINKS_MAP } from "@/constants/links";
 import { useClientUser } from "@/hooks/useClientUser";
+import { useUnreadNotificationsCount } from "@/hooks/useUnreadNotificationsCount";
 import { Role } from "@/types";
 import type { IUser } from "@/types/users";
 import { dbAuth } from "@/utils/api/dbAuth";
@@ -29,6 +31,7 @@ export function Navbar({ usersById }: INavbar) {
   const { user, isLoading } = useClientUser(router.pathname);
 
   const userInfoFromPath = usersById?.[_formatPathname(pathname)];
+  const unreadCount = useUnreadNotificationsCount(user !== undefined);
 
   const handleLogout = useCallback(async () => {
     try {
@@ -103,6 +106,10 @@ export function Navbar({ usersById }: INavbar) {
                 ]
               : [],
           )}
+          {user !== undefined &&
+            !router.pathname.includes(NAVLINKS_MAP.NOTIFICATIONS) && (
+              <InboxNavLink unreadCount={unreadCount} />
+            )}
           {(isLoading || user !== undefined) && (
             <LogoffButton
               action={handleLogout}
