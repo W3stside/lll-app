@@ -10,7 +10,10 @@ const SEND_CODE_FALLBACK_ERROR = "Failed to send verification code";
 // Failures a user can act on, keyed by Twilio error code
 // https://www.twilio.com/docs/api/errors
 const TWILIO_ERROR_MESSAGES: Partial<Record<number, string>> = {
-  60200: PHONE_FORMAT_ERROR,
+  // Our own check already enforced the format, so this means Twilio doesn't
+  // recognise the number as real (e.g. an unassigned range like +351 555...)
+  60200:
+    "This doesn't look like a real mobile number. Check the digits and try again.",
   60203:
     "Too many codes requested for this number. Wait 10 minutes before trying again.",
   60205: "This is a landline and can't receive SMS. Use a mobile number.",
