@@ -89,6 +89,7 @@ export default async function handler(
   } catch (error) {
     const errorMessage =
       error instanceof Error ? error.message : "Unknown error";
+    // eslint-disable-next-line no-console
     console.error("Twilio send error:", error);
     res.status(500).json({
       error: _getSendCodeErrorMessage(error),

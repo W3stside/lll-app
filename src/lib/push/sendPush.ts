@@ -34,11 +34,8 @@ let _vapidConfigured: boolean | undefined;
 function _ensureVapid(): boolean {
   if (_vapidConfigured !== undefined) return _vapidConfigured;
 
-  const {
-    NEXT_PUBLIC_VAPID_PUBLIC_KEY,
-    VAPID_PRIVATE_KEY,
-    VAPID_SUBJECT,
-  } = process.env;
+  const { NEXT_PUBLIC_VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY, VAPID_SUBJECT } =
+    process.env;
 
   if (
     NEXT_PUBLIC_VAPID_PUBLIC_KEY === undefined ||
@@ -87,20 +84,26 @@ async function _deliver(
   for (const batch of _chunk(subscriptions, SEND_BATCH_SIZE)) {
     // eslint-disable-next-line no-await-in-loop
     const results = await Promise.allSettled<SendResult>(
-      batch.map((sub) =>
-        sendNotification(
-          { endpoint: sub.endpoint, keys: sub.keys },
-          body,
-          { TTL: ttl, urgency, topic: payload.tag },
-        ),
+      batch.map(
+        async (sub) =>
+          await sendNotification(
+            { endpoint: sub.endpoint, keys: sub.keys },
+            body,
+            {
+              TTL: ttl,
+              urgency,
+              topic: payload.tag,
+            },
+          ),
       ),
     );
 
+    delivered += results.filter(
+      (result) => result.status === "fulfilled",
+    ).length;
+
     results.forEach((result, idx) => {
-      if (result.status === "fulfilled") {
-        delivered += 1;
-        return;
-      }
+      if (result.status === "fulfilled") return;
 
       const reason: unknown = result.reason;
       if (

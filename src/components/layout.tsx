@@ -1,7 +1,7 @@
 import dynamic from "next/dynamic";
 
-import { Footer } from "./footer";
 import { NotificationPromptContainer } from "./Notifications";
+import { Footer } from "./footer";
 import { Loader } from "./ui";
 
 import type { IUserSafe } from "@/types/users";

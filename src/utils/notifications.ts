@@ -61,8 +61,14 @@ export async function notifyPromotedToActive(
       { urgency: "high", ttl: 12 * HOUR_SECONDS },
     ),
     whatsApp !== undefined
-      ? _withWhatsApp("queue change", async (bot) =>
-          bot.sendQueueChangeMessage(whatsApp.promoted, whatsApp.cancelled, game),
+      ? _withWhatsApp(
+          "queue change",
+          async (bot) =>
+            await bot.sendQueueChangeMessage(
+              whatsApp.promoted,
+              whatsApp.cancelled,
+              game,
+            ),
         )
       : Promise.resolve(),
   ]);
@@ -81,7 +87,10 @@ export async function notifyBumped(user: IUser, game: IGame): Promise<void> {
       },
       { urgency: "high", ttl: 12 * HOUR_SECONDS },
     ),
-    _withWhatsApp("bumped", async (bot) => bot.sendBumpedMessage(user, game)),
+    _withWhatsApp(
+      "bumped",
+      async (bot) => await bot.sendBumpedMessage(user, game),
+    ),
   ]);
 }
 
@@ -107,8 +116,10 @@ export async function notifyGameCancelled(
       { urgency: "high", ttl: 24 * HOUR_SECONDS },
     ),
     Object.keys(whatsAppUserData).length > 0
-      ? _withWhatsApp("game cancelled", async (bot) =>
-          bot.sendGameCancelledMessage(whatsAppUserData, game),
+      ? _withWhatsApp(
+          "game cancelled",
+          async (bot) =>
+            await bot.sendGameCancelledMessage(whatsAppUserData, game),
         )
       : Promise.resolve(),
   ]);

@@ -7,10 +7,10 @@ const SW_URL = "/sw.js";
 const SUBSCRIBE_API = "/api/push/subscribe";
 
 export type PushSupport =
-  // Browser can do push right now
-  | "supported"
   // iOS Safari tab: push only exists once added to the Home Screen
   | "ios-needs-install"
+  // Browser can do push right now
+  | "supported"
   | "unsupported";
 
 function _isBrowser(): boolean {
@@ -57,16 +57,14 @@ async function _getRegistration(): Promise<ServiceWorkerRegistration> {
 
 // DOM typings mark endpoint/keys as optional on toJSON(), so narrow explicitly
 // instead of casting - a subscription without keys can't be pushed to anyway.
-function _toSubscriptionJSON(subscription: PushSubscription): IPushSubscriptionJSON {
+function _toSubscriptionJSON(
+  subscription: PushSubscription,
+): IPushSubscriptionJSON {
   const { endpoint, expirationTime, keys } = subscription.toJSON();
   const p256dh = keys?.p256dh;
   const auth = keys?.auth;
 
-  if (
-    endpoint === undefined ||
-    p256dh === undefined ||
-    auth === undefined
-  ) {
+  if (endpoint === undefined || p256dh === undefined || auth === undefined) {
     throw new Error("Browser returned an incomplete push subscription.");
   }
 
@@ -88,7 +86,9 @@ async function _sendToServer(
     const { message } = (await res.json().catch(() => ({}))) as {
       message?: string;
     };
-    throw new Error(message ?? `Push subscription request failed (${res.status})`);
+    throw new Error(
+      message ?? `Push subscription request failed (${res.status})`,
+    );
   }
 }
 

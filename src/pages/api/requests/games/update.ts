@@ -317,7 +317,7 @@ export default async (req: NextApiRequest, res: NextApiResponse) => {
 
       // Only on the transition into cancelled - every later edit of an
       // already-cancelled game used to re-send the message
-      if (result.cancelled === true && previousGame?.cancelled !== true) {
+      if (result.cancelled === true && previousGame.cancelled !== true) {
         try {
           const users = await db
             .collection<IUser>(Collection.USERS)

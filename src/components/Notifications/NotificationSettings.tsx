@@ -73,13 +73,14 @@ function _renderStatusBody({
       return (
         <>
           <span>
-            On iPhone/iPad, notifications only work from the installed app
-            (iOS 16.4+):
+            On iPhone/iPad, notifications only work from the installed app (iOS
+            16.4+):
           </span>
           <ol className="list-decimal ml-5 text-sm">
             <li>Open this site in Safari</li>
             <li>
-              Tap <strong>Share</strong> then <strong>Add to Home Screen</strong>
+              Tap <strong>Share</strong> then{" "}
+              <strong>Add to Home Screen</strong>
             </li>
             <li>Open LLL from your Home Screen</li>
             <li>Come back to this page and enable notifications</li>

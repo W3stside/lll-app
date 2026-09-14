@@ -25,7 +25,11 @@ function _isValidEndpoint(value: unknown): value is string {
 function _isValidSubscription(body: unknown): body is IPushSubscriptionJSON {
   if (typeof body !== "object" || body === null) return false;
 
-  const { endpoint, keys } = body as Partial<IPushSubscriptionJSON>;
+  // Untrusted JSON: any field may be missing, null, or the wrong type
+  const { endpoint, keys } = body as {
+    endpoint?: unknown;
+    keys?: { p256dh?: unknown; auth?: unknown } | null;
+  };
 
   return (
     _isValidEndpoint(endpoint) &&

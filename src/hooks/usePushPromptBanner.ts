@@ -46,8 +46,8 @@ export function usePushPromptBanner() {
   const pathname = usePathname();
   const [visible, setVisible] = useState(false);
 
-  const isLoggedIn = user._id !== undefined && user._id !== null;
-  const isExcludedPath = pathname !== null && EXCLUDED_PATHS.has(pathname);
+  const isLoggedIn = user._id !== undefined;
+  const isExcludedPath = EXCLUDED_PATHS.has(pathname);
 
   useEffect(() => {
     if (
