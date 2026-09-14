@@ -12,6 +12,7 @@ import { useClientUser } from "@/hooks/useClientUser";
 import { Role } from "@/types";
 import type { IUser } from "@/types/users";
 import { dbAuth } from "@/utils/api/dbAuth";
+import { unsubscribeFromPush } from "@/utils/push/client";
 import { cn } from "@/utils/tailwind";
 
 function _formatPathname(pathname: string) {
@@ -31,6 +32,9 @@ export function Navbar({ usersById }: INavbar) {
 
   const handleLogout = useCallback(async () => {
     try {
+      // Stop this device receiving the logged-out user's notifications.
+      // Best-effort: a push failure must never block logging out.
+      await unsubscribeFromPush().catch(() => undefined);
       await dbAuth("logout");
       void router.push(NAVLINKS_MAP.LOGIN);
     } catch (error) {

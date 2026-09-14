@@ -11,7 +11,7 @@ export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse,
 ) {
-  verifyAuthBody(req, res, "login");
+  if (!verifyAuthBody(req, res, "login")) return;
 
   const { phone_number, password } = req.body as INewSignup;
 

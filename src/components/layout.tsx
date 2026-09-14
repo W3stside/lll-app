@@ -1,5 +1,6 @@
 import dynamic from "next/dynamic";
 
+import { NotificationPromptContainer } from "./Notifications";
 import { Footer } from "./footer";
 import { Loader } from "./ui";
 
@@ -20,6 +21,7 @@ export function Layout({ children, usersById }: ILayout) {
     <>
       <Navbar usersById={usersById} />
       <div className="flex flex-col gap-y-8 items-center justify-start pb-10 px-2.5 h-auto">
+        <NotificationPromptContainer />
         {children}
       </div>
       <Footer />

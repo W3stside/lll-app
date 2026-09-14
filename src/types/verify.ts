@@ -1,8 +1,6 @@
-export interface SendCodeRequestBody {
-  phoneNumber: string;
-}
-
-export interface VerifyCodeRequestBody extends SendCodeRequestBody {
+// No phone number: send-code and verify-code both use the logged-in user's
+// stored one
+export interface VerifyCodeRequestBody {
   code: string;
 }
 

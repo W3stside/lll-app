@@ -252,13 +252,17 @@ export function ActionProvider({ children }: IActionProvider) {
               "User update error: Fields invalid! Check and try again.",
             );
           }
-          const { error } = await dbAuth("update", _user);
+          const { data, error } = await dbAuth<
+            typeof _user,
+            { verified?: boolean }
+          >("update", _user);
 
           if (error !== null) {
             throw error;
           }
 
-          setUser(_user);
+          // Server resets `verified` when the phone number changes
+          setUser({ ..._user, verified: data.verified ?? _user.verified });
         } catch (error) {
           setError(error instanceof Error ? error : DEFAULT_ERROR);
           throw error;

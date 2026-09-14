@@ -1,8 +1,9 @@
 /* eslint-disable no-console */
-import { type WithId, ObjectId } from "mongodb";
+import { type Db, type WithId, ObjectId } from "mongodb";
 import type { NextApiRequest, NextApiResponse } from "next";
 
 import client from "@/lib/mongodb";
+import { getApiRequester } from "@/lib/requireAdmin";
 import {
   type IAdmin,
   Collection,
@@ -10,25 +11,29 @@ import {
   type IGame,
   GameType,
 } from "@/types";
-import {
-  sendBumpedMessage,
-  sendGameCancelledMessage,
-  sendQueueChangeMessage,
-} from "@/utils/bot";
 import { groupUsersById } from "@/utils/data";
 import {
   findPlayerInTourney,
   getMaxPlayers,
   getRandomAvailableTourneyIndex,
 } from "@/utils/games";
+import {
+  notifyBumped,
+  notifyGameCancelled,
+  notifyPromotedToActive,
+  notifyRemovedByAdmin,
+} from "@/utils/notifications";
 
-if (
-  process.env.WHATSAPP_BOT_API_URL === undefined ||
-  process.env.WHATSAPP_BOT_API_CLIENT_ID === undefined ||
-  process.env.WHATSAPP_BOT_API_CLIENT_SECRET === undefined ||
-  process.env.WHATSAPP_BOT_CHANNEL_ID === undefined
-) {
-  throw new Error("Missing WhatsApp Bot API environment variables");
+// WhatsApp env vars are validated inside utils/bot, which utils/notifications
+// only loads when WHATSAPP_BOT_ENABLED=true - so this route works without them.
+
+async function _isSignupOpen(db: Db): Promise<boolean> {
+  // .at() types the result as possibly undefined, unlike destructuring
+  const adminInfo = (
+    await db.collection<IAdmin>(Collection.ADMIN).find().limit(1).toArray()
+  ).at(0);
+
+  return adminInfo !== undefined && adminInfo.signup_open;
 }
 
 export default async (req: NextApiRequest, res: NextApiResponse) => {
@@ -59,8 +64,30 @@ export default async (req: NextApiRequest, res: NextApiResponse) => {
     const isAddOrRemovePlayer =
       newPlayerId !== undefined || cancelPlayerId !== undefined;
 
+    const requester = await getApiRequester(req);
+    if (requester === null) {
+      res.status(401).json({ message: "Not logged in" });
+      return;
+    }
+
+    // Players may only sign themselves up or cancel themselves. Everything else
+    // (editing a game, admin cancels, acting for someone else) moves players
+    // around and sends them push notifications, so it is admin-only.
+    const targetPlayerId = newPlayerId ?? cancelPlayerId;
+    const isSelfAction =
+      isAddOrRemovePlayer &&
+      !isAdminCancel &&
+      targetPlayerId?.toString() === requester.userId;
+
+    if (!isSelfAction && !requester.isAdmin) {
+      res.status(403).json({ message: "Admins only" });
+      return;
+    }
+
     const gameIdWrapped = new ObjectId(_id);
     let result: WithId<IGame> | null;
+    // Pre-update snapshot, used to only notify on actual state transitions
+    let previousGame: WithId<IGame> | null = null;
     // Adding or Cancelling a player
     if (isAddOrRemovePlayer) {
       const previous = await gamesCollection.findOne({
@@ -71,6 +98,7 @@ export default async (req: NextApiRequest, res: NextApiResponse) => {
         res.status(404).json({ message: "Document not found" });
         return;
       }
+      previousGame = previous;
 
       const maxPlayers = getMaxPlayers(previous);
 
@@ -127,15 +155,19 @@ export default async (req: NextApiRequest, res: NextApiResponse) => {
       // User has cancelled a game
       // Check the list to see if we need to notify because
       // Pre-update list length is greater than maxPlayers (meaning there is a waitlist)
+      const playerIdx =
+        cancelPlayerId !== undefined
+          ? previous.players.findIndex((pl) => pl === cancelPlayerId.toString())
+          : -1;
+
       if (
         result !== null &&
         cancelPlayerId !== undefined &&
+        // Not in the list (double-tap, racing requests): the $pull was a no-op,
+        // so nobody moved - reinserting or notifying would invent a transition
+        playerIdx !== -1 &&
         (isAdminCancel || previous.players.length > maxPlayers)
       ) {
-        const playerIdx = previous.players.findIndex(
-          (pl) => pl === cancelPlayerId.toString(),
-        );
-
         // Admin cancelled a guy. Ping him
         if (isAdminCancel) {
           // Reinsert player at the top of the waitlist queue
@@ -172,13 +204,26 @@ export default async (req: NextApiRequest, res: NextApiResponse) => {
             });
 
           if (bumpedUser !== null) {
-            const [adminInfo] = await db
-              .collection<IAdmin>(Collection.ADMIN)
-              .find()
-              .toArray();
+            // Admins reshuffle freely while signups are closed; only ping
+            // players once the lists are live
+            if (await _isSignupOpen(db)) {
+              if (previous.players.length <= maxPlayers) {
+                // No waitlist to land on, so the $pull removed them outright
+                await notifyRemovedByAdmin(bumpedUser, result);
+              } else if (playerIdx < maxPlayers) {
+                // Confirmed player moved to the top of the waitlist; their slot
+                // goes to the first waitlisted player
+                const promotedPlayer = result.players.at(maxPlayers - 1);
 
-            if (adminInfo.signup_open) {
-              await sendBumpedMessage(bumpedUser, result);
+                await Promise.all([
+                  notifyBumped(bumpedUser, result),
+                  promotedPlayer !== undefined
+                    ? notifyPromotedToActive([promotedPlayer], result)
+                    : Promise.resolve(),
+                ]);
+              }
+              // Otherwise they were already waitlisted and stay waitlisted, so
+              // there is nothing to tell them
             }
           } else {
             throw new Error("User not found");
@@ -213,31 +258,26 @@ export default async (req: NextApiRequest, res: NextApiResponse) => {
               new ObjectId(cancelPlayerId),
             ];
 
-            const [newConfirmedUser, cancelledUser] = await db
-              .collection(Collection.USERS)
-              .aggregate<IUser>([
-                {
-                  $match: {
-                    _id: { $in: ids },
-                  },
-                },
-                {
-                  $addFields: {
-                    sortOrder: {
-                      $indexOfArray: [ids, "$_id"],
-                    },
-                  },
-                },
-                {
-                  $sort: { sortOrder: 1 },
-                },
-              ])
+            const involvedUsers = await db
+              .collection<IUser>(Collection.USERS)
+              .find({ _id: { $in: ids } })
               .toArray();
+            // Matched by id rather than position: if one user was deleted the
+            // other must not shift into the wrong slot
+            const newConfirmedUser = involvedUsers.find(
+              (u) => u._id.toString() === newlyConfirmedPlayer,
+            );
+            const cancelledUser = involvedUsers.find(
+              (u) => u._id.toString() === cancelPlayerId.toString(),
+            );
 
-            await sendQueueChangeMessage(
-              newConfirmedUser,
-              cancelledUser,
+            await notifyPromotedToActive(
+              [newlyConfirmedPlayer],
               result,
+              // Both lookups can miss if a user was deleted; push still goes out
+              newConfirmedUser !== undefined && cancelledUser !== undefined
+                ? { promoted: newConfirmedUser, cancelled: cancelledUser }
+                : undefined,
             );
           }
         }
@@ -252,6 +292,7 @@ export default async (req: NextApiRequest, res: NextApiResponse) => {
         res.status(404).json({ message: "Document not found" });
         return;
       }
+      previousGame = currentGame;
 
       // eslint-disable-next-line @typescript-eslint/no-unused-vars
       const {
@@ -287,6 +328,24 @@ export default async (req: NextApiRequest, res: NextApiResponse) => {
         updateDoc,
         { returnDocument: "after" },
       );
+
+      // Capacity grew (e.g. Standard -> Elevens, or more tourney teams):
+      // waitlisted players now inside the new limit got a spot silently.
+      // Same rule as admin cancels: no pings while admins set up closed lists.
+      if (
+        result !== null &&
+        result.cancelled !== true &&
+        (await _isSignupOpen(db))
+      ) {
+        const promotedPlayers = result.players.slice(
+          getMaxPlayers(currentGame),
+          getMaxPlayers(result),
+        );
+
+        if (promotedPlayers.length > 0) {
+          await notifyPromotedToActive(promotedPlayers, result);
+        }
+      }
     }
 
     if (result === null) {
@@ -294,7 +353,9 @@ export default async (req: NextApiRequest, res: NextApiResponse) => {
     } else {
       const updatedGames = await gamesCollection.find().toArray();
 
-      if (result.cancelled === true) {
+      // Only on the transition into cancelled - every later edit of an
+      // already-cancelled game used to re-send the message
+      if (result.cancelled === true && previousGame.cancelled !== true) {
         try {
           const users = await db
             .collection<IUser>(Collection.USERS)
@@ -318,11 +379,9 @@ export default async (req: NextApiRequest, res: NextApiResponse) => {
               .filter((entry): entry is [string, string] => entry !== null),
           );
 
-          if (Object.keys(userData).length > 0) {
-            await sendGameCancelledMessage(userData, result);
-          }
-        } catch (botError) {
-          console.error("Error sending cancellation message:", botError);
+          await notifyGameCancelled(result.players, result, userData);
+        } catch (notifyError) {
+          console.error("Error sending cancellation message:", notifyError);
           // Don't fail the request if the bot fails
         }
       }

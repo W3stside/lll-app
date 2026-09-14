@@ -15,6 +15,23 @@ export function isValidPhoneNumber(phone_number?: number | string): boolean {
   );
 }
 
+// Twilio needs E.164 and we only prepend the "+", so the digits must already lead
+// with a country code. Country codes never start with 0, so a leading 0 means a
+// national format (07..., 00351...) that the SMS will never reach. Kept separate
+// from isValidPhoneNumber because older accounts are stored with 00 prefixes and
+// must still be able to log in.
+const INTERNATIONAL_PHONE_REGEX = new RegExp(
+  `^[1-9]\\d{${PHONE_MIN_LENGTH - 1},${PHONE_MAX_LENGTH - 1}}$`,
+);
+export function isValidInternationalPhoneNumber(
+  phone_number?: number | string,
+): boolean {
+  return (
+    phone_number !== undefined &&
+    INTERNATIONAL_PHONE_REGEX.test(phone_number.toString())
+  );
+}
+
 export function isValidUserUpdate(
   player: Partial<INewSignup> | null,
 ): player is INewSignup {
@@ -34,6 +51,7 @@ export function isValidNewSignup(
 ): player is INewSignup {
   return (
     isValidUserUpdate(player) &&
+    isValidInternationalPhoneNumber(player.phone_number) &&
     password !== undefined &&
     password.toString().length >= PASSWORD_MIN_LENGTH
   );

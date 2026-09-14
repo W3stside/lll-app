@@ -3,6 +3,7 @@ import { ObjectId } from "mongodb";
 import type { NextApiRequest, NextApiResponse } from "next";
 
 import client from "@/lib/mongodb";
+import { requireAdmin } from "@/lib/requireAdmin";
 import { Collection } from "@/types";
 import type { IUser } from "@/types/users";
 
@@ -13,6 +14,10 @@ export default async (req: NextApiRequest, res: NextApiResponse) => {
   }
 
   try {
+    // Admin-only (shame, missed payments): the body is $set verbatim, so any
+    // other caller could rewrite anyone's role, password or verified flag
+    if (!(await requireAdmin(req, res))) return;
+
     const body = req.body as IUser & { recordPayment?: boolean };
     const {
       _id,
