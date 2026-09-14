@@ -124,15 +124,19 @@ export default async (req: NextApiRequest, res: NextApiResponse) => {
       // User has cancelled a game
       // Check the list to see if we need to notify because
       // Pre-update list length is greater than maxPlayers (meaning there is a waitlist)
+      const playerIdx =
+        cancelPlayerId !== undefined
+          ? previous.players.findIndex((pl) => pl === cancelPlayerId.toString())
+          : -1;
+
       if (
         result !== null &&
         cancelPlayerId !== undefined &&
+        // Not in the list (double-tap, racing requests): the $pull was a no-op,
+        // so nobody moved - reinserting or notifying would invent a transition
+        playerIdx !== -1 &&
         (isAdminCancel || previous.players.length > maxPlayers)
       ) {
-        const playerIdx = previous.players.findIndex(
-          (pl) => pl === cancelPlayerId.toString(),
-        );
-
         // Admin cancelled a guy. Ping him
         if (isAdminCancel) {
           // Reinsert player at the top of the waitlist queue
@@ -173,17 +177,22 @@ export default async (req: NextApiRequest, res: NextApiResponse) => {
               await db.collection<IAdmin>(Collection.ADMIN).find().toArray()
             ).at(0);
 
+            // Only a confirmed player in a game with a waitlist actually lands
+            // on the waitlist. Without a waitlist they are removed outright, and
+            // an already-waitlisted player stays waitlisted - "moved to the
+            // waitlist" would be wrong in both cases
+            const movedToWaitlist =
+              previous.players.length > maxPlayers && playerIdx < maxPlayers;
+
             // Admins reshuffle freely while signups are closed; only ping
             // players once the lists are live
-            if (adminInfo !== undefined && adminInfo.signup_open) {
-              // Removing a confirmed player from a full game pulls the first
-              // waitlisted player up into the last confirmed slot
-              const promotedPlayer =
-                previous.players.length > maxPlayers &&
-                playerIdx !== -1 &&
-                playerIdx < maxPlayers
-                  ? result.players.at(maxPlayers - 1)
-                  : undefined;
+            if (
+              movedToWaitlist &&
+              adminInfo !== undefined &&
+              adminInfo.signup_open
+            ) {
+              // Their confirmed slot goes to the first waitlisted player
+              const promotedPlayer = result.players.at(maxPlayers - 1);
 
               await Promise.all([
                 notifyBumped(bumpedUser, result),
