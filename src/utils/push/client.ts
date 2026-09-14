@@ -55,6 +55,24 @@ async function _getRegistration(): Promise<ServiceWorkerRegistration> {
   return await navigator.serviceWorker.ready;
 }
 
+// DOM typings mark endpoint/keys as optional on toJSON(), so narrow explicitly
+// instead of casting - a subscription without keys can't be pushed to anyway.
+function _toSubscriptionJSON(subscription: PushSubscription): IPushSubscriptionJSON {
+  const { endpoint, expirationTime, keys } = subscription.toJSON();
+  const p256dh = keys?.p256dh;
+  const auth = keys?.auth;
+
+  if (
+    endpoint === undefined ||
+    p256dh === undefined ||
+    auth === undefined
+  ) {
+    throw new Error("Browser returned an incomplete push subscription.");
+  }
+
+  return { endpoint, expirationTime, keys: { p256dh, auth } };
+}
+
 async function _sendToServer(
   method: "DELETE" | "POST",
   body: IPushSubscriptionJSON | { endpoint: string },
@@ -138,7 +156,7 @@ export async function subscribeToPush(): Promise<void> {
     }));
 
   // Always re-send: the row may belong to another user who used this device
-  await _sendToServer("POST", subscription.toJSON() as IPushSubscriptionJSON);
+  await _sendToServer("POST", _toSubscriptionJSON(subscription));
 }
 
 /** Removes this device's subscription from the browser and the server. */
