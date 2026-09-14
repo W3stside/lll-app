@@ -74,9 +74,13 @@ export async function recordGameNotifications(
 ): Promise<void> {
   if (userIds.length === 0) return;
 
-  try {
-    await _ensureIndexes();
+  // Not awaited before the insert: an index problem must not stop rows being
+  // saved (expired rows are still filtered out on read)
+  _ensureIndexes().catch((error: unknown) => {
+    console.error("[inbox] Failed to create indexes:", error);
+  });
 
+  try {
     const now = new Date();
     const expiresAt = _computeExpiry(game, now);
 

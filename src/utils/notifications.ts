@@ -43,10 +43,11 @@ async function _withWhatsApp(
   }
 }
 
+// Day and time only: names and locations can be long enough that the OS
+// truncates the notification body before the useful part
 function _describeGame(game: IGame): string {
-  const name =
-    game.name !== undefined && game.name !== "" ? `${game.name} - ` : "";
-  return `${name}${game.day} @ ${game.time}, ${game.location}`;
+  // Stored as 24h "20:00"; "20h00" is how players write it locally
+  return `${game.day} @ ${game.time.replace(":", "h")}`;
 }
 
 function _gameTag(prefix: string, game: IGame): string {
