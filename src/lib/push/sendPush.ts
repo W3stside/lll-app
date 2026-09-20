@@ -165,19 +165,37 @@ export async function sendPushToUsers(
   }
 }
 
-/** Broadcast to every subscribed device. Never throws. */
-export async function sendPushToAll(
+/**
+ * Broadcast to every subscribed device except those users' (opted out, or
+ * already signed up for the game being advertised). Never throws.
+ */
+export async function sendPushToAllExcept(
+  excludedUserIds: string[],
   payload: IPushPayload,
   options: ISendPushOptions = {},
 ): Promise<number> {
   if (!_ensureVapid()) return 0;
 
   try {
-    const subscriptions = await _collection().find().toArray();
+    const subscriptions = await _collection()
+      .find(
+        excludedUserIds.length > 0
+          ? { user_id: { $nin: excludedUserIds } }
+          : {},
+      )
+      .toArray();
 
     return await _deliver(subscriptions, payload, options);
   } catch (error) {
-    console.error("[push] sendPushToAll failed:", error);
+    console.error("[push] sendPushToAllExcept failed:", error);
     return 0;
   }
+}
+
+/** Broadcast to every subscribed device. Never throws. */
+export async function sendPushToAll(
+  payload: IPushPayload,
+  options: ISendPushOptions = {},
+): Promise<number> {
+  return await sendPushToAllExcept([], payload, options);
 }

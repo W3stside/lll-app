@@ -1,6 +1,6 @@
 import type { ObjectId } from "mongodb";
 
-import type { IGame, Role } from ".";
+import type { IGame, INotificationPreferences, Role } from ".";
 
 export interface IBaseUser {
   first_name: string;
@@ -17,6 +17,8 @@ export interface INewSignup extends IBaseUser {
   missedPayments?: (Pick<IGame, "_id" | "day" | "time"> & { date: string })[];
   role?: Role;
   verified?: boolean;
+  // Missing keys mean "on" (see resolveNotificationPreferences)
+  notification_preferences?: Partial<INotificationPreferences>;
 }
 
 export interface IUser extends INewSignup {

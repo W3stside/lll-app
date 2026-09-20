@@ -1,10 +1,11 @@
 // Browser-only helpers for Web Push. Every function guards against SSR so they
 // are safe to import from components rendered on the server.
 
-import type { IPushSubscriptionJSON } from "@/types";
+import type { INotificationPreferences, IPushSubscriptionJSON } from "@/types";
 
 const SW_URL = "/sw.js";
 const SUBSCRIBE_API = "/api/push/subscribe";
+const PREFERENCES_API = "/api/notifications/preferences";
 
 export type PushSupport =
   // iOS Safari tab: push only exists once added to the Home Screen
@@ -183,4 +184,29 @@ export async function unsubscribeFromPush(): Promise<void> {
   const { endpoint } = subscription;
   await subscription.unsubscribe();
   await _sendToServer("DELETE", { endpoint });
+}
+
+/** Saves which push categories this user wants. Resolves with the full set. */
+export async function updateNotificationPreferences(
+  changes: Partial<INotificationPreferences>,
+): Promise<INotificationPreferences> {
+  const res = await fetch(PREFERENCES_API, {
+    method: "PATCH",
+    credentials: "same-origin",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(changes),
+  });
+
+  const json = (await res.json().catch(() => ({}))) as {
+    message?: string;
+    preferences?: INotificationPreferences;
+  };
+
+  if (!res.ok || json.preferences === undefined) {
+    throw new Error(
+      json.message ?? `Saving notification preferences failed (${res.status})`,
+    );
+  }
+
+  return json.preferences;
 }

@@ -57,7 +57,7 @@ export function NotificationPromptBanner({
             <strong>Never miss a spot!</strong>
             <span>
               Get notified when you&apos;re moved off the waitlist, a game is
-              cancelled, or signups open.
+              cancelled, a game still needs players, or signups open.
             </span>
             {isIosInstall && (
               <div className="border-in bg-[var(--background-window-highlight)] px-2 py-1 text-xs">

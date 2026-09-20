@@ -1,6 +1,14 @@
 import { Loader } from "../ui";
 
+import {
+  NOTIFICATION_PREFERENCE_KEYS,
+  NOTIFICATION_PREFERENCE_LABELS,
+} from "@/constants/notifications";
 import type { PushStatus } from "@/hooks/usePushNotifications";
+import type {
+  INotificationPreferences,
+  NotificationPreferenceKey,
+} from "@/types";
 
 export interface INotificationSettings {
   status: PushStatus;
@@ -8,21 +16,80 @@ export interface INotificationSettings {
   error: Error | null;
   onEnable: () => Promise<void>;
   onDisable: () => Promise<void>;
+  preferences: INotificationPreferences;
+  // The key currently being saved, if any
+  preferencePending: NotificationPreferenceKey | null;
+  onTogglePreference: (key: NotificationPreferenceKey) => Promise<void>;
 }
+
+const ALWAYS_ON_LABEL = "Signups open for the week";
 
 const WHAT_YOU_GET = (
   <ul className="list-disc ml-5 text-sm">
-    <li>You move off the waitlist into a game</li>
-    <li>A game you signed up for is cancelled</li>
-    <li>Signups open for the week</li>
+    {NOTIFICATION_PREFERENCE_KEYS.map((key) => (
+      <li key={key}>{NOTIFICATION_PREFERENCE_LABELS[key]}</li>
+    ))}
+    <li>{ALWAYS_ON_LABEL}</li>
   </ul>
 );
+
+interface IPreferenceToggles {
+  preferences: INotificationPreferences;
+  preferencePending: NotificationPreferenceKey | null;
+  onTogglePreference: (key: NotificationPreferenceKey) => Promise<void>;
+}
+
+// Only shown once push is on: the choices mean nothing before that
+function PreferenceToggles({
+  preferences,
+  preferencePending,
+  onTogglePreference,
+}: IPreferenceToggles) {
+  return (
+    <ul className="flex flex-col gap-y-2 text-sm">
+      {NOTIFICATION_PREFERENCE_KEYS.map((key) => (
+        <li key={key}>
+          <label className="flex items-start gap-x-3 cursor-pointer">
+            <input
+              type="checkbox"
+              className="mt-1 w-4 h-4 !w-auto"
+              checked={preferences[key]}
+              disabled={preferencePending !== null}
+              onChange={() => {
+                void onTogglePreference(key);
+              }}
+            />
+            <span>
+              {NOTIFICATION_PREFERENCE_LABELS[key]}
+              {preferencePending === key && " ..."}
+            </span>
+          </label>
+        </li>
+      ))}
+      <li>
+        <label className="flex items-start gap-x-3 cursor-not-allowed">
+          <input
+            type="checkbox"
+            className="mt-1 w-4 h-4 !w-auto"
+            checked
+            disabled
+            readOnly
+          />
+          <span>{ALWAYS_ON_LABEL} (always on)</span>
+        </label>
+      </li>
+    </ul>
+  );
+}
 
 function _renderStatusBody({
   status,
   pending,
   onEnable,
   onDisable,
+  preferences,
+  preferencePending,
+  onTogglePreference,
 }: Omit<INotificationSettings, "error">) {
   switch (status) {
     case "loading":
@@ -32,9 +99,13 @@ function _renderStatusBody({
         <>
           <span>
             <strong className="text-green-700">ON</strong> for this device.
-            We&apos;ll let you know when:
+            Choose what we send you:
           </span>
-          {WHAT_YOU_GET}
+          <PreferenceToggles
+            preferences={preferences}
+            preferencePending={preferencePending}
+            onTogglePreference={onTogglePreference}
+          />
           <button
             onClick={(e) => {
               e.stopPropagation();

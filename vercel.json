@@ -1,0 +1,8 @@
+{
+  "crons": [
+    {
+      "path": "/api/cron/open-spots-alerts",
+      "schedule": "30 7 * * *"
+    }
+  ]
+}

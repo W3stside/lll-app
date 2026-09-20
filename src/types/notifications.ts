@@ -26,6 +26,16 @@ export interface IGameNotificationDocument {
   expiresAt: Date;
 }
 
+// Push categories a user can switch off in their profile. Admin actions that
+// directly affect them (bumped, removed) and the weekly "signups open" nudge
+// are always sent.
+export type NotificationPreferenceKey = "cancelled" | "open_spots" | "promoted";
+
+export type INotificationPreferences = Record<
+  NotificationPreferenceKey,
+  boolean
+>;
+
 // Shape after JSON serialisation into page props
 export interface IGameNotification
   extends Omit<

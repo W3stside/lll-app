@@ -47,6 +47,14 @@ const _sumDays = (
   return !getNext ? target - current : diff;
 };
 
+/**
+ * Wall-clock "now" in the given zone, read as a local Date. Same frame as the
+ * dates computeGameDate returns, so the two can be compared directly.
+ */
+export function nowInTimeZone(timeZone: string): Date {
+  return new Date(new Date().toLocaleString("en-US", { timeZone }));
+}
+
 export function computeGameDate(
   dayOfWeek: IGame["day"],
   time: string,
@@ -58,10 +66,7 @@ export function computeGameDate(
     throw new Error("Invalid day of week");
   }
 
-  const now =
-    timeZone !== undefined
-      ? new Date(new Date().toLocaleString("en-US", { timeZone }))
-      : new Date();
+  const now = timeZone !== undefined ? nowInTimeZone(timeZone) : new Date();
 
   const currentDayIndex = getUSDayIndex(now);
   const [targetHour, targetMinute] = time.split(":").map(Number);

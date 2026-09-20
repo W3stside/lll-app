@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 
 import pastelle from "@/assets/pastelle.svg";
 import { FilterStuff } from "@/components/FilterStuff";
+import { OpenSpotsAlertsContainer } from "@/components/Notifications";
 import { PartnerProducts } from "@/components/PartnerProducts";
 import { RegisterToPlay } from "@/components/Register/RegisterToPlay";
 import { StandardPlayersList } from "@/components/Signup/SignupsList/StandardGamesList";
@@ -98,6 +99,7 @@ const Signups: React.FC<ISignups> = ({
           </div>
         </div>
       </div>
+      <OpenSpotsAlertsContainer signupOpen={admin.signup_open} />
       {userContext.role === Role.ADMIN || admin.signup_open ? (
         <>
           {userContext.role === Role.ADMIN && !admin.signup_open && (
