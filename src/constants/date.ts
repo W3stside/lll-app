@@ -9,6 +9,9 @@ export const DAYS_IN_WEEK = [
 ] as const;
 export const DAYS_IN_WEEK_REVERSED = DAYS_IN_WEEK.toReversed();
 export const CANCELLATION_THRESHOLD_MS = 12 * 60 * 60 * 1000;
+// Games are scheduled in Lisbon wall-clock time, wherever the server or the
+// player's browser happens to be
+export const GAME_TIME_ZONE = "Europe/Lisbon";
 export const DAYS_IN_WEEK_MAP = DAYS_IN_WEEK.reduce(
   (acc, day) => ({
     ...acc,

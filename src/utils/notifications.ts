@@ -7,8 +7,13 @@
 import { NAVLINKS_MAP } from "@/constants/links";
 import { recordGameNotifications } from "@/lib/inbox";
 import {
+  filterUserIdsByPreference,
+  getOptedOutUserIds,
+} from "@/lib/notificationPreferences";
+import {
   type ISendPushOptions,
   sendPushToAll,
+  sendPushToAllExcept,
   sendPushToUsers,
 } from "@/lib/push/sendPush";
 import type {
@@ -17,9 +22,11 @@ import type {
   IPushPayload,
   IUser,
   IUserSafe,
+  NotificationPreferenceKey,
 } from "@/types";
 // Type-only: erased at build, so it does not trigger utils/bot env checks
 import type * as BotModule from "@/utils/bot";
+import { getOpenSpotsAlertCopy } from "@/utils/openSpots";
 
 const HOUR_SECONDS = 60 * 60;
 
@@ -56,16 +63,23 @@ function _gameTag(prefix: string, game: IGame): string {
 }
 
 // Game notifications also go to the in-app inbox, so players without push (iOS
-// Safari tabs, blocked permission, never enabled) still see what changed
+// Safari tabs, blocked permission, never enabled) still see what changed.
+// A profile preference only silences the push: the inbox row is still written.
 async function _sendGameNotification(
   userIds: string[],
   game: IGame,
   type: GameNotificationType,
   payload: IPushPayload,
   options: ISendPushOptions,
+  preference?: NotificationPreferenceKey,
 ): Promise<void> {
+  const pushUserIds =
+    preference !== undefined
+      ? await filterUserIdsByPreference(userIds, preference)
+      : userIds;
+
   await Promise.all([
-    sendPushToUsers(userIds, payload, options),
+    sendPushToUsers(pushUserIds, payload, options),
     recordGameNotifications(userIds, game, type, payload),
   ]);
 }
@@ -88,6 +102,7 @@ export async function notifyPromotedToActive(
         tag: _gameTag("in", game),
       },
       { urgency: "high", ttl: 12 * HOUR_SECONDS },
+      "promoted",
     ),
     whatsApp !== undefined
       ? _withWhatsApp(
@@ -175,6 +190,7 @@ export async function notifyGameCancelled(
         tag: _gameTag("cxl", game),
       },
       { urgency: "high", ttl: 24 * HOUR_SECONDS },
+      "cancelled",
     ),
     Object.keys(whatsAppUserData).length > 0
       ? _withWhatsApp(
@@ -200,5 +216,38 @@ export async function notifySignupsOpen(): Promise<void> {
     },
     // Stale after a day: by then the good spots are gone anyway
     { urgency: "normal", ttl: 24 * HOUR_SECONDS },
+  );
+}
+
+/**
+ * The day before a game that still has confirmed spots free (see the cron
+ * route). Push only, like notifySignupsOpen: it isn't about the player's own
+ * game, and the signup page shows the same banner to everyone anyway. Players
+ * already on the list are skipped - they can't sign up again.
+ * Resolves with the number of devices reached.
+ */
+export async function notifyOpenSpots(game: IGame): Promise<number> {
+  let optedOut: string[];
+  try {
+    optedOut = await getOptedOutUserIds("open_spots");
+  } catch (error) {
+    // Unlike a game update, nothing else depends on this push going out, so
+    // respect the opt-outs by sending nothing rather than nagging them
+    console.error("[open-spots] Failed to read opt-outs, not sending:", error);
+    return 0;
+  }
+
+  const { title, body } = getOpenSpotsAlertCopy(game);
+
+  return await sendPushToAllExcept(
+    [...new Set([...optedOut, ...game.players])],
+    {
+      title,
+      body,
+      url: NAVLINKS_MAP.SIGNUP,
+      tag: _gameTag("open", game),
+    },
+    // Pointless once the game has started; TTL covers 07:30 to a late kick-off
+    { urgency: "normal", ttl: 40 * HOUR_SECONDS },
   );
 }

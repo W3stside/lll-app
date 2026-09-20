@@ -6,6 +6,7 @@ export enum Collection {
   TOKENS = "tokens",
   PUSH_SUBSCRIPTIONS = "push_subscriptions",
   NOTIFICATIONS = "notifications",
+  OPEN_SPOTS_ALERTS = "open_spots_alerts",
 }
 
 export enum GameStatus {

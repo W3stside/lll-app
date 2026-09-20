@@ -1,0 +1,12 @@
+{
+  "crons": [
+    {
+      "path": "/api/cron/open-spots-alerts",
+      "schedule": "30 6 * * *"
+    },
+    {
+      "path": "/api/cron/open-spots-alerts",
+      "schedule": "30 7 * * *"
+    }
+  ]
+}

@@ -199,3 +199,18 @@ export const getMaxPlayers = (game: IGame) => {
   }
   return MAX_SIGNUPS_PER_GAME[game.type ?? GameType.STANDARD];
 };
+
+// Mirrors useWeeklyGamesData: tourney signups live on the teams, everyone else
+// on `players`, and only the first getMaxPlayers of them are confirmed
+export const getConfirmedPlayersCount = (game: IGame) => {
+  const tourneyPlayers =
+    game.teams !== undefined
+      ? game.teams.flatMap((team) => team.players).length
+      : 0;
+
+  return Math.min(tourneyPlayers || game.players.length, getMaxPlayers(game));
+};
+
+/** Confirmed (active list) spots still free - the waitlist never counts. */
+export const getOpenSpots = (game: IGame) =>
+  getMaxPlayers(game) - getConfirmedPlayersCount(game);
