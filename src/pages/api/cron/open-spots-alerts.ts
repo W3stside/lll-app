@@ -1,18 +1,22 @@
 /* eslint-disable no-console */
-// Scheduled at 07:30 Lisbon time (see vercel.json): pushes an "open spots"
-// alert for every game tomorrow that still has confirmed spots free. Monday
-// games are skipped, so nothing goes out on Sundays.
+// Pushes an "open spots" alert for every game tomorrow that still has
+// confirmed spots free. Monday games are skipped, so nothing goes out on
+// Sundays.
 //
-// Vercel crons run in UTC and Lisbon switches between UTC and UTC+1, so the
-// job is scheduled at both 06:30 and 07:30 UTC and this route only acts when
-// the local hour is 7. The per-occurrence claim in lib/openSpotsAlerts makes a
-// second run within that hour a no-op.
+// Vercel crons run in UTC and Lisbon switches between UTC and UTC+1. One cron
+// at 07:30 UTC (see vercel.json) therefore lands at 07:30 in winter and 08:30
+// in summer: late rather than early, so the push never beats the banner. The
+// hour check below only stops a stray manual call from alerting at midday, and
+// the per-occurrence claim in lib/openSpotsAlerts makes any repeat a no-op.
 
 import { timingSafeEqual } from "crypto";
 import type { NextApiRequest, NextApiResponse } from "next";
 
 import { DAYS_IN_WEEK, GAME_TIME_ZONE } from "@/constants/date";
-import { OPEN_SPOTS_ALERT_HOUR } from "@/constants/notifications";
+import {
+  OPEN_SPOTS_ALERT_HOUR,
+  OPEN_SPOTS_PUSH_LAST_HOUR,
+} from "@/constants/notifications";
 import client from "@/lib/mongodb";
 import { claimOpenSpotsAlert } from "@/lib/openSpotsAlerts";
 import { getApiRequester } from "@/lib/requireAdmin";
@@ -97,7 +101,8 @@ export default async function handler(
     const now = nowInTimeZone(GAME_TIME_ZONE);
     const localTime = now.toISOString();
 
-    if (now.getHours() !== OPEN_SPOTS_ALERT_HOUR) {
+    const hour = now.getHours();
+    if (hour < OPEN_SPOTS_ALERT_HOUR || hour > OPEN_SPOTS_PUSH_LAST_HOUR) {
       res.status(200).json({ skipped: "outside-alert-hour", localTime });
       return;
     }

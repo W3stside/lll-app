@@ -27,6 +27,9 @@ export const NOTIFICATION_PREFERENCE_LABELS: Record<
 
 // Open spots alert: from 07:30 the day before a game until kick-off
 export const OPEN_SPOTS_ALERT_HOUR = 7;
+// The push comes from one UTC cron, which lands an hour later in Lisbon during
+// summer time - so the route accepts this hour as well
+export const OPEN_SPOTS_PUSH_LAST_HOUR = 8;
 export const OPEN_SPOTS_ALERT_MINUTE = 30;
 // No alert on Sundays for Monday games
 export const OPEN_SPOTS_ALERT_EXCLUDED_DAYS = new Set<string>(["Monday"]);
