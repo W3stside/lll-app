@@ -9,7 +9,7 @@ import { getAllOccurrences } from "@/lib/gameOccurrences";
 import client from "@/lib/mongodb";
 import { requireAdmin } from "@/lib/requireAdmin";
 import { Collection, type IUser } from "@/types";
-import { getOccurrenceKey, nowInTimeZone } from "@/utils/date";
+import { formatDateKey, nowInTimeZone } from "@/utils/date";
 import {
   ATTENDANCE_LABELS,
   getOccurrencePlayers,
@@ -89,7 +89,7 @@ export default async function handler(
       ),
     );
 
-    const today = getOccurrenceKey(nowInTimeZone(GAME_TIME_ZONE));
+    const today = formatDateKey(nowInTimeZone(GAME_TIME_ZONE));
     res.setHeader("Content-Type", "text/csv; charset=utf-8");
     res.setHeader(
       "Content-Disposition",

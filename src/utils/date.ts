@@ -61,31 +61,6 @@ export function nowInTimeZone(timeZone: string): Date {
   return toTimeZoneWallClock(new Date(), timeZone);
 }
 
-/**
- * "YYYY-MM-DD" of a wall-clock Date: keys one week's occurrence of a game.
- * Reads the local fields, so a date from computeGameDate gives the Lisbon
- * calendar day in any browser or server timezone.
- */
-export function getOccurrenceKey(date: Date): string {
-  const month = String(date.getMonth() + 1).padStart(2, "0");
-  const day = String(date.getDate()).padStart(2, "0");
-  return `${date.getFullYear()}-${month}-${day}`;
-}
-
-/** Local midnight of an occurrence key, or null unless it's a real date. */
-export function parseOccurrenceKey(key: string): Date | null {
-  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(key);
-  if (match === null) return null;
-
-  const date = new Date(
-    Number(match[1]),
-    Number(match[2]) - 1,
-    Number(match[3]),
-  );
-  // Rejects overflowing dates such as 2026-02-30
-  return getOccurrenceKey(date) === key ? date : null;
-}
-
 function _dayIndex(day: IGame["day"]): number {
   const index = DAYS_IN_WEEK.indexOf(day);
   if (index === -1) {
@@ -107,26 +82,25 @@ export function getKickoffInWeekOf(
   );
 }
 
-/** Earliest kickoff of a weekly game after `wallFrom` (wall-clock frame). */
-export function getNextKickoffAfter(
-  day: IGame["day"],
-  time: string,
-  wallFrom: Date,
-): Date {
-  const daysAhead =
-    (_dayIndex(day) - getUSDayIndex(wallFrom) + ONE_WEEK_DAYS) % ONE_WEEK_DAYS;
-  const kickoff = _getDateFromGameHour(wallFrom, time, daysAhead);
-
-  return kickoff > wallFrom
-    ? kickoff
-    : _getDateFromGameHour(wallFrom, time, daysAhead + ONE_WEEK_DAYS);
-}
-
 /** "YYYY-MM-DD" of the date's local calendar day. */
 export function formatDateKey(date: Date): string {
   const month = String(date.getMonth() + 1).padStart(2, "0");
   const day = String(date.getDate()).padStart(2, "0");
   return `${date.getFullYear()}-${month}-${day}`;
+}
+
+/** Local midnight of a formatDateKey key, or null unless it's a real date. */
+export function parseDateKey(key: string): Date | null {
+  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(key);
+  if (match === null) return null;
+
+  const date = new Date(
+    Number(match[1]),
+    Number(match[2]) - 1,
+    Number(match[3]),
+  );
+  // Rejects overflowing dates such as 2026-02-30
+  return formatDateKey(date) === key ? date : null;
 }
 
 export function computeGameDate(

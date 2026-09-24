@@ -121,7 +121,7 @@ export const getServerSideProps: GetServerSideProps<ConnectionStatus> =
               game,
               now,
               // Typed as always there, but missing without an admin document
-              (admin as IAdmin | undefined)?.signups_reset_at,
+              (admin as IAdmin | undefined)?.signups_lists_week,
             ),
           })),
         ),
@@ -483,8 +483,8 @@ export default function Admin({
       }
 
       setGames(data);
-      // The reset archived this week's lists and moved every game to its
-      // next week: reload so the history and Track payment show that
+      // The lists went to the game history and may be for another week now:
+      // reload so the history and Track payment show that
       router.reload();
     } catch (error) {
       const e =
@@ -588,7 +588,7 @@ export default function Admin({
           gamesByDay={gamesByDay}
           usersById={usersById}
           occurrences={occurrenceRows}
-          lastResetAt={admin?.signups_reset_at}
+          listsWeek={admin?.signups_lists_week}
           handlePayment={handlePayment}
           handleAttendance={handleAttendance}
           loading={loading}

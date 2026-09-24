@@ -10,11 +10,7 @@ import errorIcon from "@/assets/error.png";
 import { GREEN_TW, RED_TW } from "@/constants/colours";
 import { DAYS_IN_WEEK_MAP } from "@/constants/date";
 import type { AttendanceStatus, IGame, IGameOccurrence, IUser } from "@/types";
-import {
-  formatDateStr,
-  computeGameDate,
-  parseOccurrenceKey,
-} from "@/utils/date";
+import { formatDateStr, computeGameDate, parseDateKey } from "@/utils/date";
 import {
   ATTENDANCE_LABELS,
   getListOccurrenceKey,
@@ -30,8 +26,8 @@ interface ITrackPayment {
   usersById: Record<string, IUser | undefined>;
   // Game history rows, keyed by getOccurrenceRowKey
   occurrences: Partial<Record<string, IGameOccurrence>>;
-  // Last "Clear all": which week each game's current list is for
-  lastResetAt: Date | string | undefined;
+  // The week every list was last cleared for (IAdmin.signups_lists_week)
+  listsWeek: string | undefined;
   handlePayment: (
     userId: ObjectId,
     game: IGame,
@@ -53,7 +49,7 @@ export function TrackPayment({
   gamesByDay,
   usersById,
   occurrences,
-  lastResetAt,
+  listsWeek,
   handlePayment,
   handleAttendance,
   loading,
@@ -77,7 +73,7 @@ export function TrackPayment({
       </div>
       <div className="container text-xs">
         Mark whether each player paid and whether they played. Marks are saved
-        for every admin and kept in the game history when you clear all signups.
+        for every admin and kept in the game history when the lists are cleared.
         Unpaid games also show up below in "Players in debt".
       </div>
       <div className="flex flex-col gap-y-4 pt-3">
@@ -142,13 +138,9 @@ export function TrackPayment({
                   {gamesForDay.map((g) => {
                     // Key of the player's debt, as recorded before history
                     const gameDateStr = formatDateStr(g.date);
-                    // The week this list is for, the same one the reset
-                    // archives it under, whatever the browser's timezone
-                    const occurrence = getListOccurrenceKey(
-                      g,
-                      now,
-                      lastResetAt,
-                    );
+                    // The week this list is for, the same one clearing the
+                    // lists archives it under, whatever the browser's timezone
+                    const occurrence = getListOccurrenceKey(g, now, listsWeek);
                     const row =
                       occurrences[
                         getOccurrenceRowKey(g._id.toString(), occurrence)
@@ -198,9 +190,8 @@ export function TrackPayment({
                           >
                             <span className="mr-auto">
                               <strong>
-                                {parseOccurrenceKey(
-                                  occurrence,
-                                )?.toDateString() ?? occurrence}
+                                {parseDateKey(occurrence)?.toDateString() ??
+                                  occurrence}
                               </strong>{" "}
                               · Played {countAttendance("present")} · No-show{" "}
                               {countAttendance("no_show")} · Paid {paidCount} ·

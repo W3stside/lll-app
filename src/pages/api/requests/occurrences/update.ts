@@ -12,7 +12,7 @@ import {
   type IAttendanceUpdate,
   type IGame,
 } from "@/types";
-import { getUSDayIndex, parseOccurrenceKey } from "@/utils/date";
+import { getUSDayIndex, parseDateKey } from "@/utils/date";
 import { isObjectIdHex } from "@/utils/objectId";
 
 const ATTENDANCE_STATUSES = new Set<unknown>([
@@ -34,7 +34,7 @@ function _parseBody(body: unknown): IAttendanceUpdate | null {
   if (
     !isObjectIdHex(game_id) ||
     typeof occurrence !== "string" ||
-    parseOccurrenceKey(occurrence) === null ||
+    parseDateKey(occurrence) === null ||
     !Array.isArray(user_ids) ||
     user_ids.length === 0 ||
     user_ids.length > MAX_PLAYERS_PER_UPDATE ||
@@ -80,8 +80,8 @@ export default async function handler(
       return;
     }
 
-    // Checked by parseOccurrenceKey above
-    const date = parseOccurrenceKey(update.occurrence) as Date;
+    // Checked by parseDateKey above
+    const date = parseDateKey(update.occurrence) as Date;
     if (DAYS_IN_WEEK[getUSDayIndex(date)] !== game.day) {
       res
         .status(400)

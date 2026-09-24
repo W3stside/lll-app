@@ -26,7 +26,7 @@ import type {
 } from "@/types";
 // Type-only: erased at build, so it does not trigger utils/bot env checks
 import type * as BotModule from "@/utils/bot";
-import { getOccurrenceKey } from "@/utils/date";
+import { formatDateKey } from "@/utils/date";
 import { getOpenSpotsAlertCopy } from "@/utils/openSpots";
 
 const HOUR_SECONDS = 60 * 60;
@@ -69,7 +69,7 @@ function _describeCutoff(cutoff: Date, now: Date): string {
   const hours = String(cutoff.getHours()).padStart(2, "0");
   const minutes = String(cutoff.getMinutes()).padStart(2, "0");
   const when =
-    getOccurrenceKey(cutoff) === getOccurrenceKey(now) ? "tonight" : "tomorrow";
+    formatDateKey(cutoff) === formatDateKey(now) ? "tonight" : "tomorrow";
 
   return `${hours}h${minutes} ${when}`;
 }

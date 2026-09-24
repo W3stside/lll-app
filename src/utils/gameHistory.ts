@@ -8,9 +8,9 @@ import type {
   PaymentStatus,
 } from "@/types";
 import {
+  formatDateKey,
   getKickoffInWeekOf,
-  getNextKickoffAfter,
-  getOccurrenceKey,
+  parseDateKey,
   toTimeZoneWallClock,
 } from "@/utils/date";
 
@@ -35,41 +35,33 @@ export const ATTENDANCE_LABELS: Record<AttendanceStatus, string> = {
 };
 
 /**
- * Kickoff a game's current list is for: its first kickoff since signups were
- * last reset. Before any reset was recorded, its kickoff in the week of half a
- * day ago, since lists are reset after Sunday's last game and sometimes just
- * past midnight. Both dates are Lisbon wall-clock time read as a local Date,
- * so the answer is the same on the server and in any browser. Used by the
- * history archive, the reminders and Track payment alike.
+ * Kickoff a game's current list is for: its kickoff in the week the lists
+ * were last cleared for (IAdmin.signups_lists_week). Before a clear recorded
+ * one, the week of half a day ago, as lists are cleared on Sunday night after
+ * the last game or on Monday morning. Dates are Lisbon wall-clock time read as
+ * a local Date, so the answer is the same on the server and in any browser.
+ * Used by the history archive, the reminders and Track payment alike.
  */
 export function getListKickoff(
   game: Pick<IGame, "day" | "time">,
   wallNow: Date,
-  wallLastReset: Date | undefined,
+  listsWeek: string | undefined,
 ): Date {
-  return wallLastReset !== undefined
-    ? getNextKickoffAfter(game.day, game.time, wallLastReset)
-    : getKickoffInWeekOf(
-        game.day,
-        game.time,
-        new Date(wallNow.getTime() - HALF_A_DAY_MS),
-      );
+  const weekDate =
+    (listsWeek !== undefined ? parseDateKey(listsWeek) : null) ??
+    new Date(wallNow.getTime() - HALF_A_DAY_MS);
+
+  return getKickoffInWeekOf(game.day, game.time, weekDate);
 }
 
 /** Occurrence key of the week a game's current list is for. */
 export function getListOccurrenceKey(
   game: Pick<IGame, "day" | "time">,
   now: Date,
-  lastResetAt: Date | string | undefined,
+  listsWeek: string | undefined,
 ): string {
-  return getOccurrenceKey(
-    getListKickoff(
-      game,
-      toTimeZoneWallClock(now, GAME_TIME_ZONE),
-      lastResetAt !== undefined
-        ? toTimeZoneWallClock(new Date(lastResetAt), GAME_TIME_ZONE)
-        : undefined,
-    ),
+  return formatDateKey(
+    getListKickoff(game, toTimeZoneWallClock(now, GAME_TIME_ZONE), listsWeek),
   );
 }
 

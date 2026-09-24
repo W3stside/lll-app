@@ -82,8 +82,8 @@ export async function setSignupsOpen(
 
 /**
  * The admin page's "Clear all": empties every list except the organisers, and
- * everyone's inbox with it. Resolves the updated games, or null when there are
- * no games to clear.
+ * everyone's inbox with it. The lists are saved to the game history first.
+ * Resolves the updated games, or null when there are no games to clear.
  */
 export async function clearAllSignups(): Promise<WithId<IGame>[] | null> {
   const collection = _games();
@@ -92,22 +92,14 @@ export async function clearAllSignups(): Promise<WithId<IGame>[] | null> {
   // bulkWrite rejects an empty batch
   if (games.length === 0) return null;
 
-  // Saved to the game history before anything is wiped. If that fails,
-  // nothing is cleared and the caller can retry
-  const admin = await getAdmin();
-  const resetAt = new Date();
-  await archiveGameLists(games, admin?.signups_reset_at, resetAt);
-
-  // Every list built from now on is for its game's next kickoff: the history
-  // and the reminders both read this. Recorded before the wipe, so a retry
-  // after a failed wipe finds nothing new to save rather than refiling this
-  // week's lists (or the organisers-only ones) under last week.
-  if (admin !== undefined) {
-    await _admin().updateOne(
-      { _id: admin._id },
-      { $set: { signups_reset_at: resetAt } },
-    );
-  }
+  // Saved to the game history, under the week they were cleared for last
+  // time, before anything is wiped. If that fails nothing is cleared, and the
+  // caller can retry
+  await archiveGameLists(
+    games,
+    (await getAdmin())?.signups_lists_week,
+    new Date(),
+  );
 
   const result = await collection.updateMany(
     { _id: { $in: games.map(({ _id }) => _id) } },

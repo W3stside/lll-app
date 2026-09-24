@@ -3,7 +3,7 @@ import { Collapsible } from "../ui";
 import { RED_TW } from "@/constants/colours";
 import type { IGameOccurrence, IUser } from "@/types";
 import { GAME_HISTORY_CSV_URL } from "@/utils/api/occurrences";
-import { parseOccurrenceKey } from "@/utils/date";
+import { parseDateKey } from "@/utils/date";
 import {
   ATTENDANCE_LABELS,
   getOccurrencePlayers,
@@ -55,10 +55,10 @@ export function GameHistory({
         onClick={_stopPropagation}
       >
         <div className="flex-3">
-          Every game&apos;s final lists are saved here when you clear all
-          signups, together with the attendance and payments marked in
-          &quot;Track payment per game&quot;. Showing the latest weeks; the
-          download has everything.
+          Every game&apos;s final lists are saved here when the lists are
+          cleared on Monday morning (or with &quot;Clear all&quot;), together
+          with the attendance and payments marked in &quot;Track payment per
+          game&quot;. Showing the latest weeks; the download has everything.
         </div>
         <a
           href={GAME_HISTORY_CSV_URL}
@@ -73,13 +73,13 @@ export function GameHistory({
       <div className="flex flex-col gap-y-2 pt-3" onClick={_stopPropagation}>
         {occurrences.length === 0 ? (
           <p className="pl-4">
-            Nothing yet. History starts the next time you clear all signups.
+            Nothing yet. History starts the next time the lists are cleared.
           </p>
         ) : (
           occurrences.map((occurrence) => {
             const { confirmed, played, noShows, unpaid } =
               summariseOccurrence(occurrence);
-            const date = parseOccurrenceKey(occurrence.occurrence);
+            const date = parseDateKey(occurrence.occurrence);
 
             return (
               <div

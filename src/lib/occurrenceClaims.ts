@@ -13,7 +13,7 @@ import type { Collection } from "@/types";
 interface IOccurrenceClaimDocument {
   _id?: ObjectId;
   game_id: string;
-  // "YYYY-MM-DD" of the game, see getOccurrenceKey
+  // "YYYY-MM-DD" of the game, see formatDateKey
   occurrence: string;
   createdAt: Date;
   expiresAt: Date;

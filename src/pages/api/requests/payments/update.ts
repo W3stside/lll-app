@@ -16,7 +16,7 @@ import {
   type IPaymentUpdate,
   type IUser,
 } from "@/types";
-import { getUSDayIndex, parseOccurrenceKey } from "@/utils/date";
+import { getUSDayIndex, parseDateKey } from "@/utils/date";
 import { isObjectIdHex } from "@/utils/objectId";
 
 // Ledger keys are formatDateStr output and times are "HH:MM": both short
@@ -44,8 +44,7 @@ function _parseBody(body: unknown): IPaymentUpdate | null {
     !(DAYS_IN_WEEK as readonly unknown[]).includes(day) ||
     !_isShortString(time) ||
     (occurrence !== undefined &&
-      (typeof occurrence !== "string" ||
-        parseOccurrenceKey(occurrence) === null)) ||
+      (typeof occurrence !== "string" || parseDateKey(occurrence) === null)) ||
     typeof paid !== "boolean"
   ) {
     return null;
@@ -92,7 +91,7 @@ export default async function handler(
       .collection<IGame>(Collection.GAMES)
       .findOne({ _id: new ObjectId(game_id) });
     const occurrenceDate =
-      occurrence !== undefined ? parseOccurrenceKey(occurrence) : null;
+      occurrence !== undefined ? parseDateKey(occurrence) : null;
     const gameForNewRow =
       game !== null &&
       occurrenceDate !== null &&

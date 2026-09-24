@@ -12,7 +12,4 @@ export interface IAdmin {
   signups_lists_week?: string;
   signups_closed_week?: string;
   signups_reset_week?: string;
-  // Last "Clear all" of the signup lists. Every list was built after it, which
-  // tells which week's game a list belongs to.
-  signups_reset_at?: Date;
 }

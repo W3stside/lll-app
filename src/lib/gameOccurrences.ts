@@ -1,13 +1,13 @@
 // Server-only store for game history: one row per game per week. Games are
 // weekly templates whose lists are wiped when signups reset, so admins' marks
-// (attendance, payments) are saved here during the week, and the reset saves
-// each game's final lists before wiping them.
+// (attendance, payments) are saved here during the week, and clearing the
+// lists saves each game's final lists first (see clearAllSignups).
 
-import type { AnyBulkWriteOperation, WithId } from "mongodb";
+import type { WithId } from "mongodb";
 
 import client from "./mongodb";
 
-import { GAME_TIME_ZONE } from "@/constants/date";
+import { DAYS_IN_WEEK, GAME_TIME_ZONE } from "@/constants/date";
 import {
   type AttendanceStatus,
   Collection,
@@ -15,7 +15,7 @@ import {
   type IGameOccurrenceDocument,
   type PaymentStatus,
 } from "@/types";
-import { getOccurrenceKey, toTimeZoneWallClock } from "@/utils/date";
+import { formatDateKey, toTimeZoneWallClock } from "@/utils/date";
 import { getListKickoff } from "@/utils/gameHistory";
 import { getConfirmedPlayerIds, getWaitlistPlayerIds } from "@/utils/games";
 
@@ -78,42 +78,87 @@ function _describeGame(
   };
 }
 
+/** Saving the lists to the game history failed, so none were cleared. */
+export class GameHistoryArchiveError extends Error {
+  constructor(options?: ErrorOptions) {
+    super(
+      "Couldn't save the lists to the game history, so nothing was cleared. Try again.",
+      options,
+    );
+    this.name = "GameHistoryArchiveError";
+  }
+}
+
 /**
- * Saves the lists of every game played since signups were last reset, before
- * the reset wipes them. Games not played yet are skipped: their lists never
- * happened. Throws on DB errors, and the caller must then not reset.
+ * Saves the lists of every game already played before they're cleared.
+ * `listsWeek` is the week they were last cleared for (see getListKickoff).
+ * Games not played yet are skipped: their lists never happened. The first save
+ * of a game's week wins, so lists rebuilt after an early clear that week (only
+ * the organisers) never replace the real ones. Resolves how many lists were
+ * saved. Throws a GameHistoryArchiveError, and the caller must then not clear
+ * anything.
  */
 export async function archiveGameLists(
   games: WithId<IGame>[],
-  lastResetAt: Date | undefined,
+  listsWeek: string | undefined,
   now: Date,
 ): Promise<number> {
-  await _ensureIndexes();
-
   const wallNow = toTimeZoneWallClock(now, GAME_TIME_ZONE);
-  const wallLastReset =
-    lastResetAt !== undefined
-      ? toTimeZoneWallClock(lastResetAt, GAME_TIME_ZONE)
-      : undefined;
 
-  const operations = games.flatMap<
-    AnyBulkWriteOperation<IGameOccurrenceDocument>
-  >((game) => {
-    // Admin-only games, and lists nobody signed up to
-    if (game.hidden === true || game.players.length === 0) return [];
+  const played = games.flatMap((game) => {
+    // Admin-only games, lists nobody signed up to, and malformed days, which
+    // must not hold up the weekly reset
+    if (
+      game.hidden === true ||
+      game.players.length === 0 ||
+      !DAYS_IN_WEEK.includes(game.day)
+    ) {
+      return [];
+    }
 
-    const kickoff = getListKickoff(game, wallNow, wallLastReset);
+    const kickoff = getListKickoff(game, wallNow, listsWeek);
+    // Malformed times, and games cleared before they were played
+    if (Number.isNaN(kickoff.getTime()) || kickoff > wallNow) return [];
 
-    // Reset before the game was played: its list never happened
-    if (kickoff > wallNow) return [];
+    const key: IOccurrenceKey = {
+      game_id: game._id.toString(),
+      occurrence: formatDateKey(kickoff),
+    };
+    return [{ game, key }];
+  });
 
-    return [
-      {
+  if (played.length === 0) return 0;
+
+  try {
+    await _ensureIndexes();
+
+    // Rows may exist already, holding the week's marks. Creating the missing
+    // ones first lets the lists go in with a plain update that skips rows
+    // already archived: an upsert filtered on that would hit the unique index.
+    await _collection().bulkWrite(
+      played.map(({ game, key }) => ({
         updateOne: {
-          filter: {
-            game_id: game._id.toString(),
-            occurrence: getOccurrenceKey(kickoff),
+          filter: key,
+          update: {
+            $setOnInsert: {
+              ..._describeGame(game),
+              confirmed: [],
+              waitlist: [],
+              archivedAt: null,
+              createdAt: now,
+              updatedAt: now,
+            },
           },
+          upsert: true,
+        },
+      })),
+      { ordered: false },
+    );
+
+    const { matchedCount } = await _collection().bulkWrite(
+      played.map(({ game, key }) => ({
+        updateOne: {
+          filter: { ...key, archivedAt: null },
           update: {
             $set: {
               ..._describeGame(game),
@@ -122,19 +167,16 @@ export async function archiveGameLists(
               archivedAt: now,
               updatedAt: now,
             },
-            $setOnInsert: { createdAt: now },
           },
-          upsert: true,
         },
-      },
-    ];
-  });
+      })),
+      { ordered: false },
+    );
 
-  if (operations.length > 0) {
-    await _collection().bulkWrite(operations, { ordered: false });
+    return matchedCount;
+  } catch (error) {
+    throw new GameHistoryArchiveError({ cause: error });
   }
-
-  return operations.length;
 }
 
 /**
