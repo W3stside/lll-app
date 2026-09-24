@@ -56,8 +56,9 @@ export function getSignupsWeekStart(now: Date): Date {
 }
 
 /**
- * Kick-off of the week's last game, when signups close. Hidden and cancelled
- * games are never played, so they don't count. Undefined when no game is.
+ * Kick-off of the week's last game: signups never close before it. Hidden and
+ * cancelled games are never played, so they don't count. Undefined when no
+ * game is.
  */
 export function getLastKickOff(
   games: Pick<IGame, "cancelled" | "day" | "hidden" | "time">[],

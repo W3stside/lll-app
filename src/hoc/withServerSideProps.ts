@@ -9,7 +9,6 @@ import { BANNED_USERS_SET } from "@/constants/blacklist";
 import { NAVLINKS_MAP, SMS_VERIFICATION } from "@/constants/links";
 import { getUserFromServerSideRequest } from "@/lib/authUtils";
 import client from "@/lib/mongodb";
-import { closeSignupsIfDue } from "@/lib/signups";
 import type { IServerSideProps } from "@/pages/_app";
 import { Collection } from "@/types";
 import type { IAdmin } from "@/types/admin";
@@ -72,7 +71,7 @@ export function withServerSideProps<P extends object>(
         };
       }
 
-      const [storedAdmin] = await client
+      const [admin] = await client
         .db("LLL")
         .collection<IAdmin>(Collection.ADMIN)
         .find()
@@ -81,10 +80,6 @@ export function withServerSideProps<P extends object>(
       const [games, users] = await fetchRequiredCollectionsFromMongoDb(client, {
         serialised: false,
       })();
-
-      // Signups close when the week's last game kicks off. Doing it on page
-      // loads lands it right on time, where a Hobby cron can't
-      const admin = await closeSignupsIfDue(storedAdmin, games);
 
       const usersById = groupUsersById(users);
 

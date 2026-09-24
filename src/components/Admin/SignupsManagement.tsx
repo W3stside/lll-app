@@ -29,9 +29,8 @@ export function SignupsManagement({
       </div>
       <div className="flex flex-col justify-start p-2">
         <p className="py-1">
-          Automatic every week: signups close when the last game of the week
-          kicks off, and on Monday morning every list is cleared and signups
-          re-open.
+          Automatic every week: signups close late on Sunday night, and on
+          Monday morning every list is cleared and signups re-open.
         </p>
         <div className="flex flex-wrap gap-2 items-center justify-between py-1">
           <div className="my-2 flex gap-x-4">

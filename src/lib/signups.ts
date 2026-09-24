@@ -1,7 +1,7 @@
 /* eslint-disable no-console */
 // Server-only. The admin page's signups controls, plus the weekly schedule
-// that runs them on its own: signups close when the week's last game kicks
-// off, and every list is cleared and re-opened on Monday morning.
+// that runs them on its own: signups close on Sunday night, and every list is
+// cleared and re-opened on Monday morning.
 
 import type { ObjectId, WithId } from "mongodb";
 
@@ -20,6 +20,11 @@ import {
   getWeekKey,
   getWeekStart,
 } from "@/utils/signupsSchedule";
+
+export type SignupsCloseResult = { week: string; localTime: string } & (
+  | { closed: true; wasOpen: boolean }
+  | { skipped: "already-closed" | "before-last-game" | "no-games" }
+);
 
 export type SignupsResetResult = { week: string; localTime: string } & (
   | { reset: true; cleared: boolean; wasOpen: boolean }
@@ -130,45 +135,43 @@ export async function clearAllSignups(): Promise<WithId<IGame>[] | null> {
 }
 
 /**
- * Closes signups once the week's last game has kicked off. Page loads run it,
- * so it lands right at kick-off without a cron guessing the time. The week is
- * claimed, so an admin re-opening signups afterwards is left alone.
- * Never throws: resolves the admin document the page should render.
+ * Sunday night's close, like the admin page's "Disable" button. Only once the
+ * week's last game has kicked off, so a stray call mid-week does nothing, and
+ * once per week, so an admin re-opening signups afterwards is left alone.
+ * The lists stay until the Monday reset, so admins can track payments.
  */
-export async function closeSignupsIfDue(
-  admin: WithId<IAdmin>,
-  games: IGame[],
-): Promise<WithId<IAdmin>> {
-  // Destructured from a find(), so it is missing when there is no document
-  if ((admin as WithId<IAdmin> | undefined) === undefined) return admin;
+export async function closeSignupsIfDue(): Promise<SignupsCloseResult> {
+  const now = nowInTimeZone(GAME_TIME_ZONE);
+  const localTime = now.toISOString();
+  // Until the Monday reset the week that just ended still counts, so a run
+  // that lands after midnight closes the right one
+  const weekStart = getSignupsWeekStart(now);
+  const week = getWeekKey(weekStart);
 
-  try {
-    const now = nowInTimeZone(GAME_TIME_ZONE);
-    const weekStart = getSignupsWeekStart(now);
-    const week = getWeekKey(weekStart);
-
-    if (admin.signups_closed_week === week) return admin;
-
-    const lastKickOff = getLastKickOff(games, weekStart);
-    if (lastKickOff === undefined || now < lastKickOff) return admin;
-
-    const previous = await _admin().findOneAndUpdate(
-      { _id: admin._id, signups_closed_week: { $ne: week } },
-      { $set: { signup_open: false, signups_closed_week: week } },
-      { returnDocument: "before" },
-    );
-
-    if (previous !== null) {
-      console.log(`[signups] Week ${week}: closed at the last kick-off`);
-    }
-
-    // Closed either way: a parallel page load may have claimed the week first
-    return { ...admin, signup_open: false, signups_closed_week: week };
-  } catch (error) {
-    // The page still renders, and the next load tries again
-    console.error("[signups] Closing signups failed:", error);
-    return admin;
+  const lastKickOff = getLastKickOff(
+    await _games().find().toArray(),
+    weekStart,
+  );
+  if (lastKickOff === undefined) {
+    return { skipped: "no-games", week, localTime };
   }
+  if (now < lastKickOff) {
+    return { skipped: "before-last-game", week, localTime };
+  }
+
+  const admin = await getAdmin();
+  if (admin === undefined) throw new Error("Admin document not found");
+
+  const previous = await _admin().findOneAndUpdate(
+    { _id: admin._id, signups_closed_week: { $ne: week } },
+    { $set: { signup_open: false, signups_closed_week: week } },
+    { returnDocument: "before" },
+  );
+  if (previous === null) return { skipped: "already-closed", week, localTime };
+
+  console.log(`[signups] Week ${week}: signups closed`);
+
+  return { closed: true, wasOpen: previous.signup_open, week, localTime };
 }
 
 /**

@@ -3,10 +3,10 @@
 // signups re-open, like the admin page's "Clear all" then "Enable" - including
 // the "Signups are open!" push. See resetSignupsIfDue for the rules.
 //
-// Vercel crons run in UTC, and on Hobby at most once a day, so this project
-// keeps to two. This one runs at 06:00 UTC on Mondays: 07:00 in Lisbon in
-// summer. In winter that is still 06:00 in Lisbon, too early to act, and the
-// daily open-spots cron (07:30 UTC) finishes the reset instead.
+// Vercel crons run in UTC, and on Hobby at most once a day each. This one
+// runs at 06:00 UTC on Mondays: 07:00 in Lisbon in summer. In winter that is
+// still 06:00 in Lisbon, too early to act, and the daily open-spots cron
+// (07:30 UTC) finishes the reset instead.
 
 import type { NextApiRequest, NextApiResponse } from "next";
 
