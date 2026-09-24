@@ -17,6 +17,9 @@ export default async (req: NextApiRequest, res: NextApiResponse) => {
     // never sent, not even to admins
     if (!(await requireAdmin(req, res))) return;
 
+    // Personal data: never kept by a browser or shared cache
+    res.setHeader("Cache-Control", "private, no-store");
+
     const users = await client
       .db("LLL")
       .collection<IUser>(Collection.USERS)
