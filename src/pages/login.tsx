@@ -1,5 +1,6 @@
 import { ObjectId } from "mongodb";
 import type { GetServerSideProps } from "next";
+import Link from "next/link";
 import { useRouter } from "next/router";
 import { useCallback, useState } from "react";
 
@@ -218,6 +219,14 @@ export default function Login({ isConnected }: LoginPage) {
             <p className="flex mb-6 w-full justify-center text-red-700">
               {view !== "register" ? "Login" : "Registration"} error: {appError}
             </p>
+          )}
+          {view === "login" && (
+            <Link
+              href={NAVLINKS_MAP.RESET_PASSWORD}
+              className="flex w-fit mx-auto mb-2 p-1 underline"
+            >
+              Forgot your password?
+            </Link>
           )}
           <p
             className="p-1 hover:bg-[var(--background-window-highlight)] cursor-pointer flex w-fit mx-auto justify-center underline text-[var(--background-windows-blue)]"

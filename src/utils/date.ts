@@ -48,11 +48,78 @@ const _sumDays = (
 };
 
 /**
- * Wall-clock "now" in the given zone, read as a local Date. Same frame as the
- * dates computeGameDate returns, so the two can be compared directly.
+ * Wall-clock time of `instant` in the given zone, read as a local Date. Same
+ * frame as the dates computeGameDate returns, so the two can be compared
+ * directly.
  */
+export function toTimeZoneWallClock(instant: Date, timeZone: string): Date {
+  return new Date(instant.toLocaleString("en-US", { timeZone }));
+}
+
+/** Wall-clock "now" in the given zone, read as a local Date. */
 export function nowInTimeZone(timeZone: string): Date {
-  return new Date(new Date().toLocaleString("en-US", { timeZone }));
+  return toTimeZoneWallClock(new Date(), timeZone);
+}
+
+/**
+ * "YYYY-MM-DD" of a wall-clock Date: keys one week's occurrence of a game.
+ * Reads the local fields, so a date from computeGameDate gives the Lisbon
+ * calendar day in any browser or server timezone.
+ */
+export function getOccurrenceKey(date: Date): string {
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${date.getFullYear()}-${month}-${day}`;
+}
+
+/** Local midnight of an occurrence key, or null unless it's a real date. */
+export function parseOccurrenceKey(key: string): Date | null {
+  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(key);
+  if (match === null) return null;
+
+  const date = new Date(
+    Number(match[1]),
+    Number(match[2]) - 1,
+    Number(match[3]),
+  );
+  // Rejects overflowing dates such as 2026-02-30
+  return getOccurrenceKey(date) === key ? date : null;
+}
+
+function _dayIndex(day: IGame["day"]): number {
+  const index = DAYS_IN_WEEK.indexOf(day);
+  if (index === -1) {
+    throw new Error("Invalid day of week");
+  }
+  return index;
+}
+
+/** Kickoff of a weekly game in the Monday-to-Sunday week of `wallDate`. */
+export function getKickoffInWeekOf(
+  day: IGame["day"],
+  time: string,
+  wallDate: Date,
+): Date {
+  return _getDateFromGameHour(
+    wallDate,
+    time,
+    _dayIndex(day) - getUSDayIndex(wallDate),
+  );
+}
+
+/** Earliest kickoff of a weekly game after `wallFrom` (wall-clock frame). */
+export function getNextKickoffAfter(
+  day: IGame["day"],
+  time: string,
+  wallFrom: Date,
+): Date {
+  const daysAhead =
+    (_dayIndex(day) - getUSDayIndex(wallFrom) + ONE_WEEK_DAYS) % ONE_WEEK_DAYS;
+  const kickoff = _getDateFromGameHour(wallFrom, time, daysAhead);
+
+  return kickoff > wallFrom
+    ? kickoff
+    : _getDateFromGameHour(wallFrom, time, daysAhead + ONE_WEEK_DAYS);
 }
 
 /** "YYYY-MM-DD" of the date's local calendar day. */
@@ -115,6 +182,16 @@ export function computeGameDate(
     0,
     0,
   );
+}
+
+/**
+ * Occurrence key of a game's date this Monday-to-Sunday week: the date the
+ * signup page and Track payment show for it.
+ */
+export function getThisWeekOccurrenceKey(
+  game: Pick<IGame, "day" | "time">,
+): string {
+  return getOccurrenceKey(computeGameDate(game.day, game.time, "WET"));
 }
 
 const TIME_24_REGEXP = /^([01]\d|2[0-3]):([0-5]\d)$/;

@@ -5,6 +5,7 @@
 
 import type { ObjectId, WithId } from "mongodb";
 
+import { archiveGameLists } from "./gameOccurrences";
 import { clearAllNotifications } from "./inbox";
 import client from "./mongodb";
 
@@ -90,6 +91,23 @@ export async function clearAllSignups(): Promise<WithId<IGame>[] | null> {
   const games = await collection.find().toArray();
   // bulkWrite rejects an empty batch
   if (games.length === 0) return null;
+
+  // Saved to the game history before anything is wiped. If that fails,
+  // nothing is cleared and the caller can retry
+  const admin = await getAdmin();
+  const resetAt = new Date();
+  await archiveGameLists(games, admin?.signups_reset_at, resetAt);
+
+  // Every list built from now on is for its game's next kickoff: the history
+  // and the reminders both read this. Recorded before the wipe, so a retry
+  // after a failed wipe finds nothing new to save rather than refiling this
+  // week's lists (or the organisers-only ones) under last week.
+  if (admin !== undefined) {
+    await _admin().updateOne(
+      { _id: admin._id },
+      { $set: { signups_reset_at: resetAt } },
+    );
+  }
 
   const result = await collection.updateMany(
     { _id: { $in: games.map(({ _id }) => _id) } },

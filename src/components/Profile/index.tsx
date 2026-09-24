@@ -10,6 +10,7 @@ import { Games } from "../Signup/Games";
 import { Uploader } from "../Uploader";
 import { PlaceholderAvatar } from "../Uploader/PlaceholderAvatar";
 import { Collapsible, Loader } from "../ui";
+import { PaymentsDue } from "./PaymentsDue";
 
 import { NAVLINKS_MAP, WHATS_APP } from "@/constants/links";
 import { MAX_SIGNUPS_PER_GAME } from "@/constants/signups";
@@ -182,6 +183,13 @@ export function Profile({
           </div>
         </div>
       </div>
+      {(isOwner || currentUser.role === Role.ADMIN) && (
+        <PaymentsDue
+          missedPayments={profileUser.missedPayments ?? []}
+          isOwner={isOwner}
+          firstName={profileUser.first_name}
+        />
+      )}
       {isOwner && <NotificationSettingsContainer />}
       {isOwner && (
         <div className="flex flex-col gap-y-3 text-black container">

@@ -6,6 +6,7 @@ import type {
 export const NOTIFICATION_PREFERENCE_KEYS: NotificationPreferenceKey[] = [
   "promoted",
   "cancelled",
+  "reminders",
   "open_spots",
 ];
 
@@ -13,6 +14,7 @@ export const NOTIFICATION_PREFERENCE_KEYS: NotificationPreferenceKey[] = [
 export const DEFAULT_NOTIFICATION_PREFERENCES: INotificationPreferences = {
   promoted: true,
   cancelled: true,
+  reminders: true,
   open_spots: true,
 };
 
@@ -22,8 +24,20 @@ export const NOTIFICATION_PREFERENCE_LABELS: Record<
 > = {
   promoted: "You move off the waitlist into a game",
   cancelled: "A game you signed up for is cancelled",
+  reminders: "The evening before your game, while cancelling is still free",
   open_spots: "A game the next day still needs players",
 };
+
+// Cancellation reminder, the evening before a game. Like the open spots push
+// it comes from one UTC cron (19:00, see vercel.json) that lands an hour later
+// in Lisbon during summer time, so both hours are accepted.
+export const GAME_REMINDER_HOUR = 19;
+export const GAME_REMINDER_LAST_HOUR = 20;
+// Until the first reset is recorded there's no telling whether Monday's list
+// is last week's (lists reset on Sunday night), so Monday games are skipped
+export const GAME_REMINDER_EXCLUDED_DAYS_WITHOUT_RESET = new Set<string>([
+  "Monday",
+]);
 
 // Open spots alert: from 07:30 the day before a game until kick-off
 export const OPEN_SPOTS_ALERT_HOUR = 7;

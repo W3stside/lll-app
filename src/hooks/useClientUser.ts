@@ -18,8 +18,11 @@ export function useClientUser(condition?: string) {
   useEffect(() => {
     let timeout: NodeJS.Timeout | undefined = undefined;
 
-    // We're on login page, dont ping user data
-    if (pathname === NAVLINKS_MAP.LOGIN) {
+    // Logged-out pages, dont ping user data
+    if (
+      pathname === NAVLINKS_MAP.LOGIN ||
+      pathname === NAVLINKS_MAP.RESET_PASSWORD
+    ) {
       clearTimeout(timeout);
     }
     // Else run polling logic

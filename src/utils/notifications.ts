@@ -26,6 +26,7 @@ import type {
 } from "@/types";
 // Type-only: erased at build, so it does not trigger utils/bot env checks
 import type * as BotModule from "@/utils/bot";
+import { getOccurrenceKey } from "@/utils/date";
 import { getOpenSpotsAlertCopy } from "@/utils/openSpots";
 
 const HOUR_SECONDS = 60 * 60;
@@ -62,9 +63,21 @@ function _gameTag(prefix: string, game: IGame): string {
   return `${prefix}-${game._id.toString()}`;
 }
 
+// Stored as 24h "20:00"; "20h00" is how players write it locally. Both dates
+// are Lisbon wall-clock time read as a local Date.
+function _describeCutoff(cutoff: Date, now: Date): string {
+  const hours = String(cutoff.getHours()).padStart(2, "0");
+  const minutes = String(cutoff.getMinutes()).padStart(2, "0");
+  const when =
+    getOccurrenceKey(cutoff) === getOccurrenceKey(now) ? "tonight" : "tomorrow";
+
+  return `${hours}h${minutes} ${when}`;
+}
+
 // Game notifications also go to the in-app inbox, so players without push (iOS
 // Safari tabs, blocked permission, never enabled) still see what changed.
 // A profile preference only silences the push: the inbox row is still written.
+// Resolves with the number of devices the push reached.
 async function _sendGameNotification(
   userIds: string[],
   game: IGame,
@@ -72,16 +85,18 @@ async function _sendGameNotification(
   payload: IPushPayload,
   options: ISendPushOptions,
   preference?: NotificationPreferenceKey,
-): Promise<void> {
+): Promise<number> {
   const pushUserIds =
     preference !== undefined
       ? await filterUserIdsByPreference(userIds, preference)
       : userIds;
 
-  await Promise.all([
+  const [delivered] = await Promise.all([
     sendPushToUsers(pushUserIds, payload, options),
     recordGameNotifications(userIds, game, type, payload),
   ]);
+
+  return delivered;
 }
 
 /** Waitlisted players who just got a confirmed spot. */
@@ -116,6 +131,35 @@ export async function notifyPromotedToActive(
         )
       : Promise.resolve(),
   ]);
+}
+
+/**
+ * Confirmed players, the evening before their game, while cancelling is still
+ * free (see the game reminders cron route). `cutoff` and `now` are Lisbon
+ * wall-clock time read as a local Date. Resolves with the devices reached.
+ */
+export async function notifyCancellationReminder(
+  userIds: string[],
+  game: IGame,
+  { cutoff, now }: { cutoff: Date; now: Date },
+): Promise<number> {
+  return await _sendGameNotification(
+    userIds,
+    game,
+    "reminder",
+    {
+      title: "Still in for tomorrow? ⚽",
+      body: `Free cancellation for ${_describeGame(game)} closes at ${_describeCutoff(cutoff, now)}. Can't make it? Drop out now.`,
+      url: NAVLINKS_MAP.SIGNUP,
+      tag: _gameTag("rem", game),
+    },
+    {
+      urgency: "normal",
+      // Pointless once dropping out costs money, so don't deliver it late
+      ttl: Math.max(60, Math.floor((cutoff.getTime() - now.getTime()) / 1000)),
+    },
+    "reminders",
+  );
 }
 
 /** A confirmed player an admin moved back to the waitlist. */

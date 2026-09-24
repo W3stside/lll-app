@@ -14,7 +14,12 @@ export interface INewSignup extends IBaseUser {
   password: string;
   createdAt: Date;
   shame: { game_id: ObjectId; date: string }[];
-  missedPayments?: (Pick<IGame, "_id" | "day" | "time"> & { date: string })[];
+  // `occurrence` ("YYYY-MM-DD") links the debt to its game history row. Only
+  // on entries recorded since game history existed.
+  missedPayments?: (Pick<IGame, "_id" | "day" | "time"> & {
+    date: string;
+    occurrence?: string;
+  })[];
   role?: Role;
   verified?: boolean;
   // Missing keys mean "on" (see resolveNotificationPreferences)

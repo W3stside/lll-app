@@ -24,6 +24,7 @@ export const NAVLINKS_MAP = {
   NOT_FOUND: "/404",
   BANNED: "/shadow-realm",
   NOTIFICATIONS: "/notifications",
+  RESET_PASSWORD: "/reset-password",
 } as const;
 export const SMS_VERIFICATION = "/verify";
 export const ADMIN_PATH = "/admin";

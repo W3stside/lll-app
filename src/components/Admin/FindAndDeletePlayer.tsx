@@ -77,8 +77,12 @@ export function FindAndDeletePlayer({
       </div>
       <div className="container text-xs gap-x-4">
         <div className="flex-3">
-          Find a player by their name or phone number and delete them.{" "}
-          <b>Useful as a password "reset" of sorts.</b>
+          Find a player by their name or phone number and delete them. This also
+          wipes their shame and unpaid games.{" "}
+          <b>
+            Forgot their password? They can reset it themselves with
+            &quot;Forgot your password?&quot; on the login page.
+          </b>
           <br />
           <br />
           Or to just yeet the fuckhead.

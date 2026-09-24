@@ -22,6 +22,7 @@ interface IOweMoney {
     unpaidGame: Pick<IGame, "_id" | "day" | "time">,
     date: string,
     isPaid: boolean,
+    occurrence?: string,
   ) => Promise<void>;
   startCollapsed?: boolean;
 }
@@ -91,7 +92,14 @@ export function OweMoney({
                               disabled={loading}
                               onClick={(e) => {
                                 e.stopPropagation();
-                                void handlePayment(_id, unpaidGame, date, true);
+                                void handlePayment(
+                                  _id,
+                                  unpaidGame,
+                                  date,
+                                  true,
+                                  // Only on debts recorded since game history
+                                  unpaidGame.occurrence,
+                                );
                               }}
                             >
                               Record payment

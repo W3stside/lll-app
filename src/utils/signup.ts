@@ -32,6 +32,15 @@ export function isValidInternationalPhoneNumber(
   );
 }
 
+/**
+ * E.164 ("+351...") for Twilio, or null when the stored number can't take a
+ * text. Older accounts can be stored with a 00 international prefix.
+ */
+export function toE164(phone_number: string): string | null {
+  const digits = phone_number.replace(/^\+/, "").replace(/^00/, "");
+  return isValidInternationalPhoneNumber(digits) ? `+${digits}` : null;
+}
+
 export function isValidUserUpdate(
   player: Partial<INewSignup> | null,
 ): player is INewSignup {

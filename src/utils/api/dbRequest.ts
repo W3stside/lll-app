@@ -50,8 +50,9 @@ export async function dbRequest<T, R = undefined>(
       console.error("Request response NOT ok. json.error: ", json);
       return {
         data: undefined as R extends undefined ? T : R,
-        error:
-          json instanceof Error ? json : new Error("Unknown error occurred."),
+        // API routes explain failures in `message`, e.g. a reset that was
+        // refused because the game history couldn't be saved
+        error: new Error(json?.message ?? "Unknown error occurred."),
       };
     }
 

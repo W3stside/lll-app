@@ -6,6 +6,8 @@ export type GameNotificationType =
   | "cancelled"
   // Waitlisted player got a confirmed spot
   | "promoted"
+  // Confirmed player, the evening before, while cancelling is still free
+  | "reminder"
   // Admin removed a confirmed player from a game with no waitlist
   | "removed";
 
@@ -29,7 +31,11 @@ export interface IGameNotificationDocument {
 // Push categories a user can switch off in their profile. Admin actions that
 // directly affect them (bumped, removed) and the weekly "signups open" nudge
 // are always sent.
-export type NotificationPreferenceKey = "cancelled" | "open_spots" | "promoted";
+export type NotificationPreferenceKey =
+  | "cancelled"
+  | "open_spots"
+  | "promoted"
+  | "reminders";
 
 export type INotificationPreferences = Record<
   NotificationPreferenceKey,
