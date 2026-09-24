@@ -128,13 +128,26 @@ async function _claimAccountText(userId: string, now: Date): Promise<boolean> {
   }
 }
 
-// One row per UTC day counts every text sent. When it's at the cap the filter
-// misses, and the upsert's insert hits the unique index instead.
+// One row per UTC day counts every text sent
+function _dailyRowId(now: Date): string {
+  return `all:${now.toISOString().slice(0, 10)}`;
+}
+
+async function _isDailyCapReached(now: Date): Promise<boolean> {
+  const row = await _collection().findOne(
+    { user_id: _dailyRowId(now) },
+    { projection: { count: 1 } },
+  );
+  return row !== null && row.count >= RESET_CODES_PER_DAY_TOTAL;
+}
+
+// When the day is at the cap the filter misses, and the upsert's insert hits
+// the unique index instead
 async function _claimDailyText(now: Date): Promise<boolean> {
   try {
     await _collection().updateOne(
       {
-        user_id: `all:${now.toISOString().slice(0, 10)}`,
+        user_id: _dailyRowId(now),
         count: { $lt: RESET_CODES_PER_DAY_TOTAL },
       },
       {
@@ -168,5 +181,14 @@ export async function claimPasswordResetText(userId: string): Promise<boolean> {
   await _ensureIndexes();
 
   const now = new Date();
+  // Checked first, so a day at its cap doesn't use up accounts' allowances.
+  // The claim below still enforces the cap if a race gets past this.
+  if (await _isDailyCapReached(now)) {
+    console.warn(
+      `[reset-password] Daily cap of ${RESET_CODES_PER_DAY_TOTAL} texts reached`,
+    );
+    return false;
+  }
+
   return (await _claimAccountText(userId, now)) && (await _claimDailyText(now));
 }

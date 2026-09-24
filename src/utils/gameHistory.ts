@@ -1,10 +1,20 @@
 // Shared by client and server: never import anything server-only here
 
+import { GAME_TIME_ZONE } from "@/constants/date";
 import type {
   AttendanceStatus,
+  IGame,
   IGameOccurrenceDocument,
   PaymentStatus,
 } from "@/types";
+import {
+  getKickoffInWeekOf,
+  getNextKickoffAfter,
+  getOccurrenceKey,
+  toTimeZoneWallClock,
+} from "@/utils/date";
+
+const HALF_A_DAY_MS = 12 * 60 * 60 * 1000;
 
 type OccurrenceMarks = Pick<
   IGameOccurrenceDocument,
@@ -23,6 +33,45 @@ export const ATTENDANCE_LABELS: Record<AttendanceStatus, string> = {
   present: "Played",
   no_show: "No-show",
 };
+
+/**
+ * Kickoff a game's current list is for: its first kickoff since signups were
+ * last reset. Before any reset was recorded, its kickoff in the week of half a
+ * day ago, since lists are reset after Sunday's last game and sometimes just
+ * past midnight. Both dates are Lisbon wall-clock time read as a local Date,
+ * so the answer is the same on the server and in any browser. Used by the
+ * history archive, the reminders and Track payment alike.
+ */
+export function getListKickoff(
+  game: Pick<IGame, "day" | "time">,
+  wallNow: Date,
+  wallLastReset: Date | undefined,
+): Date {
+  return wallLastReset !== undefined
+    ? getNextKickoffAfter(game.day, game.time, wallLastReset)
+    : getKickoffInWeekOf(
+        game.day,
+        game.time,
+        new Date(wallNow.getTime() - HALF_A_DAY_MS),
+      );
+}
+
+/** Occurrence key of the week a game's current list is for. */
+export function getListOccurrenceKey(
+  game: Pick<IGame, "day" | "time">,
+  now: Date,
+  lastResetAt: Date | string | undefined,
+): string {
+  return getOccurrenceKey(
+    getListKickoff(
+      game,
+      toTimeZoneWallClock(now, GAME_TIME_ZONE),
+      lastResetAt !== undefined
+        ? toTimeZoneWallClock(new Date(lastResetAt), GAME_TIME_ZONE)
+        : undefined,
+    ),
+  );
+}
 
 /** Row id in the client's map of occurrences. */
 export function getOccurrenceRowKey(gameId: string, occurrence: string) {

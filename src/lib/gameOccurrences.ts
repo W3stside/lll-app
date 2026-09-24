@@ -15,15 +15,9 @@ import {
   type IGameOccurrenceDocument,
   type PaymentStatus,
 } from "@/types";
-import {
-  getKickoffInWeekOf,
-  getNextKickoffAfter,
-  getOccurrenceKey,
-  toTimeZoneWallClock,
-} from "@/utils/date";
+import { getOccurrenceKey, toTimeZoneWallClock } from "@/utils/date";
+import { getListKickoff } from "@/utils/gameHistory";
 import { getConfirmedPlayerIds, getWaitlistPlayerIds } from "@/utils/games";
-
-const HALF_A_DAY_MS = 12 * 60 * 60 * 1000;
 
 export interface IOccurrenceKey {
   game_id: string;
@@ -101,10 +95,6 @@ export async function archiveGameLists(
     lastResetAt !== undefined
       ? toTimeZoneWallClock(lastResetAt, GAME_TIME_ZONE)
       : undefined;
-  // Only for the first reset, before any was recorded: lists are reset after
-  // the week's last game on Sunday night, sometimes a bit past midnight, so
-  // each one is for its game's date in the week of half a day ago
-  const assumedWeek = new Date(wallNow.getTime() - HALF_A_DAY_MS);
 
   const operations = games.flatMap<
     AnyBulkWriteOperation<IGameOccurrenceDocument>
@@ -112,11 +102,7 @@ export async function archiveGameLists(
     // Admin-only games, and lists nobody signed up to
     if (game.hidden === true || game.players.length === 0) return [];
 
-    // A list is for the first kickoff after the reset that emptied it
-    const kickoff =
-      wallLastReset !== undefined
-        ? getNextKickoffAfter(game.day, game.time, wallLastReset)
-        : getKickoffInWeekOf(game.day, game.time, assumedWeek);
+    const kickoff = getListKickoff(game, wallNow, wallLastReset);
 
     // Reset before the game was played: its list never happened
     if (kickoff > wallNow) return [];

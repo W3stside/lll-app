@@ -1,6 +1,7 @@
 import { ObjectId } from "mongodb";
 import type { GetServerSideProps } from "next";
 import Image from "next/image";
+import { useRouter } from "next/router";
 import { useCallback, useEffect, useMemo, useState } from "react";
 
 import { FindAndDeletePlayer } from "@/components/Admin/FindAndDeletePlayer";
@@ -33,10 +34,9 @@ import {
   type IUser,
 } from "@/types";
 import { dbRequest } from "@/utils/api/dbRequest";
-import { fetchUsersFromMongodb } from "@/utils/api/mongodb";
 import { updateAttendance, updatePayment } from "@/utils/api/occurrences";
-import { getThisWeekOccurrenceKey, isValid24hTime } from "@/utils/date";
-import { getOccurrenceRowKey } from "@/utils/gameHistory";
+import { isValid24hTime } from "@/utils/date";
+import { getListOccurrenceKey, getOccurrenceRowKey } from "@/utils/gameHistory";
 import { sharePaymentsMissingList } from "@/utils/games";
 import { sortDaysOfWeek } from "@/utils/sort";
 
@@ -90,7 +90,9 @@ type ConnectionStatus = {
 export const getServerSideProps: GetServerSideProps<ConnectionStatus> =
   // TODO: review
   // @ts-expect-error error in the custom HOC - doesn't break.
-  withServerSideProps(async ({ parentProps: { games, user, usersById } }) => {
+  withServerSideProps(async ({ parentProps }) => {
+    const { admin, games, user, usersById } = parentProps;
+
     try {
       const adminUser = await client
         .db("LLL")
@@ -109,13 +111,18 @@ export const getServerSideProps: GetServerSideProps<ConnectionStatus> =
         };
       }
 
-      const [usersSerialised, thisWeekRows, recentRows] = await Promise.all([
-        fetchUsersFromMongodb(client, true),
-        // Track payment shows each game's marks for this week
+      const now = new Date();
+      const [thisWeekRows, recentRows] = await Promise.all([
+        // Track payment shows the marks for the week each list is for
         getOccurrences(
           games.map((game) => ({
             game_id: game._id.toString(),
-            occurrence: getThisWeekOccurrenceKey(game),
+            occurrence: getListOccurrenceKey(
+              game,
+              now,
+              // Typed as always there, but missing without an admin document
+              (admin as IAdmin | undefined)?.signups_reset_at,
+            ),
           })),
         ),
         getRecentOccurrences(HISTORY_ROWS_SHOWN),
@@ -134,7 +141,7 @@ export const getServerSideProps: GetServerSideProps<ConnectionStatus> =
           isConnected: true,
           games,
           user: JSON.parse(JSON.stringify(user)) as string,
-          users: usersSerialised,
+          // `users` comes from withServerSideProps, without password hashes
           usersById: JSON.parse(JSON.stringify(usersById)) as string,
           occurrences: JSON.parse(JSON.stringify(occurrences)) as string,
         },
@@ -189,6 +196,7 @@ export default function Admin({
   const { admin, setAdmin } = useAdmin();
   const { openDialog } = useDialog();
   const { users, usersById, setUsers } = useUser();
+  const router = useRouter();
 
   // Sync server-side shit with client-side shit
   useEffect(() => {
@@ -475,6 +483,9 @@ export default function Admin({
       }
 
       setGames(data);
+      // The reset archived this week's lists and moved every game to its
+      // next week: reload so the history and Track payment show that
+      router.reload();
     } catch (error) {
       const e =
         error instanceof Error
@@ -484,7 +495,7 @@ export default function Admin({
     } finally {
       setLoading(false);
     }
-  }, [admin, setGames]);
+  }, [admin, router, setGames]);
 
   const handleDeletePlayer = useCallback(
     async (userToDelete: IUserSafe | undefined) => {
@@ -577,6 +588,7 @@ export default function Admin({
           gamesByDay={gamesByDay}
           usersById={usersById}
           occurrences={occurrenceRows}
+          lastResetAt={admin?.signups_reset_at}
           handlePayment={handlePayment}
           handleAttendance={handleAttendance}
           loading={loading}

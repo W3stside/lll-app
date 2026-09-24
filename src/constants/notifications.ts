@@ -33,11 +33,6 @@ export const NOTIFICATION_PREFERENCE_LABELS: Record<
 // in Lisbon during summer time, so both hours are accepted.
 export const GAME_REMINDER_HOUR = 19;
 export const GAME_REMINDER_LAST_HOUR = 20;
-// Until the first reset is recorded there's no telling whether Monday's list
-// is last week's (lists reset on Sunday night), so Monday games are skipped
-export const GAME_REMINDER_EXCLUDED_DAYS_WITHOUT_RESET = new Set<string>([
-  "Monday",
-]);
 
 // Open spots alert: from 07:30 the day before a game until kick-off
 export const OPEN_SPOTS_ALERT_HOUR = 7;

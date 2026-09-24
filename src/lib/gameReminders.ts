@@ -5,7 +5,7 @@
 
 import { getAdminSettings } from "./adminSettings";
 import client from "./mongodb";
-import { claimGameReminder } from "./openSpotsAlerts";
+import { createOccurrenceClaim } from "./occurrenceClaims";
 
 import {
   CANCELLATION_THRESHOLD_MS,
@@ -13,19 +13,24 @@ import {
   GAME_TIME_ZONE,
 } from "@/constants/date";
 import {
-  GAME_REMINDER_EXCLUDED_DAYS_WITHOUT_RESET,
   GAME_REMINDER_HOUR,
   GAME_REMINDER_LAST_HOUR,
 } from "@/constants/notifications";
 import { Collection, type IGame } from "@/types";
 import {
-  getNextKickoffAfter,
   getOccurrenceKey,
   getUSDayIndex,
   toTimeZoneWallClock,
 } from "@/utils/date";
+import { getListKickoff } from "@/utils/gameHistory";
 import { getConfirmedPlayerIds } from "@/utils/games";
 import { notifyCancellationReminder } from "@/utils/notifications";
+
+/** Marks the reminder for this game occurrence as sent. */
+const claimGameReminder = createOccurrenceClaim(
+  Collection.GAME_REMINDERS,
+  "reminders",
+);
 
 export interface IGameReminderResult {
   game_id: string;
@@ -49,8 +54,7 @@ export type GameRemindersRun =
       results: IGameReminderResult[];
     }
   | {
-      skipped: "list-not-live" | "outside-reminder-hour" | "signups-closed";
-      day?: IGame["day"];
+      skipped: "outside-reminder-hour" | "signups-closed";
     };
 
 /**
@@ -82,13 +86,6 @@ export async function runGameReminders(now: Date): Promise<GameRemindersRun> {
       ? toTimeZoneWallClock(new Date(admin.signups_reset_at), GAME_TIME_ZONE)
       : undefined;
 
-  if (
-    lastReset === undefined &&
-    GAME_REMINDER_EXCLUDED_DAYS_WITHOUT_RESET.has(day)
-  ) {
-    return { skipped: "list-not-live", day };
-  }
-
   const games = await client
     .db("LLL")
     .collection<IGame>(Collection.GAMES)
@@ -113,13 +110,11 @@ export async function runGameReminders(now: Date): Promise<GameRemindersRun> {
       minutes,
     );
 
-    // Lists are reused until signups reset, so if tomorrow isn't this game's
-    // first kickoff since then, the list was already played: it's last week's
-    if (
-      lastReset !== undefined &&
-      getNextKickoffAfter(game.day, game.time, lastReset).getTime() !==
-        kickoff.getTime()
-    ) {
+    // Lists are reused until signups reset, so a list that isn't for
+    // tomorrow's kickoff was already played: it's last week's. Before any
+    // reset was recorded this also skips Monday games on Sunday evening, when
+    // their list can still be last week's.
+    if (getListKickoff(game, now, lastReset).getTime() !== kickoff.getTime()) {
       results.push({ ...base, outcome: "stale-list" });
       continue;
     }

@@ -184,16 +184,6 @@ export function computeGameDate(
   );
 }
 
-/**
- * Occurrence key of a game's date this Monday-to-Sunday week: the date the
- * signup page and Track payment show for it.
- */
-export function getThisWeekOccurrenceKey(
-  game: Pick<IGame, "day" | "time">,
-): string {
-  return getOccurrenceKey(computeGameDate(game.day, game.time, "WET"));
-}
-
 const TIME_24_REGEXP = /^([01]\d|2[0-3]):([0-5]\d)$/;
 export const isValid24hTime = (str: string) => TIME_24_REGEXP.test(str);
 

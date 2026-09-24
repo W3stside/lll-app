@@ -10,8 +10,16 @@ import errorIcon from "@/assets/error.png";
 import { GREEN_TW, RED_TW } from "@/constants/colours";
 import { DAYS_IN_WEEK_MAP } from "@/constants/date";
 import type { AttendanceStatus, IGame, IGameOccurrence, IUser } from "@/types";
-import { formatDateStr, computeGameDate, getOccurrenceKey } from "@/utils/date";
-import { ATTENDANCE_LABELS, getOccurrenceRowKey } from "@/utils/gameHistory";
+import {
+  formatDateStr,
+  computeGameDate,
+  parseOccurrenceKey,
+} from "@/utils/date";
+import {
+  ATTENDANCE_LABELS,
+  getListOccurrenceKey,
+  getOccurrenceRowKey,
+} from "@/utils/gameHistory";
 import { getConfirmedPlayerIds } from "@/utils/games";
 import { cn } from "@/utils/tailwind";
 
@@ -22,6 +30,8 @@ interface ITrackPayment {
   usersById: Record<string, IUser | undefined>;
   // Game history rows, keyed by getOccurrenceRowKey
   occurrences: Partial<Record<string, IGameOccurrence>>;
+  // Last "Clear all": which week each game's current list is for
+  lastResetAt: Date | string | undefined;
   handlePayment: (
     userId: ObjectId,
     game: IGame,
@@ -43,6 +53,7 @@ export function TrackPayment({
   gamesByDay,
   usersById,
   occurrences,
+  lastResetAt,
   handlePayment,
   handleAttendance,
   loading,
@@ -50,6 +61,7 @@ export function TrackPayment({
 }: ITrackPayment) {
   const [collapsed, setCollapse] =
     useState<Record<string, boolean>>(DAYS_IN_WEEK_MAP);
+  const now = new Date();
 
   return (
     <Collapsible
@@ -130,7 +142,13 @@ export function TrackPayment({
                   {gamesForDay.map((g) => {
                     // Key of the player's debt, as recorded before history
                     const gameDateStr = formatDateStr(g.date);
-                    const occurrence = getOccurrenceKey(new Date(g.date));
+                    // The week this list is for, the same one the reset
+                    // archives it under, whatever the browser's timezone
+                    const occurrence = getListOccurrenceKey(
+                      g,
+                      now,
+                      lastResetAt,
+                    );
                     const row =
                       occurrences[
                         getOccurrenceRowKey(g._id.toString(), occurrence)
@@ -179,7 +197,12 @@ export function TrackPayment({
                             }}
                           >
                             <span className="mr-auto">
-                              Played {countAttendance("present")} · No-show{" "}
+                              <strong>
+                                {parseOccurrenceKey(
+                                  occurrence,
+                                )?.toDateString() ?? occurrence}
+                              </strong>{" "}
+                              · Played {countAttendance("present")} · No-show{" "}
                               {countAttendance("no_show")} · Paid {paidCount} ·
                               Unpaid {owingIds.size}
                             </span>

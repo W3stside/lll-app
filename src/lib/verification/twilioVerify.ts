@@ -4,6 +4,9 @@
 
 import twilio from "twilio";
 
+// https://www.twilio.com/docs/api/errors/60202
+const MAX_CHECK_ATTEMPTS_ERROR_CODE = 60202;
+
 function _createService() {
   const { TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN, TWILIO_VERIFY_SERVICE_SID } =
     process.env;
@@ -45,12 +48,14 @@ export async function isSmsCodeApproved(
     });
     return check.status === "approved";
   } catch (error) {
-    // Twilio answers 404 when there's no pending code for the number
+    // Twilio answers 404 when there's no pending code for the number, and
+    // error 60202 once the code has had too many wrong guesses. Either way the
+    // player needs a new code, not a retry.
     if (
       typeof error === "object" &&
       error !== null &&
-      "status" in error &&
-      error.status === 404
+      (("status" in error && error.status === 404) ||
+        ("code" in error && error.code === MAX_CHECK_ATTEMPTS_ERROR_CODE))
     ) {
       return false;
     }

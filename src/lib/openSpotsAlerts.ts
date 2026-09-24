@@ -9,9 +9,3 @@ export const claimOpenSpotsAlert = createOccurrenceClaim(
   Collection.OPEN_SPOTS_ALERTS,
   "open-spots",
 );
-
-/** Marks the cancellation reminder for this game occurrence as sent. */
-export const claimGameReminder = createOccurrenceClaim(
-  Collection.GAME_REMINDERS,
-  "reminders",
-);

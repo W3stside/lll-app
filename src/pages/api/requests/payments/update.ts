@@ -85,21 +85,20 @@ export default async function handler(
     const users = db.collection<IUser>(Collection.USERS);
     const userId = new ObjectId(user_id);
 
-    // A deleted game can still have debts to settle, but a history row only
-    // for a date the game is played on
+    // Debts are always settled, even for a game since deleted or moved to
+    // another day. A history row is only created for a date the game is
+    // played on; otherwise only an existing row is marked.
     const game = await db
       .collection<IGame>(Collection.GAMES)
       .findOne({ _id: new ObjectId(game_id) });
     const occurrenceDate =
       occurrence !== undefined ? parseOccurrenceKey(occurrence) : null;
-    if (
+    const gameForNewRow =
       game !== null &&
       occurrenceDate !== null &&
-      DAYS_IN_WEEK[getUSDayIndex(occurrenceDate)] !== game.day
-    ) {
-      res.status(400).json({ message: `${occurrence} isn't a ${game.day}` });
-      return;
-    }
+      DAYS_IN_WEEK[getUSDayIndex(occurrenceDate)] === game.day
+        ? game
+        : null;
 
     // Ledger entries hold the game id as a string, the way the earlier admin
     // route stored them from JSON. An ObjectId is matched as well regardless.
@@ -147,7 +146,7 @@ export default async function handler(
       occurrence !== undefined
         ? await markPayment(
             { game_id, occurrence },
-            game,
+            gameForNewRow,
             user_id,
             paid ? "paid" : "unpaid",
           )
