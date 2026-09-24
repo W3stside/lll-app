@@ -47,12 +47,17 @@ const _sumDays = (
   return !getNext ? target - current : diff;
 };
 
+/** Wall-clock time of `date` in the given zone, read as a local Date. */
+export function toTimeZone(date: Date, timeZone: string): Date {
+  return new Date(date.toLocaleString("en-US", { timeZone }));
+}
+
 /**
  * Wall-clock "now" in the given zone, read as a local Date. Same frame as the
  * dates computeGameDate returns, so the two can be compared directly.
  */
 export function nowInTimeZone(timeZone: string): Date {
-  return new Date(new Date().toLocaleString("en-US", { timeZone }));
+  return toTimeZone(new Date(), timeZone);
 }
 
 export function computeGameDate(

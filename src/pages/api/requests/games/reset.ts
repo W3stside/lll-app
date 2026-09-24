@@ -1,9 +1,7 @@
 import type { NextApiRequest, NextApiResponse } from "next";
 
-import { clearAllNotifications } from "@/lib/inbox";
-import client from "@/lib/mongodb";
 import { requireAdmin } from "@/lib/requireAdmin";
-import { Collection, type IGame } from "@/types";
+import { clearAllSignups } from "@/lib/signups";
 
 export default async (req: NextApiRequest, res: NextApiResponse) => {
   if (req.method !== "PATCH" && req.method !== "PUT") {
@@ -15,61 +13,12 @@ export default async (req: NextApiRequest, res: NextApiResponse) => {
     // Admin-only: wipes every signup list and everyone's inbox
     if (!(await requireAdmin(req, res))) return;
 
-    const db = client.db("LLL");
-    const collection = db.collection<IGame>(Collection.GAMES);
+    const newGames = await clearAllSignups();
 
-    const games = await collection.find().toArray();
-    const result = await collection.updateMany(
-      { _id: { $in: games.map(({ _id }) => _id) } },
-      [
-        {
-          $set: {
-            players: [],
-            teams: {
-              $cond: {
-                if: { $isArray: "$teams" },
-                then: {
-                  $map: {
-                    input: "$teams",
-                    as: "team",
-                    in: {
-                      name: "$$team.name",
-                      players: [],
-                    },
-                  },
-                },
-                else: "$$REMOVE",
-              },
-            },
-          },
-        },
-      ],
-    );
-
-    const gamesBulkUpdates = games.map(({ _id, organisers = [] }) => ({
-      updateOne: {
-        filter: { _id },
-        update: {
-          $addToSet: {
-            players: {
-              $each: organisers.map((org) => org.toString()),
-            },
-          },
-        },
-      },
-    }));
-
-    const bulkResults = await collection.bulkWrite(gamesBulkUpdates);
-    const newGames = await collection.find().toArray();
-
-    if (bulkResults.matchedCount === 0) {
+    if (newGames === null) {
       res.status(404).json({ message: "Document not found" });
-    } else if (result.acknowledged) {
-      // Every list starts over, so last week's inbox no longer applies
-      await clearAllNotifications();
-      res.status(200).json(newGames);
     } else {
-      res.status(500).json({ message: "Error updating document" });
+      res.status(200).json(newGames);
     }
   } catch (error) {
     // eslint-disable-next-line no-console
