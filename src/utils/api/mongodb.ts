@@ -22,26 +22,6 @@ export async function fetchGamesFromMongodb(
   return serialised ? (JSON.parse(JSON.stringify(games)) as string) : games;
 }
 
-export async function fetchUsersFromMongodb(
-  client: MongoClient,
-  serialised: false,
-): Promise<WithId<IUser>[]>;
-export async function fetchUsersFromMongodb(
-  client: MongoClient,
-  serialised: true,
-): Promise<string>;
-export async function fetchUsersFromMongodb(
-  client: MongoClient,
-  serialised: boolean,
-): Promise<WithId<IUser>[] | string> {
-  await client.connect();
-
-  const db = client.db("LLL");
-  const users = await db.collection<IUser>(Collection.USERS).find().toArray();
-
-  return serialised ? (JSON.parse(JSON.stringify(users)) as string) : users;
-}
-
 export function fetchRequiredCollectionsFromMongoDb(
   client: MongoClient,
   { serialised }: { serialised: true },

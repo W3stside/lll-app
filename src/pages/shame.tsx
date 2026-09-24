@@ -9,8 +9,7 @@ import { Loader } from "@/components/ui";
 import { useUser } from "@/context/User/context";
 import { withServerSideProps } from "@/hoc/withServerSideProps";
 import { SEARCH_DEBOUNCE, useSearchFilter } from "@/hooks/useSearchFilter";
-import client from "@/lib/mongodb";
-import { Collection, type IGame, type IUser } from "@/types";
+import type { IGame, IUser } from "@/types";
 
 const ShameList = dynamic(
   async () =>
@@ -20,35 +19,8 @@ const ShameList = dynamic(
   { ssr: false, loading: () => <Loader /> }, // Disable SSR and provide a loading fallback
 );
 
-export const getServerSideProps: GetServerSideProps = withServerSideProps(
-  // TODO: review
-  // @ts-expect-error error in the custom HOC - doesn't break.
-  async (context) => {
-    const { parentProps } = context;
-
-    try {
-      await client.connect();
-
-      const users = await client
-        .db("LLL")
-        .collection<IGame[]>(Collection.USERS)
-        .find()
-        .toArray();
-
-      return {
-        props: {
-          ...parentProps,
-          isConnected: true,
-          users: JSON.parse(JSON.stringify(users)) as string,
-        },
-      };
-    } catch (e) {
-      // eslint-disable-next-line no-console
-      console.error(e);
-      throw e instanceof Error ? e : new Error("Shame: error occured!");
-    }
-  },
-);
+// `users` comes from withServerSideProps, without password hashes
+export const getServerSideProps: GetServerSideProps = withServerSideProps();
 
 interface IWallOfShame {
   users: IUser[];
