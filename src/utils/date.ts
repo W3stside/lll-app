@@ -1,7 +1,7 @@
 import { DAYS_IN_WEEK } from "@/constants/date";
 import type { IGame } from "@/types";
 
-const ONE_WEEK_DAYS = 7;
+export const ONE_WEEK_DAYS = 7;
 
 export const getUSDayIndex = (date: Date): number => {
   const isoDay = date.getDay();
@@ -47,17 +47,19 @@ const _sumDays = (
   return !getNext ? target - current : diff;
 };
 
-/** Wall-clock time of `date` in the given zone, read as a local Date. */
-export function toTimeZone(date: Date, timeZone: string): Date {
-  return new Date(date.toLocaleString("en-US", { timeZone }));
-}
-
 /**
  * Wall-clock "now" in the given zone, read as a local Date. Same frame as the
  * dates computeGameDate returns, so the two can be compared directly.
  */
 export function nowInTimeZone(timeZone: string): Date {
-  return toTimeZone(new Date(), timeZone);
+  return new Date(new Date().toLocaleString("en-US", { timeZone }));
+}
+
+/** "YYYY-MM-DD" of the date's local calendar day. */
+export function formatDateKey(date: Date): string {
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${date.getFullYear()}-${month}-${day}`;
 }
 
 export function computeGameDate(

@@ -10,11 +10,11 @@ import client from "./mongodb";
 
 import { GAME_TIME_ZONE } from "@/constants/date";
 import { Collection, type IAdmin, type IGame } from "@/types";
-import { getUSDayIndex, nowInTimeZone, toTimeZone } from "@/utils/date";
+import { getUSDayIndex, nowInTimeZone } from "@/utils/date";
 import { notifySignupsOpen } from "@/utils/notifications";
 import {
+  addWeeks,
   getLastKickOff,
-  getPreviousWeekStart,
   getSignupsResetTime,
   getSignupsWeekStart,
   getWeekKey,
@@ -22,13 +22,25 @@ import {
 } from "@/utils/signupsSchedule";
 
 export type SignupsCloseResult = { week: string; localTime: string } & (
+  | {
+      skipped:
+        | "already-closed"
+        | "before-last-game"
+        | "lists-already-reset"
+        | "no-games";
+    }
   | { closed: true; wasOpen: boolean }
-  | { skipped: "already-closed" | "before-last-game" | "no-games" }
 );
 
 export type SignupsResetResult = { week: string; localTime: string } & (
+  | {
+      skipped:
+        | "already-open"
+        | "already-reset"
+        | "no-games"
+        | "outside-reset-window";
+    }
   | { reset: true; cleared: boolean; wasOpen: boolean }
-  | { skipped: "already-open" | "already-reset" | "outside-reset-window" }
 );
 
 function _admin() {
@@ -126,8 +138,19 @@ export async function clearAllSignups(): Promise<WithId<IGame>[] | null> {
     throw new Error("Clearing the signup lists was not acknowledged");
   }
 
-  // Lets the Monday reset spot lists an admin already reset by hand
-  await _admin().updateOne({}, { $set: { signups_reset_at: new Date() } });
+  // Which week the empty lists are for: next week's once this week's last
+  // game has kicked off. Recorded now, as the schedule can change later
+  const now = nowInTimeZone(GAME_TIME_ZONE);
+  const weekStart = getSignupsWeekStart(now);
+  const lastKickOff = getLastKickOff(games, weekStart);
+  const listsWeekStart =
+    lastKickOff === undefined || now >= lastKickOff
+      ? addWeeks(weekStart, 1)
+      : weekStart;
+  await _admin().updateOne(
+    {},
+    { $set: { signups_lists_week: getWeekKey(listsWeekStart) } },
+  );
   // Every list starts over, so last week's inbox no longer applies
   await clearAllNotifications();
 
@@ -136,8 +159,9 @@ export async function clearAllSignups(): Promise<WithId<IGame>[] | null> {
 
 /**
  * Sunday night's close, like the admin page's "Disable" button. Only once the
- * week's last game has kicked off, so a stray call mid-week does nothing, and
- * once per week, so an admin re-opening signups afterwards is left alone.
+ * week's last game has kicked off, so a stray call mid-week does nothing;
+ * once per week, so an admin re-opening signups afterwards is left alone; and
+ * not when an admin already cleared the lists for next week.
  * The lists stay until the Monday reset, so admins can track payments.
  */
 export async function closeSignupsIfDue(): Promise<SignupsCloseResult> {
@@ -162,6 +186,11 @@ export async function closeSignupsIfDue(): Promise<SignupsCloseResult> {
   const admin = await getAdmin();
   if (admin === undefined) throw new Error("Admin document not found");
 
+  // Cleared after the last game: an admin has started next week by hand
+  if (admin.signups_lists_week === getWeekKey(addWeeks(weekStart, 1))) {
+    return { skipped: "lists-already-reset", week, localTime };
+  }
+
   const previous = await _admin().findOneAndUpdate(
     { _id: admin._id, signups_closed_week: { $ne: week } },
     { $set: { signup_open: false, signups_closed_week: week } },
@@ -179,9 +208,9 @@ export async function closeSignupsIfDue(): Promise<SignupsCloseResult> {
  * re-opens signups, like the admin page's "Clear all" then "Enable". The week
  * is claimed first, so a repeat or parallel run can never wipe new signups.
  *
- * Lists an admin already reset after last week's final kick-off are kept, as
- * they may have been set up by hand since, and so are lists an admin already
- * re-opened that may hold this week's signups.
+ * Lists already cleared for this week are kept, as an admin may have set them
+ * up by hand since, and so are open lists with no record of being cleared.
+ * Weeks without a playable game are skipped.
  */
 export async function resetSignupsIfDue(): Promise<SignupsResetResult> {
   const now = nowInTimeZone(GAME_TIME_ZONE);
@@ -195,6 +224,13 @@ export async function resetSignupsIfDue(): Promise<SignupsResetResult> {
     return { skipped: "outside-reset-window", week, localTime };
   }
 
+  // Nothing to sign up for, e.g. every game hidden over a break: leave
+  // signups as they are rather than announce an empty week
+  const games = await _games().find().toArray();
+  if (getLastKickOff(games, weekStart) === undefined) {
+    return { skipped: "no-games", week, localTime };
+  }
+
   const admin = await getAdmin();
   if (admin === undefined) throw new Error("Admin document not found");
 
@@ -206,21 +242,13 @@ export async function resetSignupsIfDue(): Promise<SignupsResetResult> {
   if (previous === null) return { skipped: "already-reset", week, localTime };
 
   try {
-    const games = await _games().find().toArray();
-
-    // Falls back to midnight when nothing was played last week
-    const lastWeekEnd =
-      getLastKickOff(games, getPreviousWeekStart(weekStart)) ?? weekStart;
-    const lastReset =
-      previous.signups_reset_at !== undefined
-        ? toTimeZone(previous.signups_reset_at, GAME_TIME_ZONE)
-        : undefined;
-
-    // Lists nobody cleared since last week's final kick-off still hold last
-    // week's players. With no reset on record, open lists might already hold
-    // this week's, so only closed ones are cleared
+    // Lists cleared for any other week still hold another week's players.
+    // With no record at all, open lists might already hold this week's, so
+    // only closed ones are cleared
     const clearLists =
-      lastReset !== undefined ? lastReset < lastWeekEnd : !previous.signup_open;
+      previous.signups_lists_week !== undefined
+        ? previous.signups_lists_week !== week
+        : !previous.signup_open;
 
     if (previous.signup_open && !clearLists) {
       return { skipped: "already-open", week, localTime };
@@ -248,7 +276,7 @@ export async function resetSignupsIfDue(): Promise<SignupsResetResult> {
     };
   } catch (error) {
     // Hand the claim back so the next run can retry. It won't clear twice:
-    // clearAllSignups records the reset once the lists are empty
+    // clearAllSignups records the lists' week once they are empty
     await _admin()
       .updateOne(
         { _id: admin._id, signups_reset_week: week },

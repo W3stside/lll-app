@@ -2,13 +2,11 @@
 // Sunday, and dates here are Lisbon wall-clock time read as a local Date - the
 // frame nowInTimeZone produces.
 
-import { getUSDayIndex } from "./date";
+import { formatDateKey, getUSDayIndex, ONE_WEEK_DAYS } from "./date";
 
 import { DAYS_IN_WEEK } from "@/constants/date";
 import { SIGNUPS_RESET_HOUR } from "@/constants/signups";
 import type { IGame } from "@/types";
-
-const ONE_WEEK_DAYS = 7;
 
 /** Monday 00:00 of the week `date` falls in. */
 export function getWeekStart(date: Date): Date {
@@ -19,19 +17,18 @@ export function getWeekStart(date: Date): Date {
   );
 }
 
-export function getPreviousWeekStart(weekStart: Date): Date {
+/** The Monday `weeks` weeks later, or earlier when negative. */
+export function addWeeks(weekStart: Date, weeks: number): Date {
   return new Date(
     weekStart.getFullYear(),
     weekStart.getMonth(),
-    weekStart.getDate() - ONE_WEEK_DAYS,
+    weekStart.getDate() + weeks * ONE_WEEK_DAYS,
   );
 }
 
 /** "YYYY-MM-DD" of the week's Monday, so each step runs once per week. */
 export function getWeekKey(weekStart: Date): string {
-  const month = String(weekStart.getMonth() + 1).padStart(2, "0");
-  const day = String(weekStart.getDate()).padStart(2, "0");
-  return `${weekStart.getFullYear()}-${month}-${day}`;
+  return formatDateKey(weekStart);
 }
 
 /** Monday morning: every list is cleared and signups re-open. */
@@ -51,7 +48,7 @@ export function getSignupsResetTime(weekStart: Date): Date {
 export function getSignupsWeekStart(now: Date): Date {
   const weekStart = getWeekStart(now);
   return now < getSignupsResetTime(weekStart)
-    ? getPreviousWeekStart(weekStart)
+    ? addWeeks(weekStart, -1)
     : weekStart;
 }
 

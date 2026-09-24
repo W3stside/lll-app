@@ -8,6 +8,9 @@
 // in summer: late rather than early, so the push never beats the banner. The
 // hour check below only stops a stray manual call from alerting at midday, and
 // the per-occurrence claim in lib/openSpotsAlerts makes any repeat a no-op.
+//
+// On Mondays it first finishes the weekly signups reset if that is still due
+// (see reset-signups).
 
 import type { NextApiRequest, NextApiResponse } from "next";
 
