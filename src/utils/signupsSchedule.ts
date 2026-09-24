@@ -45,6 +45,17 @@ export function getSignupsResetTime(weekStart: Date): Date {
 }
 
 /**
+ * Start of the week whose signups are current at `now`. They only roll over
+ * at the Monday reset, so early on Monday the week that just ended counts.
+ */
+export function getSignupsWeekStart(now: Date): Date {
+  const weekStart = getWeekStart(now);
+  return now < getSignupsResetTime(weekStart)
+    ? getPreviousWeekStart(weekStart)
+    : weekStart;
+}
+
+/**
  * Kick-off of the week's last game, when signups close. Hidden and cancelled
  * games are never played, so they don't count. Undefined when no game is.
  */

@@ -1,5 +1,4 @@
 import { RED_TW } from "@/constants/colours";
-import { SIGNUPS_RESET_HOUR } from "@/constants/signups";
 import { type IDialogContext, DialogVariant } from "@/context/Dialog/context";
 import type { IAdmin } from "@/types";
 import { cn } from "@/utils/tailwind";
@@ -31,9 +30,8 @@ export function SignupsManagement({
       <div className="flex flex-col justify-start p-2">
         <p className="py-1">
           Automatic every week: signups close when the last game of the week
-          kicks off, and on Monday at{" "}
-          {String(SIGNUPS_RESET_HOUR).padStart(2, "0")}:00 every list is cleared
-          and signups re-open.
+          kicks off, and on Monday morning every list is cleared and signups
+          re-open.
         </p>
         <div className="flex flex-wrap gap-2 items-center justify-between py-1">
           <div className="my-2 flex gap-x-4">

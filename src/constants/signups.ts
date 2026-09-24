@@ -10,7 +10,8 @@ export const MAX_SIGNUPS_PER_GAME = {
 export const MINIMUM_TOURNAMENT_TEAMS = 2;
 
 // Weekly cycle, in Lisbon time: signups close when the week's last game kicks
-// off, then every list is cleared and signups re-open on Monday at this hour
+// off, then every list is cleared and signups re-open on Monday from this
+// hour. The reset-signups cron in vercel.json is scheduled around it
 export const SIGNUPS_RESET_HOUR = 7;
 
 export const PASSWORD_MIN_LENGTH = 6;

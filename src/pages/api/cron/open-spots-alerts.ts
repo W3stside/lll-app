@@ -19,6 +19,7 @@ import {
 import { isCronAuthorised } from "@/lib/cronAuth";
 import client from "@/lib/mongodb";
 import { claimOpenSpotsAlert } from "@/lib/openSpotsAlerts";
+import { resetSignupsIfDue } from "@/lib/signups";
 import { type IAdmin, Collection, type IGame } from "@/types";
 import { getUSDayIndex, nowInTimeZone } from "@/utils/date";
 import { getOpenSpots } from "@/utils/games";
@@ -68,6 +69,16 @@ export default async function handler(
 
     // Never cached: every call re-evaluates the lists
     res.setHeader("Cache-Control", "no-store");
+
+    // Also the Monday reset's winter slot: reset-signups runs at 06:00 UTC,
+    // which is 07:00 in Lisbon in summer but only 06:00 in winter. It goes
+    // first so the alerts below see this week's lists, and is a no-op on
+    // other days or once the week's reset has run
+    try {
+      await resetSignupsIfDue();
+    } catch (error) {
+      console.error("[signups] Weekly reset failed:", error);
+    }
 
     const now = nowInTimeZone(GAME_TIME_ZONE);
     const localTime = now.toISOString();
