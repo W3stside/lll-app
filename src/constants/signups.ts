@@ -14,6 +14,9 @@ export const MINIMUM_TOURNAMENT_TEAMS = 2;
 // reset-signups cron in vercel.json is scheduled around it
 export const SIGNUPS_RESET_HOUR = 7;
 
+// Per game, cash only (see the About page)
+export const GAME_PRICE_EUR = 5;
+
 export const PASSWORD_MIN_LENGTH = 6;
 export const NAME_MIN_LENGTH = 2;
 export const PHONE_MIN_LENGTH = 10;
@@ -23,5 +26,7 @@ export const PHONE_FORMAT_HINT = `Format: <COUNTRY_CODE><NUMBER> with no "+" (e.
 export const PHONE_FORMAT_ERROR = `Phone number must start with the country code, with no "+" or leading 0 (e.g. ${PHONE_FORMAT_EXAMPLE} for Portugal).`;
 export const VERIFICATION_STEP_KEY = "verification-step";
 export const VERIFICATION_COOLDOWN_KEY = "verification-cooldown";
+// Shortest gap between two password reset texts to the same account
+export const RESET_CODE_COOLDOWN_SECONDS = 60;
 export const ORANGE_THRESHOLD = 5;
 export const YELLOW_THRESHOLD = 10;

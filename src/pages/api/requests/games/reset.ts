@@ -1,5 +1,6 @@
 import type { NextApiRequest, NextApiResponse } from "next";
 
+import { GameHistoryArchiveError } from "@/lib/gameOccurrences";
 import { requireAdmin } from "@/lib/requireAdmin";
 import { clearAllSignups } from "@/lib/signups";
 
@@ -23,6 +24,12 @@ export default async (req: NextApiRequest, res: NextApiResponse) => {
   } catch (error) {
     // eslint-disable-next-line no-console
     console.error(error);
-    res.status(500).json({ message: "Error updating document" });
+    res.status(500).json({
+      message:
+        // Tells the admin nothing was cleared, so trying again is safe
+        error instanceof GameHistoryArchiveError
+          ? error.message
+          : "Error updating document",
+    });
   }
 };

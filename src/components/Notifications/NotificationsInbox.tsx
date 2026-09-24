@@ -9,6 +9,7 @@ export interface INotificationsInbox {
 
 const TYPE_LABELS: Record<GameNotificationType, string> = {
   promoted: "IN",
+  reminder: "REMINDER",
   bumped: "WAITLIST",
   removed: "REMOVED",
   cancelled: "CANCELLED",

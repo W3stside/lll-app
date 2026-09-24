@@ -1,9 +1,11 @@
 import { ObjectId } from "mongodb";
 import type { GetServerSideProps } from "next";
 import Image from "next/image";
+import { useRouter } from "next/router";
 import { useCallback, useEffect, useMemo, useState } from "react";
 
 import { FindAndDeletePlayer } from "@/components/Admin/FindAndDeletePlayer";
+import { GameHistory } from "@/components/Admin/GameHistory";
 import { ManageGames } from "@/components/Admin/ManageGames";
 import { OweMoney } from "@/components/Admin/OweMoney";
 import { SignupsManagement } from "@/components/Admin/SignupsManagement";
@@ -11,25 +13,30 @@ import { TrackPayment } from "@/components/Admin/TrackPayment";
 import { DEFAULT_GAME_STATE } from "@/components/Admin/constants";
 import type { ErrorUser } from "@/components/Admin/types";
 import { PartnerProducts } from "@/components/PartnerProducts";
+import { RED_TW } from "@/constants/colours";
 import { ADMIN_NAVLINK, NAVLINKS_MAP } from "@/constants/links";
 import { useAdmin } from "@/context/Admin/context";
 import { useDialog } from "@/context/Dialog/context";
 import { useGames } from "@/context/Games/context";
 import { useUser } from "@/context/User/context";
 import { withServerSideProps } from "@/hoc/withServerSideProps";
+import { getOccurrences, getRecentOccurrences } from "@/lib/gameOccurrences";
 import client from "@/lib/mongodb";
 import {
+  type AttendanceStatus,
   type IUserSafe,
   Collection,
   GameType,
   Role,
   type IAdmin,
   type IGame,
+  type IGameOccurrence,
   type IUser,
 } from "@/types";
 import { dbRequest } from "@/utils/api/dbRequest";
-import { fetchUsersFromMongodb } from "@/utils/api/mongodb";
+import { updateAttendance, updatePayment } from "@/utils/api/occurrences";
 import { isValid24hTime } from "@/utils/date";
+import { getListOccurrenceKey, getOccurrenceRowKey } from "@/utils/gameHistory";
 import { sharePaymentsMissingList } from "@/utils/games";
 import { sortDaysOfWeek } from "@/utils/sort";
 
@@ -47,7 +54,8 @@ const EMPTY_TEAMS = [
   { players: [] },
   { players: [] },
 ] as const satisfies IGame["teams"];
-const LOCAL_STORAGE_PAYMENTS_KEY = "LLL-payments-confirmed";
+// About six weeks of games; the CSV download has the rest
+const HISTORY_ROWS_SHOWN = 40;
 
 const FIELDS_TO_VALIDATE: (keyof IGame)[] = [
   "name",
@@ -62,20 +70,17 @@ const FIELDS_TO_VALIDATE: (keyof IGame)[] = [
   "hidden",
 ];
 
-function _getPaymentConfirmation() {
-  if (typeof window !== "undefined") {
-    return JSON.parse(
-      localStorage.getItem(LOCAL_STORAGE_PAYMENTS_KEY) ?? "{}",
-    ) as Record<string, string[]>;
-  }
-
-  return {};
+function _keyOccurrences(rows: IGameOccurrence[]) {
+  return Object.fromEntries(
+    rows.map((row) => [getOccurrenceRowKey(row.game_id, row.occurrence), row]),
+  );
 }
 
-function _setPaymentConfirmation(data: Partial<Record<string, string[]>>) {
-  if (typeof window !== "undefined") {
-    localStorage.setItem(LOCAL_STORAGE_PAYMENTS_KEY, JSON.stringify(data));
-  }
+// Latest week first, then the latest kick-off
+function _compareOccurrences(a: IGameOccurrence, b: IGameOccurrence) {
+  return (
+    b.occurrence.localeCompare(a.occurrence) || b.time.localeCompare(a.time)
+  );
 }
 
 type ConnectionStatus = {
@@ -85,7 +90,9 @@ type ConnectionStatus = {
 export const getServerSideProps: GetServerSideProps<ConnectionStatus> =
   // TODO: review
   // @ts-expect-error error in the custom HOC - doesn't break.
-  withServerSideProps(async ({ parentProps: { games, user, usersById } }) => {
+  withServerSideProps(async ({ parentProps }) => {
+    const { admin, games, user, usersById } = parentProps;
+
     try {
       const adminUser = await client
         .db("LLL")
@@ -104,15 +111,39 @@ export const getServerSideProps: GetServerSideProps<ConnectionStatus> =
         };
       }
 
-      const usersSerialised = await fetchUsersFromMongodb(client, true);
+      const now = new Date();
+      const [thisWeekRows, recentRows] = await Promise.all([
+        // Track payment shows the marks for the week each list is for
+        getOccurrences(
+          games.map((game) => ({
+            game_id: game._id.toString(),
+            occurrence: getListOccurrenceKey(
+              game,
+              now,
+              // Typed as always there, but missing without an admin document
+              (admin as IAdmin | undefined)?.signups_lists_week,
+            ),
+          })),
+        ),
+        getRecentOccurrences(HISTORY_ROWS_SHOWN),
+      ]);
+      const occurrences = [
+        ...new Map(
+          [...recentRows, ...thisWeekRows].map((row) => [
+            row._id.toString(),
+            row,
+          ]),
+        ).values(),
+      ];
 
       return {
         props: {
           isConnected: true,
           games,
           user: JSON.parse(JSON.stringify(user)) as string,
-          users: usersSerialised,
+          // `users` comes from withServerSideProps, without password hashes
           usersById: JSON.parse(JSON.stringify(usersById)) as string,
+          occurrences: JSON.parse(JSON.stringify(occurrences)) as string,
         },
       };
     } catch (e) {
@@ -122,6 +153,7 @@ export const getServerSideProps: GetServerSideProps<ConnectionStatus> =
           user: null,
           users: [],
           usersById: {},
+          occurrences: [],
         },
       };
     }
@@ -134,6 +166,8 @@ interface IAdminPage {
   usersById: Record<string, IUser>;
   games: IGame[];
   admin: IAdmin | null;
+  // Game history: this week's rows and the latest weeks
+  occurrences?: IGameOccurrence[];
 }
 
 export default function Admin({
@@ -142,9 +176,15 @@ export default function Admin({
   user,
   users: usersInitial,
   games: gamesInitial,
+  occurrences: occurrencesInitial = [],
 }: IAdminPage) {
   const [loading, setLoading] = useState(false);
   const [generalError, setGeneralError] = useState<Error | null>(null);
+  // Payment and attendance errors, shown by the players tools
+  const [playersError, setPlayersError] = useState<Error | null>(null);
+  const [occurrenceRows, setOccurrenceRows] = useState<
+    Record<string, IGameOccurrence>
+  >(() => _keyOccurrences(occurrencesInitial));
   const [addGameError, setAddGameError] = useState<
     | {
         [key in keyof ErrorUser]: string;
@@ -156,6 +196,7 @@ export default function Admin({
   const { admin, setAdmin } = useAdmin();
   const { openDialog } = useDialog();
   const { users, usersById, setUsers } = useUser();
+  const router = useRouter();
 
   // Sync server-side shit with client-side shit
   useEffect(() => {
@@ -168,44 +209,84 @@ export default function Admin({
   const [targettedGame, setGameInfo] =
     useState<Partial<IGame>>(DEFAULT_GAME_STATE);
 
+  const saveOccurrence = useCallback((row: IGameOccurrence | null) => {
+    if (row === null) return;
+
+    setOccurrenceRows((prev) => ({
+      ...prev,
+      [getOccurrenceRowKey(row.game_id, row.occurrence)]: row,
+    }));
+  }, []);
+
   const handlePayment = useCallback(
     async (
       userId: ObjectId,
       { _id, time, day }: Pick<IGame, "_id" | "day" | "time">,
       dateStr: string,
-      recordPayment = false,
+      paid: boolean,
+      occurrence?: string,
     ) => {
       setLoading(true);
-      setGeneralError(null);
+      setPlayersError(null);
 
       try {
-        const { error } = await dbRequest<IUser & { recordPayment?: boolean }>(
-          "update",
-          Collection.USERS,
-          {
-            _id: userId,
-            missedPayments: [{ _id, date: dateStr, time, day }],
-            recordPayment,
-          },
+        const { user: updatedUser, occurrence: row } = await updatePayment({
+          user_id: userId.toString(),
+          game_id: _id.toString(),
+          date: dateStr,
+          day,
+          time,
+          occurrence,
+          paid,
+        });
+
+        setUsers((prev) =>
+          prev.map((usr) =>
+            usr._id.toString() === updatedUser._id.toString()
+              ? updatedUser
+              : usr,
+          ),
         );
-
-        if (error !== null) throw error;
-
-        const { data: usersUpdated } = await dbRequest<IUser[]>(
-          "get",
-          Collection.USERS,
-        );
-
-        setUsers(usersUpdated);
+        saveOccurrence(row);
       } catch (error) {
-        const e = error instanceof Error ? error : new Error("Unknown error!");
-        setGeneralError(e);
-        throw e;
+        setPlayersError(
+          error instanceof Error ? error : new Error("Unknown error!"),
+        );
       } finally {
         setLoading(false);
       }
     },
-    [setUsers],
+    [saveOccurrence, setUsers],
+  );
+
+  const handleAttendance = useCallback(
+    async (
+      game: IGame,
+      occurrence: string,
+      userIds: string[],
+      attendance: AttendanceStatus | null,
+    ) => {
+      setLoading(true);
+      setPlayersError(null);
+
+      try {
+        saveOccurrence(
+          await updateAttendance({
+            game_id: game._id.toString(),
+            occurrence,
+            user_ids: userIds,
+            attendance,
+          }),
+        );
+      } catch (error) {
+        setPlayersError(
+          error instanceof Error ? error : new Error("Unknown error!"),
+        );
+      } finally {
+        setLoading(false);
+      }
+    },
+    [saveOccurrence],
   );
 
   const handleUpdateGame = useCallback(async () => {
@@ -402,6 +483,9 @@ export default function Admin({
       }
 
       setGames(data);
+      // The lists went to the game history and may be for another week now:
+      // reload so the history and Track payment show that
+      router.reload();
     } catch (error) {
       const e =
         error instanceof Error
@@ -411,7 +495,7 @@ export default function Admin({
     } finally {
       setLoading(false);
     }
-  }, [admin, setGames]);
+  }, [admin, router, setGames]);
 
   const handleDeletePlayer = useCallback(
     async (userToDelete: IUserSafe | undefined) => {
@@ -456,17 +540,10 @@ export default function Admin({
     [users],
   );
 
-  const [paymentsConfirmed, setPaymentsConfirmed] = useState<
-    Partial<Record<string, string[]>>
-  >({});
-
-  useEffect(() => {
-    setPaymentsConfirmed(_getPaymentConfirmation());
-  }, []);
-
-  useEffect(() => {
-    _setPaymentConfirmation(paymentsConfirmed);
-  }, [paymentsConfirmed]);
+  const historyRows = useMemo(
+    () => Object.values(occurrenceRows).toSorted(_compareOccurrences),
+    [occurrenceRows],
+  );
 
   if (!isConnected) return <h1>Connecting to db...</h1>;
 
@@ -502,12 +579,18 @@ export default function Admin({
           />{" "}
           Players admin
         </h5>
+        {playersError !== null && (
+          <p role="alert" className={`px-2 py-1 text-sm ${RED_TW}`}>
+            Not saved: {playersError.message}
+          </p>
+        )}
         <TrackPayment
           gamesByDay={gamesByDay}
           usersById={usersById}
-          paymentsConfirmed={paymentsConfirmed}
-          setPaymentsConfirmed={setPaymentsConfirmed}
+          occurrences={occurrenceRows}
+          listsWeek={admin?.signups_lists_week}
           handlePayment={handlePayment}
+          handleAttendance={handleAttendance}
           loading={loading}
           startCollapsed={false}
         />
@@ -517,6 +600,7 @@ export default function Admin({
           sharePaymentsMissingList={sharePaymentsMissingList}
           loading={loading}
         />
+        <GameHistory occurrences={historyRows} usersById={usersById} />
         <FindAndDeletePlayer
           users={users}
           openDialog={openDialog}

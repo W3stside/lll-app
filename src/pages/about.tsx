@@ -8,6 +8,7 @@ import {
   RULEBOOK_URL,
   WHATS_APP_GROUP_URL,
 } from "@/constants/links";
+import { GAME_PRICE_EUR } from "@/constants/signups";
 import client from "@/lib/mongodb";
 import type { IGame } from "@/types";
 import { fetchGamesFromMongodb } from "@/utils/api/mongodb";
@@ -131,7 +132,8 @@ export default function About({ isConnected, gamesByDay }: IAbout) {
             </h5>
           </div>
           <p>
-            <strong>💵💵 €5/game - CASH ONLY!! 💵💵</strong> <br />
+            <strong>💵💵 €{GAME_PRICE_EUR}/game - CASH ONLY!! 💵💵</strong>{" "}
+            <br />
             <small>
               We don't accept MBWay because the amount of payments we would need
               to accept far exceeds their minimum untaxed threshold.

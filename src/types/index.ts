@@ -7,6 +7,9 @@ export enum Collection {
   PUSH_SUBSCRIPTIONS = "push_subscriptions",
   NOTIFICATIONS = "notifications",
   OPEN_SPOTS_ALERTS = "open_spots_alerts",
+  GAME_REMINDERS = "game_reminders",
+  GAME_OCCURRENCES = "game_occurrences",
+  PASSWORD_RESETS = "password_resets",
 }
 
 export enum GameStatus {
@@ -25,3 +28,4 @@ export * from "./admin";
 export * from "./http";
 export * from "./push";
 export * from "./notifications";
+export * from "./occurrences";

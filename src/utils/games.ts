@@ -200,6 +200,33 @@ export const getMaxPlayers = (game: IGame) => {
   return MAX_SIGNUPS_PER_GAME[game.type ?? GameType.STANDARD];
 };
 
+/**
+ * Players on the active list, as the signup page shows them: the first spots of
+ * each tourney team, otherwise the head of `players`.
+ */
+export const getConfirmedPlayerIds = (game: IGame): string[] => {
+  const isTourney =
+    game.type === GameType.TOURNAMENT_RANDOM ||
+    game.type === GameType.TOURNAMENT_NATIONS;
+
+  if (isTourney && game.teams !== undefined) {
+    return game.teams.flatMap(({ players }) =>
+      players.slice(0, MAX_SIGNUPS_PER_GAME[GameType.TOURNAMENT_RANDOM]),
+    );
+  }
+
+  return game.players.slice(
+    0,
+    MAX_SIGNUPS_PER_GAME[game.type ?? GameType.STANDARD],
+  );
+};
+
+/** Everyone signed up but not on the active list, in signup order. */
+export const getWaitlistPlayerIds = (game: IGame): string[] => {
+  const confirmed = new Set(getConfirmedPlayerIds(game));
+  return game.players.filter((id) => !confirmed.has(id));
+};
+
 // Mirrors useWeeklyGamesData: tourney signups live on the teams, everyone else
 // on `players`, and only the first getMaxPlayers of them are confirmed
 export const getConfirmedPlayersCount = (game: IGame) => {

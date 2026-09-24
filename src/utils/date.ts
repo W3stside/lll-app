@@ -48,11 +48,38 @@ const _sumDays = (
 };
 
 /**
- * Wall-clock "now" in the given zone, read as a local Date. Same frame as the
- * dates computeGameDate returns, so the two can be compared directly.
+ * Wall-clock time of `instant` in the given zone, read as a local Date. Same
+ * frame as the dates computeGameDate returns, so the two can be compared
+ * directly.
  */
+export function toTimeZoneWallClock(instant: Date, timeZone: string): Date {
+  return new Date(instant.toLocaleString("en-US", { timeZone }));
+}
+
+/** Wall-clock "now" in the given zone, read as a local Date. */
 export function nowInTimeZone(timeZone: string): Date {
-  return new Date(new Date().toLocaleString("en-US", { timeZone }));
+  return toTimeZoneWallClock(new Date(), timeZone);
+}
+
+function _dayIndex(day: IGame["day"]): number {
+  const index = DAYS_IN_WEEK.indexOf(day);
+  if (index === -1) {
+    throw new Error("Invalid day of week");
+  }
+  return index;
+}
+
+/** Kickoff of a weekly game in the Monday-to-Sunday week of `wallDate`. */
+export function getKickoffInWeekOf(
+  day: IGame["day"],
+  time: string,
+  wallDate: Date,
+): Date {
+  return _getDateFromGameHour(
+    wallDate,
+    time,
+    _dayIndex(day) - getUSDayIndex(wallDate),
+  );
 }
 
 /** "YYYY-MM-DD" of the date's local calendar day. */
@@ -60,6 +87,20 @@ export function formatDateKey(date: Date): string {
   const month = String(date.getMonth() + 1).padStart(2, "0");
   const day = String(date.getDate()).padStart(2, "0");
   return `${date.getFullYear()}-${month}-${day}`;
+}
+
+/** Local midnight of a formatDateKey key, or null unless it's a real date. */
+export function parseDateKey(key: string): Date | null {
+  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(key);
+  if (match === null) return null;
+
+  const date = new Date(
+    Number(match[1]),
+    Number(match[2]) - 1,
+    Number(match[3]),
+  );
+  // Rejects overflowing dates such as 2026-02-30
+  return formatDateKey(date) === key ? date : null;
 }
 
 export function computeGameDate(
