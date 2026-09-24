@@ -2,6 +2,7 @@
 // game "needs more players". Dates here are Lisbon wall-clock time read as a
 // local Date - the frame computeGameDate returns and nowInTimeZone produces.
 
+import { formatDateKey } from "./date";
 import { getOpenSpots } from "./games";
 
 import {
@@ -49,9 +50,7 @@ export function gameNeedsPlayers(game: IGame): boolean {
 
 /** "YYYY-MM-DD" of the game, so one alert is sent per game per week. */
 export function getOpenSpotsAlertOccurrence(gameDate: Date): string {
-  const month = String(gameDate.getMonth() + 1).padStart(2, "0");
-  const day = String(gameDate.getDate()).padStart(2, "0");
-  return `${gameDate.getFullYear()}-${month}-${day}`;
+  return formatDateKey(gameDate);
 }
 
 export function getOpenSpotsAlertKey(gameId: string, gameDate: Date): string {

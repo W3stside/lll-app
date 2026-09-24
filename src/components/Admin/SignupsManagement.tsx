@@ -28,6 +28,11 @@ export function SignupsManagement({
         Game and signups management
       </div>
       <div className="flex flex-col justify-start p-2">
+        <p className="py-1">
+          Automatic every week: signups close late on Sunday night, and on
+          Monday morning every list is cleared and signups re-open. To pause it,
+          e.g. over a break, hide or cancel every game.
+        </p>
         <div className="flex flex-wrap gap-2 items-center justify-between py-1">
           <div className="my-2 flex gap-x-4">
             <strong>Signups enabled?</strong>{" "}
@@ -63,9 +68,9 @@ export function SignupsManagement({
                     Are you sure you want to remove all players from signups?
                     This action cannot be undone. <br />
                     <br />
-                    You should really only be doing this on Sunday night after
-                    the last game has been played and when preparing next week's
-                    games.
+                    Lists are cleared automatically every Monday morning. Only
+                    do this to start next week early, after the last game has
+                    been played.
                   </div>
                 ),
                 action: async () => {

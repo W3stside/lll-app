@@ -3,6 +3,14 @@
     {
       "path": "/api/cron/open-spots-alerts",
       "schedule": "30 7 * * *"
+    },
+    {
+      "path": "/api/cron/close-signups",
+      "schedule": "59 22 * * 0"
+    },
+    {
+      "path": "/api/cron/reset-signups",
+      "schedule": "0 6 * * 1"
     }
   ]
 }

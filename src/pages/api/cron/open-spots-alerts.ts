@@ -8,8 +8,10 @@
 // in summer: late rather than early, so the push never beats the banner. The
 // hour check below only stops a stray manual call from alerting at midday, and
 // the per-occurrence claim in lib/openSpotsAlerts makes any repeat a no-op.
+//
+// On Mondays it first finishes the weekly signups reset if that is still due
+// (see reset-signups).
 
-import { timingSafeEqual } from "crypto";
 import type { NextApiRequest, NextApiResponse } from "next";
 
 import { DAYS_IN_WEEK, GAME_TIME_ZONE } from "@/constants/date";
@@ -17,9 +19,10 @@ import {
   OPEN_SPOTS_ALERT_HOUR,
   OPEN_SPOTS_PUSH_LAST_HOUR,
 } from "@/constants/notifications";
+import { isCronAuthorised } from "@/lib/cronAuth";
 import client from "@/lib/mongodb";
 import { claimOpenSpotsAlert } from "@/lib/openSpotsAlerts";
-import { getApiRequester } from "@/lib/requireAdmin";
+import { resetSignupsIfDue } from "@/lib/signups";
 import { type IAdmin, Collection, type IGame } from "@/types";
 import { getUSDayIndex, nowInTimeZone } from "@/utils/date";
 import { getOpenSpots } from "@/utils/games";
@@ -37,34 +40,6 @@ interface IGameResult {
   openSpots: number;
   outcome: "already-sent" | "error" | "full" | "sent";
   delivered?: number;
-}
-
-function _secretsMatch(provided: string, expected: string): boolean {
-  const a = Buffer.from(provided);
-  const b = Buffer.from(expected);
-  return a.length === b.length && timingSafeEqual(a, b);
-}
-
-// Vercel sends `Authorization: Bearer $CRON_SECRET` when the env var is set;
-// any other scheduler can do the same. Admins may also hit the route from a
-// logged-in browser to test it.
-async function _isAuthorised(req: NextApiRequest): Promise<boolean> {
-  const secret = process.env.CRON_SECRET;
-  const { authorization } = req.headers;
-
-  if (secret === undefined || secret.trim() === "") {
-    console.warn(
-      "[open-spots] CRON_SECRET is not set - scheduled runs are rejected",
-    );
-  } else if (
-    authorization !== undefined &&
-    _secretsMatch(authorization, `Bearer ${secret}`)
-  ) {
-    return true;
-  }
-
-  const requester = await getApiRequester(req);
-  return requester !== null && requester.isAdmin;
 }
 
 async function _isSignupOpen(): Promise<boolean> {
@@ -90,13 +65,23 @@ export default async function handler(
   }
 
   try {
-    if (!(await _isAuthorised(req))) {
+    if (!(await isCronAuthorised(req))) {
       res.status(401).json({ message: "Unauthorized" });
       return;
     }
 
     // Never cached: every call re-evaluates the lists
     res.setHeader("Cache-Control", "no-store");
+
+    // Also the Monday reset's winter slot: reset-signups runs at 06:00 UTC,
+    // which is 07:00 in Lisbon in summer but only 06:00 in winter. It goes
+    // first so the alerts below see this week's lists, and is a no-op on
+    // other days or once the week's reset has run
+    try {
+      await resetSignupsIfDue();
+    } catch (error) {
+      console.error("[signups] Weekly reset failed:", error);
+    }
 
     const now = nowInTimeZone(GAME_TIME_ZONE);
     const localTime = now.toISOString();

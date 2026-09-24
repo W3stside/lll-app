@@ -1,7 +1,7 @@
 import { DAYS_IN_WEEK } from "@/constants/date";
 import type { IGame } from "@/types";
 
-const ONE_WEEK_DAYS = 7;
+export const ONE_WEEK_DAYS = 7;
 
 export const getUSDayIndex = (date: Date): number => {
   const isoDay = date.getDay();
@@ -53,6 +53,13 @@ const _sumDays = (
  */
 export function nowInTimeZone(timeZone: string): Date {
   return new Date(new Date().toLocaleString("en-US", { timeZone }));
+}
+
+/** "YYYY-MM-DD" of the date's local calendar day. */
+export function formatDateKey(date: Date): string {
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${date.getFullYear()}-${month}-${day}`;
 }
 
 export function computeGameDate(
